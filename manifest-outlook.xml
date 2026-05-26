@@ -414,15 +414,15 @@
                     <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Button" id="provideFeedbackSelection_OL_v11">
-                    <Label resid="provideFeedbackSelection.Label.v11"/>
-                    <Supertip><Title resid="provideFeedbackSelection.Label.v11"/><Description resid="provideFeedbackSelection.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="provideFeedbackSelection.Icon16.v11"/><bt:Image size="32" resid="provideFeedbackSelection.Icon32.v11"/><bt:Image size="80" resid="provideFeedbackSelection.Icon80.v11"/></Icon>
+                    <Label resid="pvFbSel.Label.v11"/>
+                    <Supertip><Title resid="pvFbSel.Label.v11"/><Description resid="pvFbSel.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="pvFbSel.Icon16.v11"/><bt:Image size="32" resid="pvFbSel.Icon32.v11"/><bt:Image size="80" resid="pvFbSel.Icon80.v11"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackSelection</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Button" id="provideFeedbackParagraph_OL_v11">
-                    <Label resid="provideFeedbackParagraph.Label.v11"/>
-                    <Supertip><Title resid="provideFeedbackParagraph.Label.v11"/><Description resid="provideFeedbackParagraph.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="provideFeedbackParagraph.Icon16.v11"/><bt:Image size="32" resid="provideFeedbackParagraph.Icon32.v11"/><bt:Image size="80" resid="provideFeedbackParagraph.Icon80.v11"/></Icon>
+                    <Label resid="pvFbPar.Label.v11"/>
+                    <Supertip><Title resid="pvFbPar.Label.v11"/><Description resid="pvFbPar.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="pvFbPar.Icon16.v11"/><bt:Image size="32" resid="pvFbPar.Icon32.v11"/><bt:Image size="80" resid="pvFbPar.Icon80.v11"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackParagraph</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Button" id="requestFeedback_OL_v11">
@@ -562,15 +562,15 @@
                     <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Button" id="provideFeedbackSelection_OLC">
-                    <Label resid="provideFeedbackSelection.Label.v11"/>
-                    <Supertip><Title resid="provideFeedbackSelection.Label.v11"/><Description resid="provideFeedbackSelection.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="provideFeedbackSelection.Icon16.v11"/><bt:Image size="32" resid="provideFeedbackSelection.Icon32.v11"/><bt:Image size="80" resid="provideFeedbackSelection.Icon80.v11"/></Icon>
+                    <Label resid="pvFbSel.Label.v11"/>
+                    <Supertip><Title resid="pvFbSel.Label.v11"/><Description resid="pvFbSel.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="pvFbSel.Icon16.v11"/><bt:Image size="32" resid="pvFbSel.Icon32.v11"/><bt:Image size="80" resid="pvFbSel.Icon80.v11"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackSelection</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Button" id="provideFeedbackParagraph_OLC">
-                    <Label resid="provideFeedbackParagraph.Label.v11"/>
-                    <Supertip><Title resid="provideFeedbackParagraph.Label.v11"/><Description resid="provideFeedbackParagraph.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="provideFeedbackParagraph.Icon16.v11"/><bt:Image size="32" resid="provideFeedbackParagraph.Icon32.v11"/><bt:Image size="80" resid="provideFeedbackParagraph.Icon80.v11"/></Icon>
+                    <Label resid="pvFbPar.Label.v11"/>
+                    <Supertip><Title resid="pvFbPar.Label.v11"/><Description resid="pvFbPar.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="pvFbPar.Icon16.v11"/><bt:Image size="32" resid="pvFbPar.Icon32.v11"/><bt:Image size="80" resid="pvFbPar.Icon80.v11"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackParagraph</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Button" id="requestFeedback_OLC">
@@ -684,12 +684,12 @@
           <bt:Image id="applyParagraph.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-apply-para-16.png"/>
           <bt:Image id="applyParagraph.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-apply-para-32.png"/>
           <bt:Image id="applyParagraph.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-apply-para-80.png"/>
-          <bt:Image id="provideFeedbackSelection.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-16.png"/>
-          <bt:Image id="provideFeedbackSelection.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-32.png"/>
-          <bt:Image id="provideFeedbackSelection.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-80.png"/>
-          <bt:Image id="provideFeedbackParagraph.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-16.png"/>
-          <bt:Image id="provideFeedbackParagraph.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-32.png"/>
-          <bt:Image id="provideFeedbackParagraph.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-80.png"/>
+          <bt:Image id="pvFbSel.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-16.png"/>
+          <bt:Image id="pvFbSel.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-32.png"/>
+          <bt:Image id="pvFbSel.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-80.png"/>
+          <bt:Image id="pvFbPar.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-16.png"/>
+          <bt:Image id="pvFbPar.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-32.png"/>
+          <bt:Image id="pvFbPar.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-80.png"/>
           <bt:Image id="requestFeedback.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-req-fb-16.png"/>
           <bt:Image id="requestFeedback.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-req-fb-32.png"/>
           <bt:Image id="requestFeedback.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-req-fb-80.png"/>
@@ -741,8 +741,8 @@
           <bt:String id="selectionConfig.Label.v11" DefaultValue="Selection Config"/>
           <bt:String id="applySelection.Label.v11" DefaultValue="Apply Selection"/>
           <bt:String id="applyParagraph.Label.v11" DefaultValue="Apply Paragraph"/>
-          <bt:String id="provideFeedbackSelection.Label.v11" DefaultValue="Provide Feedback"/>
-          <bt:String id="provideFeedbackParagraph.Label.v11" DefaultValue="Feedback Paragraph"/>
+          <bt:String id="pvFbSel.Label.v11" DefaultValue="Provide Feedback"/>
+          <bt:String id="pvFbPar.Label.v11" DefaultValue="Feedback Paragraph"/>
           <bt:String id="requestFeedback.Label.v11" DefaultValue="Request Feedback"/>
           <bt:String id="createArticle.Label.v11" DefaultValue="Create Article"/>
           <bt:String id="listArticles.Label.v11" DefaultValue="List Articles"/>
@@ -763,8 +763,8 @@
           <bt:String id="selectionConfig.Tooltip.v11" DefaultValue="Configure selection behavior"/>
           <bt:String id="applySelection.Tooltip.v11" DefaultValue="Apply analysis as feedback to selection"/>
           <bt:String id="applyParagraph.Tooltip.v11" DefaultValue="Apply analysis as feedback to paragraph"/>
-          <bt:String id="provideFeedbackSelection.Tooltip.v11" DefaultValue="Send analysis as email feedback"/>
-          <bt:String id="provideFeedbackParagraph.Tooltip.v11" DefaultValue="Send paragraph analysis as email feedback"/>
+          <bt:String id="pvFbSel.Tooltip.v11" DefaultValue="Send analysis as email feedback"/>
+          <bt:String id="pvFbPar.Tooltip.v11" DefaultValue="Send paragraph analysis as email feedback"/>
           <bt:String id="requestFeedback.Tooltip.v11" DefaultValue="Request feedback from another person"/>
           <bt:String id="createArticle.Tooltip.v11" DefaultValue="Create a new article"/>
           <bt:String id="listArticles.Tooltip.v11" DefaultValue="View saved articles"/>
