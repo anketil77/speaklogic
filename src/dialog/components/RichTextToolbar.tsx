@@ -95,6 +95,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   const [fontColor, setFontColor] = useState("#1B1B1B");
   const [highlight, setHighlight] = useState<string | null>(null);
   const [alignment, setAlignment] = useState<Alignment>("left");
+  const [saveStatus, setSaveStatus] = useState<"" | "empty" | "saved" | "copied" | "error">("");
 
   const {
     show: showFindReplace,
@@ -410,9 +411,17 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   }
 
   // ── Save: download editor content as .html file ──────────────────────────
+  function showSaveStatus(s: "empty" | "saved" | "copied" | "error") {
+    setSaveStatus(s);
+    setTimeout(() => setSaveStatus(""), 3000);
+  }
+
   function handleSave() {
     const el = editorRef.current;
-    if (!el || !el.innerHTML.trim()) return;
+    if (!el || !el.innerHTML.trim()) {
+      showSaveStatus("empty");
+      return;
+    }
 
     const htmlContent = `<!DOCTYPE html>
 <html>
@@ -429,43 +438,60 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
     const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const fileName = `speak-logic-analysis-${ts}.html`;
 
-    // Try File System Access API (native OS Save dialog in WebView2)
+    // Try native OS Save dialog (File System Access API) — blocked in iframes, harmless to try
     const fsApi = (window as any).showSaveFilePicker;
     if (typeof fsApi === "function") {
-      fsApi({
+      (fsApi as (opts: unknown) => Promise<any>)({
         suggestedName: fileName,
-        types: [
-          {
-            description: "HTML Document",
-            accept: { "text/html": [".html"] },
-          },
-        ],
+        types: [{ description: "HTML Document", accept: { "text/html": [".html"] } }],
       })
         .then(async (handle: any) => {
           const writable = await handle.createWritable();
           await writable.write(htmlContent);
           await writable.close();
+          showSaveStatus("saved");
         })
         .catch((e: any) => {
-          if (e.name === "AbortError") return;
-          triggerBlobDownload(htmlContent, fileName);
+          if (e?.name === "AbortError") return;
+          // Blocked in iframe (SecurityError) or other — fall through to blob/clipboard
+          tryBlobThenClipboard(htmlContent, fileName);
         });
       return;
     }
 
-    triggerBlobDownload(htmlContent, fileName);
+    tryBlobThenClipboard(htmlContent, fileName);
   }
 
-  function triggerBlobDownload(content: string, fileName: string) {
-    const blob = new Blob([content], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  function tryBlobThenClipboard(content: string, fileName: string) {
+    // Try blob URL download first
+    try {
+      const blob = new Blob([content], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 500);
+      // Show "saved" optimistically — blob click is fire-and-forget
+      showSaveStatus("saved");
+    } catch {
+      // Blob creation failed — copy to clipboard as last resort
+      copyToClipboard(content);
+    }
+  }
+
+  function copyToClipboard(content: string) {
+    // Strip tags for plain-text clipboard; preserves readability
+    const plain = content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    navigator.clipboard.writeText(plain).then(
+      () => showSaveStatus("copied"),
+      () => showSaveStatus("error"),
+    );
   }
 
   // ── Print: stamp sl-print-region only on the toolbar's bound editor, then remove ──
@@ -480,9 +506,8 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   }
 
   // ── Open: file picker → read HTML → set editor content ──────────────────
-  function handleOpen() {
-    fileInputRef.current?.click();
-  }
+  // Uses a <label> trigger instead of .click() — programmatic file input clicks
+  // are blocked in some Office.js WebView2 iframe contexts.
 
   function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -499,6 +524,9 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
 
       if (editorRef.current) {
         editorRef.current.innerHTML = content;
+        // Dispatch input event so RichEditor's onChange fires and parent state updates.
+        // Without this, the next React render wipes the loaded content back to the old value.
+        editorRef.current.dispatchEvent(new Event("input", { bubbles: true }));
       }
     };
     reader.readAsText(file);
@@ -928,13 +956,31 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
       <button className="sl-icon-btn" style={iconBtnBase} title="Save" onClick={handleSave}>
         <SaveLayoutIcon />
       </button>
+      {saveStatus && (
+        <span style={{
+          fontSize: 11, color:
+            saveStatus === "error" ? "#D13438" :
+            saveStatus === "empty" ? "#D13438" : "#107C10",
+          marginLeft: 4, whiteSpace: "nowrap",
+        }}>
+          {saveStatus === "saved" && "Saved"}
+          {saveStatus === "copied" && "Copied to clipboard"}
+          {saveStatus === "empty" && "Nothing to save"}
+            {saveStatus === "error" && "Save failed"}
+        </span>
+      )}
 
       <div style={toolbarSep} />
 
-      {/* Open */}
-      <button className="sl-icon-btn" style={iconBtnBase} title="Open" onClick={handleOpen}>
+      {/* Open — label wraps the hidden input so user click directly activates the file picker */}
+      <label
+        htmlFor="sl-rtt-file-open"
+        className="sl-icon-btn"
+        style={{ ...iconBtnBase, cursor: "pointer" }}
+        title="Open"
+      >
         <OpenIconSvg />
-      </button>
+      </label>
 
       {/* Print */}
       <button className="sl-icon-btn" style={iconBtnBase} title="Print" onClick={handlePrint}>
@@ -961,12 +1007,13 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
         <SpellCheckIcon />
       </button>
 
-      {/* Hidden file input for Open */}
+      {/* Hidden file input for Open — activated directly by the <label> above */}
       <input
+        id="sl-rtt-file-open"
         ref={fileInputRef}
         type="file"
         accept=".html,.htm"
-        style={{ display: "none" }}
+        style={{ position: "absolute", width: 0, height: 0, opacity: 0, overflow: "hidden" }}
         onChange={handleFileSelected}
       />
     </div>
