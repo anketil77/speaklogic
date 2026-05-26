@@ -17,7 +17,7 @@
   <SupportUrl DefaultValue="https://localhost:3000"/>
   <AppDomains>
     <AppDomain>https://localhost:3000</AppDomain>
-    <AppDomain>https://speaklogic-two.vercel.app</AppDomain>
+    <AppDomain>https://speaklogic-testing.vercel.app</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Document"/>
