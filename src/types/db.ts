@@ -188,6 +188,20 @@ export interface Article {
   personName: string;
   personEmail: string;
   source: "Word Document" | "Outlook Mail" | "PowerPoint Document";
+  articleNumber?: number;
+  isProviderUseGivenSetOfInfo?: 0 | 1;
+  category?: string;
+  articleBasisReference?: string;
+  isDraft?: 0 | 1;
+}
+
+export interface SaveArticlePayload {
+  articleTitle: string;
+  articleContent: string;
+  category: string;
+  articleBasisReference: string;
+  isProviderUseGivenSetOfInfo: 0 | 1;
+  isDraft: 0 | 1;
 }
 
 export interface AttachFileToProject {
@@ -595,7 +609,8 @@ export type DialogAction =
   | { action: "ADD_ATTACHED_FILE"; file: Omit<AttachFileToProject, "id"> }
   | { action: "REMOVE_ATTACHED_FILE"; id: number }
   | { action: "SAVE_RELATED_SELECTION"; payload: SaveRelatedSelectionPayload }
-  | { action: "SAVE_PRINCIPLE_IN_SELECTION"; payload: SavePrincipleInSelectionPayload };
+  | { action: "SAVE_PRINCIPLE_IN_SELECTION"; payload: SavePrincipleInSelectionPayload }
+  | { action: "SAVE_ARTICLE"; payload: SaveArticlePayload };
 
 export interface SaveRelatedSelectionPayload {
   record: Omit<SelectionWithPrinciple, "id">;

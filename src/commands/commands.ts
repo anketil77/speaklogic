@@ -11,6 +11,7 @@ import { saveFlag, getAllFlaggedSelections, deleteFlag } from "@/db/queries/flag
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
+import { saveArticle } from "@/db/queries/article";
 import { dbg, clearLog } from "@/debug/log";
 import { openInterpretedPrincipleReport } from "@/dialog/utils/reportGenerator";
 
@@ -28,6 +29,7 @@ import type {
   HostMessage,
   HostSource,
   SaveAnalysisPayload,
+  SaveArticlePayload,
   SaveCommunicationConfigPayload,
   SaveFeedbackPayload,
   SaveRelatedSelectionPayload,
@@ -44,6 +46,8 @@ const FLAG_DIALOG_SIZE = { height: 58, width: 25 } as const;
 const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: 25 } as const;
 // About dialog: 604×292px → 27% height, 32% width on 1920×1080
 const ABOUT_DIALOG_SIZE = { height: 27, width: 32 } as const;
+// Create Article dialog: 520×508px → 61% height, 27% width (height % is of Word viewport ~827px, not raw 1080)
+const CREATE_ARTICLE_DIALOG_SIZE = { height: 61, width: 27 } as const;
 
 let dbInitialized = false;
 
@@ -106,7 +110,7 @@ function registerHandlers(): void {
   Office.actions.associate("about", (event) => openAboutDialog(event));
   Office.actions.associate("communicationConfig", (event) => openCommunicationConfigDialog(event));
   Office.actions.associate("createArticle", (event) =>
-    openViewDialogSimple("create-article", event)
+    void openCreateArticleDialog(event)
   );
   Office.actions.associate("listArticles", (event) =>
     openViewDialogSimple("list-articles", event)
@@ -1088,6 +1092,64 @@ function openViewDialogSimple(
   }, event);
 }
 
+
+async function openCreateArticleDialog(event: Office.AddinCommands.Event): Promise<void> {
+  await ensureDb();
+  const { personName, personEmail } = getUserIdentity();
+  const initPayload: DialogInitPayload = {
+    selection: "",
+    mode: "selection",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: [],
+  };
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=create-article`,
+    { ...CREATE_ARTICLE_DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        void (evt as { error: number }).error;
+        event.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "SAVE_ARTICLE": {
+            const p = m.payload as SaveArticlePayload;
+            try {
+              saveArticle({ ...p, personName, personEmail, source: getSource() });
+            } catch (err) {
+              dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+              break;
+            }
+            dialog.close();
+            event.completed();
+            break;
+          }
+          case "CLOSE":
+            dialog.close();
+            event.completed();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
 
 function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: Office.AddinCommands.Event, attempt = 0): void {
   Office.context.ui.displayDialogAsync(

@@ -175,7 +175,12 @@ CREATE TABLE IF NOT EXISTS Article (
   articleTime TEXT,
   personName TEXT,
   personEmail TEXT,
-  source TEXT
+  source TEXT,
+  articleNumber INTEGER DEFAULT 0,
+  isProviderUseGivenSetOfInfo INTEGER DEFAULT 1,
+  category TEXT DEFAULT '',
+  articleBasisReference TEXT DEFAULT '',
+  isDraft INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS AttachFileToProject (
