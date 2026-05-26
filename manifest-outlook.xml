@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Outlook-only sideload manifest.
+     Use this file when sideloading via https://aka.ms/olksideload.
+     Uses TaskPaneApp + taskpaneappversionoverrides (same as the combined
+     manifest.xml) so the schema validator at the sideload page accepts it. -->
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xsi:type="TaskPaneApp">
+
+  <Id>b1f2e692-86aa-4579-8224-21de1f0ce235</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Speak Logic</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Speak Logic"/>
+  <Description DefaultValue="Speak Logic Communication Analysis Add-in for Outlook"/>
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png"/>
+  <SupportUrl DefaultValue="https://localhost:3000"/>
+
+  <AppDomains>
+    <AppDomain>https://localhost:3000</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Mailbox"/>
+  </Hosts>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://localhost:3000/taskpane.html"/>
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <!--
+    taskpaneappversionoverrides V1_0 wrapper is required to nest V1_1 inside.
+    MailHost is only valid in V1_1, so V1_0 carries a minimal placeholder host
+    that satisfies the schema; Outlook clients ignore it and use the V1_1 block.
+  -->
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Requirements>
+      <bt:Sets>
+        <bt:Set Name="Mailbox" MinVersion="1.1"/>
+      </bt:Sets>
+    </Requirements>
+
+    <Hosts>
+      <!--
+        Placeholder Document host satisfies the V1_0 schema requirement that
+        Hosts must be present (V1_0 doesn't define MailHost). Since the root
+        <Hosts> only declares Mailbox, Office never installs this for Word.
+      -->
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <FunctionFile resid="Commands.Url"/>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="tabSpeakLogic_placeholder">
+              <Group id="grpSpeakLogic_placeholder">
+                <Label resid="grpSpeakLogic.Label.placeholder"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16.placeholder"/>
+                  <bt:Image size="32" resid="Icon.32x32.placeholder"/>
+                  <bt:Image size="80" resid="Icon.80x80.placeholder"/>
+                </Icon>
+                <Control xsi:type="Button" id="btnPlaceholder">
+                  <Label resid="openTaskPane.Label.placeholder"/>
+                  <Supertip>
+                    <Title resid="openTaskPane.Label.placeholder"/>
+                    <Description resid="openTaskPane.Tooltip.placeholder"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16.placeholder"/>
+                    <bt:Image size="32" resid="Icon.32x32.placeholder"/>
+                    <bt:Image size="80" resid="Icon.80x80.placeholder"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>noop</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="grpSpeakLogic.Label.placeholder"/>
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16x16.placeholder" DefaultValue="https://localhost:3000/assets/icon-16.png"/>
+        <bt:Image id="Icon.32x32.placeholder" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80.placeholder" DefaultValue="https://localhost:3000/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/commands.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="grpSpeakLogic.Label.placeholder" DefaultValue="Speak Logic"/>
+        <bt:String id="openTaskPane.Label.placeholder" DefaultValue="Open Speak Logic"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="openTaskPane.Tooltip.placeholder" DefaultValue="Open the Speak Logic panel"/>
+      </bt:LongStrings>
+    </Resources>
+
+    <!-- V1_1 — modern Outlook clients use this block (read + compose mode) -->
+    <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides/1.1" xsi:type="VersionOverridesV1_1">
+
+      <Requirements>
+        <bt:Sets>
+          <bt:Set Name="Mailbox" MinVersion="1.3"/>
+        </bt:Sets>
+      </Requirements>
+
+      <Hosts>
+        <Host xsi:type="MailHost">
+          <DesktopFormFactor>
+            <FunctionFile resid="Commands.Url.v11"/>
+
+            <!-- Read mode -->
+            <ExtensionPoint xsi:type="MessageReadCommandSurface">
+              <CustomTab id="tabSpeakLogic_OL">
+                <Group id="grpSpeakLogic_OL">
+                  <Label resid="grpSpeakLogic.Label"/>
+                  <Control xsi:type="Button" id="openTaskPane_OL">
+                    <Label resid="openTaskPane.Label"/>
+                    <Supertip>
+                      <Title resid="openTaskPane.Label"/>
+                      <Description resid="openTaskPane.Tooltip"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="Icon.16x16.v11"/>
+                      <bt:Image size="32" resid="Icon.32x32.v11"/>
+                      <bt:Image size="80" resid="Icon.80x80.v11"/>
+                    </Icon>
+                    <Action xsi:type="ShowTaskPane">
+                      <SourceLocation resid="TaskPane.Url.v11"/>
+                      <SupportsPinning>true</SupportsPinning>
+                    </Action>
+                  </Control>
+                </Group>
+                <Label resid="tabSpeakLogic.Label.v11"/>
+              </CustomTab>
+            </ExtensionPoint>
+
+            <!-- Compose mode -->
+            <ExtensionPoint xsi:type="MessageComposeCommandSurface">
+              <CustomTab id="tabSpeakLogic_OLC">
+                <Group id="grpSpeakLogic_OLC">
+                  <Label resid="grpSpeakLogic.Label"/>
+                  <Control xsi:type="Button" id="openTaskPane_OLC">
+                    <Label resid="openTaskPane.Label"/>
+                    <Supertip>
+                      <Title resid="openTaskPane.Label"/>
+                      <Description resid="openTaskPane.Tooltip"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="Icon.16x16.v11"/>
+                      <bt:Image size="32" resid="Icon.32x32.v11"/>
+                      <bt:Image size="80" resid="Icon.80x80.v11"/>
+                    </Icon>
+                    <Action xsi:type="ShowTaskPane">
+                      <SourceLocation resid="TaskPane.Url.v11"/>
+                      <SupportsPinning>true</SupportsPinning>
+                    </Action>
+                  </Control>
+                </Group>
+                <Label resid="tabSpeakLogic.Label.v11"/>
+              </CustomTab>
+            </ExtensionPoint>
+
+          </DesktopFormFactor>
+        </Host>
+      </Hosts>
+
+      <Resources>
+        <bt:Images>
+          <bt:Image id="Icon.16x16.v11" DefaultValue="https://localhost:3000/assets/icon-16.png"/>
+          <bt:Image id="Icon.32x32.v11" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+          <bt:Image id="Icon.80x80.v11" DefaultValue="https://localhost:3000/assets/icon-80.png"/>
+        </bt:Images>
+        <bt:Urls>
+          <bt:Url id="Commands.Url.v11" DefaultValue="https://localhost:3000/commands.html"/>
+          <bt:Url id="TaskPane.Url.v11" DefaultValue="https://localhost:3000/taskpane.html"/>
+        </bt:Urls>
+        <bt:ShortStrings>
+          <bt:String id="tabSpeakLogic.Label.v11" DefaultValue="Speak Logic"/>
+          <bt:String id="grpSpeakLogic.Label" DefaultValue="Speak Logic"/>
+          <bt:String id="openTaskPane.Label" DefaultValue="Open Speak Logic"/>
+        </bt:ShortStrings>
+        <bt:LongStrings>
+          <bt:String id="openTaskPane.Tooltip" DefaultValue="Open the Speak Logic panel to analyze and manage communications"/>
+        </bt:LongStrings>
+      </Resources>
+
+    </VersionOverrides>
+  </VersionOverrides>
+
+</OfficeApp>

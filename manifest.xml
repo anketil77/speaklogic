@@ -1,0 +1,1037 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+
+  <Id>b1f2e692-86aa-4579-8224-21de1f0ce235</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Speak Logic</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Speak Logic"/>
+  <Description DefaultValue="Analyze communication by identifying errors, questions, compensators, problems, and answers."/>
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-64.png"/>
+  <SupportUrl DefaultValue="https://localhost:3000"/>
+  <AppDomains>
+    <AppDomain>https://localhost:3000</AppDomain>
+    <AppDomain>https://speaklogic-two.vercel.app</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Document"/>
+    <Host Name="Presentation"/>
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://localhost:3000/dialog.html"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <FunctionFile resid="Commands.Url"/>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="tabSpeakLogic">
+              <Group id="grpAnalysis">
+                <Label resid="grpAnalysis.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Control xsi:type="Button" id="analyzeSelection">
+                  <Label resid="analyzeSelection.Label"/>
+                  <Supertip><Title resid="analyzeSelection.Label"/><Description resid="analyzeSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="analyzeSelection.Icon16"/><bt:Image size="32" resid="analyzeSelection.Icon32"/><bt:Image size="80" resid="analyzeSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>analyzeSelection</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="analyzeParagraph">
+                  <Label resid="analyzeParagraph.Label"/>
+                  <Supertip><Title resid="analyzeParagraph.Label"/><Description resid="analyzeParagraph.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="flagSelection">
+                  <Label resid="flagSelection.Label"/>
+                  <Supertip><Title resid="flagSelection.Label"/><Description resid="flagSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="flagSelection.Icon16"/><bt:Image size="32" resid="flagSelection.Icon32"/><bt:Image size="80" resid="flagSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>flagSelection</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="flagParagraph">
+                  <Label resid="flagParagraph.Label"/>
+                  <Supertip><Title resid="flagParagraph.Label"/><Description resid="flagParagraph.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="flagParagraph.Icon16"/><bt:Image size="32" resid="flagParagraph.Icon32"/><bt:Image size="80" resid="flagParagraph.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="selectionConfig">
+                  <Label resid="selectionConfig.Label"/>
+                  <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
+                </Control>
+              </Group>
+
+              <Group id="grpFeedback">
+                <Label resid="grpFeedback.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Control xsi:type="Button" id="applySelection">
+                  <Label resid="applySelection.Label"/>
+                  <Supertip><Title resid="applySelection.Label"/><Description resid="applySelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="applySelection.Icon16"/><bt:Image size="32" resid="applySelection.Icon32"/><bt:Image size="80" resid="applySelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>applySelection</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="applyParagraph">
+                  <Label resid="applyParagraph.Label"/>
+                  <Supertip><Title resid="applyParagraph.Label"/><Description resid="applyParagraph.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="provideFeedbackSelection">
+                  <Label resid="provideFeedbackSelection.Label"/>
+                  <Supertip><Title resid="provideFeedbackSelection.Label"/><Description resid="provideFeedbackSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="provideFeedbackSelection.Icon16"/><bt:Image size="32" resid="provideFeedbackSelection.Icon32"/><bt:Image size="80" resid="provideFeedbackSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackSelection</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="provideFeedbackParagraph">
+                  <Label resid="provideFeedbackParagraph.Label"/>
+                  <Supertip><Title resid="provideFeedbackParagraph.Label"/><Description resid="provideFeedbackParagraph.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="provideFeedbackParagraph.Icon16"/><bt:Image size="32" resid="provideFeedbackParagraph.Icon32"/><bt:Image size="80" resid="provideFeedbackParagraph.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackParagraph</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="requestFeedback">
+                  <Label resid="requestFeedback.Label"/>
+                  <Supertip><Title resid="requestFeedback.Label"/><Description resid="requestFeedback.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="requestFeedback.Icon16"/><bt:Image size="32" resid="requestFeedback.Icon32"/><bt:Image size="80" resid="requestFeedback.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>requestFeedback</FunctionName></Action>
+                </Control>
+              </Group>
+
+              <Group id="grpArticle">
+                <Label resid="grpArticle.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Control xsi:type="Button" id="createArticle">
+                  <Label resid="createArticle.Label"/>
+                  <Supertip><Title resid="createArticle.Label"/><Description resid="createArticle.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="createArticle.Icon16"/><bt:Image size="32" resid="createArticle.Icon32"/><bt:Image size="80" resid="createArticle.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>createArticle</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="listArticles">
+                  <Label resid="listArticles.Label"/>
+                  <Supertip><Title resid="listArticles.Label"/><Description resid="listArticles.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listArticles</FunctionName></Action>
+                </Control>
+              </Group>
+
+              <Group id="grpHistory">
+                <Label resid="grpHistory.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Control xsi:type="Button" id="flaggedSelection">
+                  <Label resid="flaggedSelection.Label"/>
+                  <Supertip><Title resid="flaggedSelection.Label"/><Description resid="flaggedSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="flaggedSelection.Icon16"/><bt:Image size="32" resid="flaggedSelection.Icon32"/><bt:Image size="80" resid="flaggedSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>flaggedSelection</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="listAnalysis">
+                  <Label resid="listAnalysis.Label"/>
+                  <Supertip><Title resid="listAnalysis.Label"/><Description resid="listAnalysis.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listAnalysis</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="listFeedback">
+                  <Label resid="listFeedback.Label"/>
+                  <Supertip><Title resid="listFeedback.Label"/><Description resid="listFeedback.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listFeedback.Icon16"/><bt:Image size="32" resid="listFeedback.Icon32"/><bt:Image size="80" resid="listFeedback.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="listRetained">
+                  <Label resid="listRetained.Label"/>
+                  <Supertip><Title resid="listRetained.Label"/><Description resid="listRetained.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listRetained.Icon16"/><bt:Image size="32" resid="listRetained.Icon32"/><bt:Image size="80" resid="listRetained.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listRetained</FunctionName></Action>
+                </Control>
+              </Group>
+
+              <Group id="grpAbout">
+                <Label resid="grpAbout.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Control xsi:type="Button" id="communicationConfig">
+                  <Label resid="communicationConfig.Label"/>
+                  <Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="requestSLFeedback">
+                  <Label resid="requestSLFeedback.Label"/>
+                  <Supertip><Title resid="requestSLFeedback.Label"/><Description resid="requestSLFeedback.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="requestSLFeedback.Icon16"/><bt:Image size="32" resid="requestSLFeedback.Icon32"/><bt:Image size="80" resid="requestSLFeedback.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="help">
+                  <Label resid="help.Label"/>
+                  <Supertip><Title resid="help.Label"/><Description resid="help.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="help.Icon16"/><bt:Image size="32" resid="help.Icon32"/><bt:Image size="80" resid="help.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="about">
+                  <Label resid="about.Label"/>
+                  <Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action>
+                </Control>
+              </Group>
+
+              <Label resid="tabSpeakLogic.Label"/>
+            </CustomTab>
+          </ExtensionPoint>
+
+          <ExtensionPoint xsi:type="ContextMenu">
+            <OfficeMenu id="ContextMenuText">
+              <Control xsi:type="Menu" id="SpeakLogicContextMenu">
+                <Label resid="SpeakLogicMenu.Label"/>
+                <Supertip><Title resid="SpeakLogicMenu.Label"/><Description resid="SpeakLogicMenu.Tooltip"/></Supertip>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Items>
+                  <Item id="ctx_analyzeSelection">
+                    <Label resid="analyzeSelection.Label"/>
+                    <Supertip><Title resid="analyzeSelection.Label"/><Description resid="analyzeSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="analyzeSelection.Icon16"/><bt:Image size="32" resid="analyzeSelection.Icon32"/><bt:Image size="80" resid="analyzeSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>analyzeSelection</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_flagSelection">
+                    <Label resid="ctx_flagSelection.Label"/>
+                    <Supertip><Title resid="ctx_flagSelection.Label"/><Description resid="flagSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="flagSelection.Icon16"/><bt:Image size="32" resid="flagSelection.Icon32"/><bt:Image size="80" resid="flagSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>flagSelection</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_applySelection">
+                    <Label resid="ctx_applySelection.Label"/>
+                    <Supertip><Title resid="ctx_applySelection.Label"/><Description resid="applySelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="applySelection.Icon16"/><bt:Image size="32" resid="applySelection.Icon32"/><bt:Image size="80" resid="applySelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>applySelection</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_analyzeParagraph">
+                    <Label resid="analyzeParagraph.Label"/>
+                    <Supertip><Title resid="analyzeParagraph.Label"/><Description resid="analyzeParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_flagParagraph">
+                    <Label resid="ctx_flagParagraph.Label"/>
+                    <Supertip><Title resid="ctx_flagParagraph.Label"/><Description resid="flagParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="flagParagraph.Icon16"/><bt:Image size="32" resid="flagParagraph.Icon32"/><bt:Image size="80" resid="flagParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_applyParagraph">
+                    <Label resid="ctx_applyParagraph.Label"/>
+                    <Supertip><Title resid="ctx_applyParagraph.Label"/><Description resid="applyParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
+                  </Item>
+                </Items>
+              </Control>
+            </OfficeMenu>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+      <Host xsi:type="Presentation">
+        <DesktopFormFactor>
+          <FunctionFile resid="Commands.Url"/>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="tabSpeakLogic_PPT">
+              <Group id="grpAnalysis_PPT">
+                <Label resid="grpAnalysis.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Control xsi:type="Button" id="analyzeSelection_PPT">
+                  <Label resid="analyzeSelection.Label"/>
+                  <Supertip><Title resid="analyzeSelection.Label"/><Description resid="analyzeSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="analyzeSelection.Icon16"/><bt:Image size="32" resid="analyzeSelection.Icon32"/><bt:Image size="80" resid="analyzeSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>analyzeSelection</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="analyzeParagraph_PPT">
+                  <Label resid="analyzeParagraph.Label"/>
+                  <Supertip><Title resid="analyzeParagraph.Label"/><Description resid="analyzeParagraph.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="flagSelection_PPT">
+                  <Label resid="flagSelection.Label"/>
+                  <Supertip><Title resid="flagSelection.Label"/><Description resid="flagSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="flagSelection.Icon16"/><bt:Image size="32" resid="flagSelection.Icon32"/><bt:Image size="80" resid="flagSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>flagSelection</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="flagParagraph_PPT">
+                  <Label resid="flagParagraph.Label"/>
+                  <Supertip><Title resid="flagParagraph.Label"/><Description resid="flagParagraph.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="flagParagraph.Icon16"/><bt:Image size="32" resid="flagParagraph.Icon32"/><bt:Image size="80" resid="flagParagraph.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="selectionConfig_PPT">
+                  <Label resid="selectionConfig.Label"/>
+                  <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
+                </Control>
+              </Group>
+
+              <Group id="grpFeedback_PPT">
+                <Label resid="grpFeedback.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Control xsi:type="Button" id="applySelection_PPT">
+                  <Label resid="applySelection.Label"/>
+                  <Supertip><Title resid="applySelection.Label"/><Description resid="applySelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="applySelection.Icon16"/><bt:Image size="32" resid="applySelection.Icon32"/><bt:Image size="80" resid="applySelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>applySelection</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="applyParagraph_PPT">
+                  <Label resid="applyParagraph.Label"/>
+                  <Supertip><Title resid="applyParagraph.Label"/><Description resid="applyParagraph.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="provideFeedbackSelection_PPT">
+                  <Label resid="provideFeedbackSelection.Label"/>
+                  <Supertip><Title resid="provideFeedbackSelection.Label"/><Description resid="provideFeedbackSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="provideFeedbackSelection.Icon16"/><bt:Image size="32" resid="provideFeedbackSelection.Icon32"/><bt:Image size="80" resid="provideFeedbackSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackSelection</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="provideFeedbackParagraph_PPT">
+                  <Label resid="provideFeedbackParagraph.Label"/>
+                  <Supertip><Title resid="provideFeedbackParagraph.Label"/><Description resid="provideFeedbackParagraph.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="provideFeedbackParagraph.Icon16"/><bt:Image size="32" resid="provideFeedbackParagraph.Icon32"/><bt:Image size="80" resid="provideFeedbackParagraph.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackParagraph</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="requestFeedback_PPT">
+                  <Label resid="requestFeedback.Label"/>
+                  <Supertip><Title resid="requestFeedback.Label"/><Description resid="requestFeedback.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="requestFeedback.Icon16"/><bt:Image size="32" resid="requestFeedback.Icon32"/><bt:Image size="80" resid="requestFeedback.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>requestFeedback</FunctionName></Action>
+                </Control>
+              </Group>
+
+              <Group id="grpArticle_PPT">
+                <Label resid="grpArticle.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Control xsi:type="Button" id="createArticle_PPT">
+                  <Label resid="createArticle.Label"/>
+                  <Supertip><Title resid="createArticle.Label"/><Description resid="createArticle.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="createArticle.Icon16"/><bt:Image size="32" resid="createArticle.Icon32"/><bt:Image size="80" resid="createArticle.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>createArticle</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="listArticles_PPT">
+                  <Label resid="listArticles.Label"/>
+                  <Supertip><Title resid="listArticles.Label"/><Description resid="listArticles.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listArticles</FunctionName></Action>
+                </Control>
+              </Group>
+
+              <Group id="grpHistory_PPT">
+                <Label resid="grpHistory.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Control xsi:type="Button" id="flaggedSelection_PPT">
+                  <Label resid="flaggedSelection.Label"/>
+                  <Supertip><Title resid="flaggedSelection.Label"/><Description resid="flaggedSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="flaggedSelection.Icon16"/><bt:Image size="32" resid="flaggedSelection.Icon32"/><bt:Image size="80" resid="flaggedSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>flaggedSelection</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="listAnalysis_PPT">
+                  <Label resid="listAnalysis.Label"/>
+                  <Supertip><Title resid="listAnalysis.Label"/><Description resid="listAnalysis.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listAnalysis</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="listFeedback_PPT">
+                  <Label resid="listFeedback.Label"/>
+                  <Supertip><Title resid="listFeedback.Label"/><Description resid="listFeedback.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listFeedback.Icon16"/><bt:Image size="32" resid="listFeedback.Icon32"/><bt:Image size="80" resid="listFeedback.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="listRetained_PPT">
+                  <Label resid="listRetained.Label"/>
+                  <Supertip><Title resid="listRetained.Label"/><Description resid="listRetained.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listRetained.Icon16"/><bt:Image size="32" resid="listRetained.Icon32"/><bt:Image size="80" resid="listRetained.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listRetained</FunctionName></Action>
+                </Control>
+              </Group>
+
+              <Group id="grpAbout_PPT">
+                <Label resid="grpAbout.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Control xsi:type="Button" id="communicationConfig_PPT">
+                  <Label resid="communicationConfig.Label"/>
+                  <Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="requestSLFeedback_PPT">
+                  <Label resid="requestSLFeedback.Label"/>
+                  <Supertip><Title resid="requestSLFeedback.Label"/><Description resid="requestSLFeedback.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="requestSLFeedback.Icon16"/><bt:Image size="32" resid="requestSLFeedback.Icon32"/><bt:Image size="80" resid="requestSLFeedback.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="help_PPT">
+                  <Label resid="help.Label"/>
+                  <Supertip><Title resid="help.Label"/><Description resid="help.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="help.Icon16"/><bt:Image size="32" resid="help.Icon32"/><bt:Image size="80" resid="help.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="about_PPT">
+                  <Label resid="about.Label"/>
+                  <Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action>
+                </Control>
+              </Group>
+
+              <Label resid="tabSpeakLogic.Label"/>
+            </CustomTab>
+          </ExtensionPoint>
+
+          <ExtensionPoint xsi:type="ContextMenu">
+            <OfficeMenu id="ContextMenuText">
+              <Control xsi:type="Menu" id="SpeakLogicContextMenu_PPT">
+                <Label resid="SpeakLogicMenu.Label"/>
+                <Supertip><Title resid="SpeakLogicMenu.Label"/><Description resid="SpeakLogicMenu.Tooltip"/></Supertip>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Items>
+                  <Item id="ctx_analyzeSelection_PPT">
+                    <Label resid="analyzeSelection.Label"/>
+                    <Supertip><Title resid="analyzeSelection.Label"/><Description resid="analyzeSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="analyzeSelection.Icon16"/><bt:Image size="32" resid="analyzeSelection.Icon32"/><bt:Image size="80" resid="analyzeSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>analyzeSelection</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_flagSelection_PPT">
+                    <Label resid="ctx_flagSelection.Label"/>
+                    <Supertip><Title resid="ctx_flagSelection.Label"/><Description resid="flagSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="flagSelection.Icon16"/><bt:Image size="32" resid="flagSelection.Icon32"/><bt:Image size="80" resid="flagSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>flagSelection</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_applySelection_PPT">
+                    <Label resid="ctx_applySelection.Label"/>
+                    <Supertip><Title resid="ctx_applySelection.Label"/><Description resid="applySelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="applySelection.Icon16"/><bt:Image size="32" resid="applySelection.Icon32"/><bt:Image size="80" resid="applySelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>applySelection</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_analyzeParagraph_PPT">
+                    <Label resid="analyzeParagraph.Label"/>
+                    <Supertip><Title resid="analyzeParagraph.Label"/><Description resid="analyzeParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_flagParagraph_PPT">
+                    <Label resid="ctx_flagParagraph.Label"/>
+                    <Supertip><Title resid="ctx_flagParagraph.Label"/><Description resid="flagParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="flagParagraph.Icon16"/><bt:Image size="32" resid="flagParagraph.Icon32"/><bt:Image size="80" resid="flagParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_applyParagraph_PPT">
+                    <Label resid="ctx_applyParagraph.Label"/>
+                    <Supertip><Title resid="ctx_applyParagraph.Label"/><Description resid="applyParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
+                  </Item>
+                </Items>
+              </Control>
+            </OfficeMenu>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <!-- Generic fallback (used by group icons) -->
+        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3000/assets/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3000/assets/icon-80.png"/>
+
+        <!-- Analysis group -->
+        <bt:Image id="analyzeSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-analyze-sel-16.png"/>
+        <bt:Image id="analyzeSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-analyze-sel-32.png"/>
+        <bt:Image id="analyzeSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-analyze-sel-80.png"/>
+
+        <bt:Image id="analyzeParagraph.Icon16" DefaultValue="https://localhost:3000/assets/btn-analyze-para-16.png"/>
+        <bt:Image id="analyzeParagraph.Icon32" DefaultValue="https://localhost:3000/assets/btn-analyze-para-32.png"/>
+        <bt:Image id="analyzeParagraph.Icon80" DefaultValue="https://localhost:3000/assets/btn-analyze-para-80.png"/>
+
+        <bt:Image id="flagSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flag-sel-16.png"/>
+        <bt:Image id="flagSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flag-sel-32.png"/>
+        <bt:Image id="flagSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-flag-sel-80.png"/>
+
+        <bt:Image id="flagParagraph.Icon16" DefaultValue="https://localhost:3000/assets/btn-flag-para-16.png"/>
+        <bt:Image id="flagParagraph.Icon32" DefaultValue="https://localhost:3000/assets/btn-flag-para-32.png"/>
+        <bt:Image id="flagParagraph.Icon80" DefaultValue="https://localhost:3000/assets/btn-flag-para-80.png"/>
+
+        <bt:Image id="selectionConfig.Icon16" DefaultValue="https://localhost:3000/assets/btn-sel-config-16.png"/>
+        <bt:Image id="selectionConfig.Icon32" DefaultValue="https://localhost:3000/assets/btn-sel-config-32.png"/>
+        <bt:Image id="selectionConfig.Icon80" DefaultValue="https://localhost:3000/assets/btn-sel-config-80.png"/>
+
+        <!-- Feedback group -->
+        <bt:Image id="applySelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-apply-sel-16.png"/>
+        <bt:Image id="applySelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-apply-sel-32.png"/>
+        <bt:Image id="applySelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-apply-sel-80.png"/>
+
+        <bt:Image id="applyParagraph.Icon16" DefaultValue="https://localhost:3000/assets/btn-apply-para-16.png"/>
+        <bt:Image id="applyParagraph.Icon32" DefaultValue="https://localhost:3000/assets/btn-apply-para-32.png"/>
+        <bt:Image id="applyParagraph.Icon80" DefaultValue="https://localhost:3000/assets/btn-apply-para-80.png"/>
+
+        <bt:Image id="provideFeedbackSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-16.png"/>
+        <bt:Image id="provideFeedbackSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-32.png"/>
+        <bt:Image id="provideFeedbackSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-80.png"/>
+
+        <bt:Image id="provideFeedbackParagraph.Icon16" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-16.png"/>
+        <bt:Image id="provideFeedbackParagraph.Icon32" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-32.png"/>
+        <bt:Image id="provideFeedbackParagraph.Icon80" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-80.png"/>
+
+        <bt:Image id="requestFeedback.Icon16" DefaultValue="https://localhost:3000/assets/btn-req-fb-16.png"/>
+        <bt:Image id="requestFeedback.Icon32" DefaultValue="https://localhost:3000/assets/btn-req-fb-32.png"/>
+        <bt:Image id="requestFeedback.Icon80" DefaultValue="https://localhost:3000/assets/btn-req-fb-80.png"/>
+
+        <!-- Article group -->
+        <bt:Image id="createArticle.Icon16" DefaultValue="https://localhost:3000/assets/btn-create-article-16.png"/>
+        <bt:Image id="createArticle.Icon32" DefaultValue="https://localhost:3000/assets/btn-create-article-32.png"/>
+        <bt:Image id="createArticle.Icon80" DefaultValue="https://localhost:3000/assets/btn-create-article-80.png"/>
+
+        <bt:Image id="listArticles.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-articles-16.png"/>
+        <bt:Image id="listArticles.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-articles-32.png"/>
+        <bt:Image id="listArticles.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-articles-80.png"/>
+
+        <!-- History group -->
+        <bt:Image id="flaggedSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
+        <bt:Image id="flaggedSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
+        <bt:Image id="flaggedSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
+
+        <bt:Image id="listAnalysis.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-analysis-16.png"/>
+        <bt:Image id="listAnalysis.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-analysis-32.png"/>
+        <bt:Image id="listAnalysis.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-analysis-80.png"/>
+
+        <bt:Image id="listFeedback.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-feedback-16.png"/>
+        <bt:Image id="listFeedback.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-feedback-32.png"/>
+        <bt:Image id="listFeedback.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-feedback-80.png"/>
+
+        <bt:Image id="listRetained.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-retained-16.png"/>
+        <bt:Image id="listRetained.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-retained-32.png"/>
+        <bt:Image id="listRetained.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-retained-80.png"/>
+
+        <!-- About group -->
+        <bt:Image id="communicationConfig.Icon16" DefaultValue="https://localhost:3000/assets/btn-comm-config-16.png"/>
+        <bt:Image id="communicationConfig.Icon32" DefaultValue="https://localhost:3000/assets/btn-comm-config-32.png"/>
+        <bt:Image id="communicationConfig.Icon80" DefaultValue="https://localhost:3000/assets/btn-comm-config-80.png"/>
+
+        <bt:Image id="requestSLFeedback.Icon16" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-16.png"/>
+        <bt:Image id="requestSLFeedback.Icon32" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-32.png"/>
+        <bt:Image id="requestSLFeedback.Icon80" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-80.png"/>
+
+        <bt:Image id="help.Icon16" DefaultValue="https://localhost:3000/assets/btn-help-16.png"/>
+        <bt:Image id="help.Icon32" DefaultValue="https://localhost:3000/assets/btn-help-32.png"/>
+        <bt:Image id="help.Icon80" DefaultValue="https://localhost:3000/assets/btn-help-80.png"/>
+
+        <bt:Image id="about.Icon16" DefaultValue="https://localhost:3000/assets/btn-about-16.png"/>
+        <bt:Image id="about.Icon32" DefaultValue="https://localhost:3000/assets/btn-about-32.png"/>
+        <bt:Image id="about.Icon80" DefaultValue="https://localhost:3000/assets/btn-about-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/commands.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="tabSpeakLogic.Label" DefaultValue="Speak Logic"/>
+        <bt:String id="SpeakLogicMenu.Label" DefaultValue="Speak Logic"/>
+        <bt:String id="ctx_flagSelection.Label" DefaultValue="Flag Selection for Analysis"/>
+        <bt:String id="ctx_applySelection.Label" DefaultValue="Apply Selection as Feedback"/>
+        <bt:String id="ctx_flagParagraph.Label" DefaultValue="Flag Paragraph for Analysis"/>
+        <bt:String id="ctx_applyParagraph.Label" DefaultValue="Apply Paragraph as Feedback"/>
+        <bt:String id="grpAnalysis.Label" DefaultValue="Analysis"/>
+        <bt:String id="grpFeedback.Label" DefaultValue="Feedback"/>
+        <bt:String id="grpArticle.Label" DefaultValue="Article"/>
+        <bt:String id="grpHistory.Label" DefaultValue="History"/>
+        <bt:String id="grpAbout.Label" DefaultValue="About"/>
+        <bt:String id="analyzeSelection.Label" DefaultValue="Analyze Selection"/>
+        <bt:String id="analyzeParagraph.Label" DefaultValue="Analyze Paragraph"/>
+        <bt:String id="flagSelection.Label" DefaultValue="Flag Selection"/>
+        <bt:String id="flagParagraph.Label" DefaultValue="Flag Paragraph"/>
+        <bt:String id="selectionConfig.Label" DefaultValue="Selection Config"/>
+        <bt:String id="applySelection.Label" DefaultValue="Apply Selection"/>
+        <bt:String id="applyParagraph.Label" DefaultValue="Apply Paragraph"/>
+        <bt:String id="provideFeedbackSelection.Label" DefaultValue="Provide Feedback"/>
+        <bt:String id="provideFeedbackParagraph.Label" DefaultValue="Feedback Paragraph"/>
+        <bt:String id="requestFeedback.Label" DefaultValue="Request Feedback"/>
+        <bt:String id="createArticle.Label" DefaultValue="Create Article"/>
+        <bt:String id="listArticles.Label" DefaultValue="List Articles"/>
+        <bt:String id="flaggedSelection.Label" DefaultValue="Flagged Selection"/>
+        <bt:String id="listAnalysis.Label" DefaultValue="List of Analysis"/>
+        <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
+        <bt:String id="listRetained.Label" DefaultValue="List of Retained"/>
+        <bt:String id="communicationConfig.Label" DefaultValue="Communication Config"/>
+        <bt:String id="requestSLFeedback.Label" DefaultValue="Request SL Feedback"/>
+        <bt:String id="help.Label" DefaultValue="Help"/>
+        <bt:String id="about.Label" DefaultValue="About"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="SpeakLogicMenu.Tooltip" DefaultValue="Speak Logic analysis and feedback tools"/>
+        <bt:String id="analyzeSelection.Tooltip" DefaultValue="Analyze the selected text"/>
+        <bt:String id="analyzeParagraph.Tooltip" DefaultValue="Analyze the current paragraph"/>
+        <bt:String id="flagSelection.Tooltip" DefaultValue="Flag selected text for later analysis"/>
+        <bt:String id="flagParagraph.Tooltip" DefaultValue="Flag current paragraph for later analysis"/>
+        <bt:String id="selectionConfig.Tooltip" DefaultValue="Configure selection behavior"/>
+        <bt:String id="applySelection.Tooltip" DefaultValue="Apply analysis as feedback to selection"/>
+        <bt:String id="applyParagraph.Tooltip" DefaultValue="Apply analysis as feedback to paragraph"/>
+        <bt:String id="provideFeedbackSelection.Tooltip" DefaultValue="Send analysis as email feedback"/>
+        <bt:String id="provideFeedbackParagraph.Tooltip" DefaultValue="Send paragraph analysis as email feedback"/>
+        <bt:String id="requestFeedback.Tooltip" DefaultValue="Request feedback from another person"/>
+        <bt:String id="createArticle.Tooltip" DefaultValue="Create a new article"/>
+        <bt:String id="listArticles.Tooltip" DefaultValue="View saved articles"/>
+        <bt:String id="flaggedSelection.Tooltip" DefaultValue="View flagged selections"/>
+        <bt:String id="listAnalysis.Tooltip" DefaultValue="View all saved analyses"/>
+        <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>
+        <bt:String id="listRetained.Tooltip" DefaultValue="View retained analyses"/>
+        <bt:String id="communicationConfig.Tooltip" DefaultValue="Configure your name and email for analysis and feedback"/>
+        <bt:String id="requestSLFeedback.Tooltip" DefaultValue="Send feedback to the Speak Logic team"/>
+        <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
+        <bt:String id="about.Tooltip" DefaultValue="About Speak Logic"/>
+      </bt:LongStrings>
+    </Resources>
+
+    <!-- Outlook support — nested V1_1 inside V1_0 -->
+    <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides/1.1"
+                      xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+                      xsi:type="VersionOverridesV1_1">
+      <Requirements>
+        <bt:Sets>
+          <bt:Set Name="Mailbox" MinVersion="1.3"/>
+        </bt:Sets>
+      </Requirements>
+      <Hosts>
+        <Host xsi:type="MailHost">
+          <DesktopFormFactor>
+            <FunctionFile resid="Commands.Url"/>
+
+            <!-- ── Read mode (viewing a received email) ── -->
+            <ExtensionPoint xsi:type="MessageReadCommandSurface">
+              <CustomTab id="tabSpeakLogic_OL">
+                <Group id="grpAnalysis_OL">
+                  <Label resid="grpAnalysis.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                  <Control xsi:type="Button" id="analyzeSelection_OL">
+                    <Label resid="analyzeSelection.Label"/>
+                    <Supertip><Title resid="analyzeSelection.Label"/><Description resid="analyzeSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="analyzeSelection.Icon16"/><bt:Image size="32" resid="analyzeSelection.Icon32"/><bt:Image size="80" resid="analyzeSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>analyzeSelection</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="analyzeParagraph_OL">
+                    <Label resid="analyzeParagraph.Label"/>
+                    <Supertip><Title resid="analyzeParagraph.Label"/><Description resid="analyzeParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="flagSelection_OL">
+                    <Label resid="flagSelection.Label"/>
+                    <Supertip><Title resid="flagSelection.Label"/><Description resid="flagSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="flagSelection.Icon16"/><bt:Image size="32" resid="flagSelection.Icon32"/><bt:Image size="80" resid="flagSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>flagSelection</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="flagParagraph_OL">
+                    <Label resid="flagParagraph.Label"/>
+                    <Supertip><Title resid="flagParagraph.Label"/><Description resid="flagParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="flagParagraph.Icon16"/><bt:Image size="32" resid="flagParagraph.Icon32"/><bt:Image size="80" resid="flagParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="selectionConfig_OL">
+                    <Label resid="selectionConfig.Label"/>
+                    <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
+                  </Control>
+                </Group>
+
+                <Group id="grpFeedback_OL">
+                  <Label resid="grpFeedback.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                  <Control xsi:type="Button" id="applySelection_OL">
+                    <Label resid="applySelection.Label"/>
+                    <Supertip><Title resid="applySelection.Label"/><Description resid="applySelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="applySelection.Icon16"/><bt:Image size="32" resid="applySelection.Icon32"/><bt:Image size="80" resid="applySelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>applySelection</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="applyParagraph_OL">
+                    <Label resid="applyParagraph.Label"/>
+                    <Supertip><Title resid="applyParagraph.Label"/><Description resid="applyParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="provideFeedbackSelection_OL">
+                    <Label resid="provideFeedbackSelection.Label"/>
+                    <Supertip><Title resid="provideFeedbackSelection.Label"/><Description resid="provideFeedbackSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="provideFeedbackSelection.Icon16"/><bt:Image size="32" resid="provideFeedbackSelection.Icon32"/><bt:Image size="80" resid="provideFeedbackSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackSelection</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="provideFeedbackParagraph_OL">
+                    <Label resid="provideFeedbackParagraph.Label"/>
+                    <Supertip><Title resid="provideFeedbackParagraph.Label"/><Description resid="provideFeedbackParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="provideFeedbackParagraph.Icon16"/><bt:Image size="32" resid="provideFeedbackParagraph.Icon32"/><bt:Image size="80" resid="provideFeedbackParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackParagraph</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="requestFeedback_OL">
+                    <Label resid="requestFeedback.Label"/>
+                    <Supertip><Title resid="requestFeedback.Label"/><Description resid="requestFeedback.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="requestFeedback.Icon16"/><bt:Image size="32" resid="requestFeedback.Icon32"/><bt:Image size="80" resid="requestFeedback.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>requestFeedback</FunctionName></Action>
+                  </Control>
+                </Group>
+
+                <Group id="grpArticle_OL">
+                  <Label resid="grpArticle.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                  <Control xsi:type="Button" id="createArticle_OL">
+                    <Label resid="createArticle.Label"/>
+                    <Supertip><Title resid="createArticle.Label"/><Description resid="createArticle.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="createArticle.Icon16"/><bt:Image size="32" resid="createArticle.Icon32"/><bt:Image size="80" resid="createArticle.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>createArticle</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listArticles_OL">
+                    <Label resid="listArticles.Label"/>
+                    <Supertip><Title resid="listArticles.Label"/><Description resid="listArticles.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listArticles</FunctionName></Action>
+                  </Control>
+                </Group>
+
+                <Group id="grpHistory_OL">
+                  <Label resid="grpHistory.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                  <Control xsi:type="Button" id="flaggedSelection_OL">
+                    <Label resid="flaggedSelection.Label"/>
+                    <Supertip><Title resid="flaggedSelection.Label"/><Description resid="flaggedSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="flaggedSelection.Icon16"/><bt:Image size="32" resid="flaggedSelection.Icon32"/><bt:Image size="80" resid="flaggedSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>flaggedSelection</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listAnalysis_OL">
+                    <Label resid="listAnalysis.Label"/>
+                    <Supertip><Title resid="listAnalysis.Label"/><Description resid="listAnalysis.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listAnalysis</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listFeedback_OL">
+                    <Label resid="listFeedback.Label"/>
+                    <Supertip><Title resid="listFeedback.Label"/><Description resid="listFeedback.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listFeedback.Icon16"/><bt:Image size="32" resid="listFeedback.Icon32"/><bt:Image size="80" resid="listFeedback.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listRetained_OL">
+                    <Label resid="listRetained.Label"/>
+                    <Supertip><Title resid="listRetained.Label"/><Description resid="listRetained.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listRetained.Icon16"/><bt:Image size="32" resid="listRetained.Icon32"/><bt:Image size="80" resid="listRetained.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listRetained</FunctionName></Action>
+                  </Control>
+                </Group>
+
+                <Group id="grpAbout_OL">
+                  <Label resid="grpAbout.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                  <Control xsi:type="Button" id="communicationConfig_OL">
+                    <Label resid="communicationConfig.Label"/>
+                    <Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="requestSLFeedback_OL">
+                    <Label resid="requestSLFeedback.Label"/>
+                    <Supertip><Title resid="requestSLFeedback.Label"/><Description resid="requestSLFeedback.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="requestSLFeedback.Icon16"/><bt:Image size="32" resid="requestSLFeedback.Icon32"/><bt:Image size="80" resid="requestSLFeedback.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="help_OL">
+                    <Label resid="help.Label"/>
+                    <Supertip><Title resid="help.Label"/><Description resid="help.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="help.Icon16"/><bt:Image size="32" resid="help.Icon32"/><bt:Image size="80" resid="help.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="about_OL">
+                    <Label resid="about.Label"/>
+                    <Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action>
+                  </Control>
+                </Group>
+
+                <Label resid="tabSpeakLogic.Label"/>
+              </CustomTab>
+            </ExtensionPoint>
+
+            <!-- ── Compose mode (new email / reply) ── -->
+            <ExtensionPoint xsi:type="MessageComposeCommandSurface">
+              <CustomTab id="tabSpeakLogic_OLC">
+                <Group id="grpAnalysis_OLC">
+                  <Label resid="grpAnalysis.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                  <Control xsi:type="Button" id="analyzeSelection_OLC">
+                    <Label resid="analyzeSelection.Label"/>
+                    <Supertip><Title resid="analyzeSelection.Label"/><Description resid="analyzeSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="analyzeSelection.Icon16"/><bt:Image size="32" resid="analyzeSelection.Icon32"/><bt:Image size="80" resid="analyzeSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>analyzeSelection</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="analyzeParagraph_OLC">
+                    <Label resid="analyzeParagraph.Label"/>
+                    <Supertip><Title resid="analyzeParagraph.Label"/><Description resid="analyzeParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="flagSelection_OLC">
+                    <Label resid="flagSelection.Label"/>
+                    <Supertip><Title resid="flagSelection.Label"/><Description resid="flagSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="flagSelection.Icon16"/><bt:Image size="32" resid="flagSelection.Icon32"/><bt:Image size="80" resid="flagSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>flagSelection</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="flagParagraph_OLC">
+                    <Label resid="flagParagraph.Label"/>
+                    <Supertip><Title resid="flagParagraph.Label"/><Description resid="flagParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="flagParagraph.Icon16"/><bt:Image size="32" resid="flagParagraph.Icon32"/><bt:Image size="80" resid="flagParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="selectionConfig_OLC">
+                    <Label resid="selectionConfig.Label"/>
+                    <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
+                  </Control>
+                </Group>
+
+                <Group id="grpFeedback_OLC">
+                  <Label resid="grpFeedback.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                  <Control xsi:type="Button" id="applySelection_OLC">
+                    <Label resid="applySelection.Label"/>
+                    <Supertip><Title resid="applySelection.Label"/><Description resid="applySelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="applySelection.Icon16"/><bt:Image size="32" resid="applySelection.Icon32"/><bt:Image size="80" resid="applySelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>applySelection</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="applyParagraph_OLC">
+                    <Label resid="applyParagraph.Label"/>
+                    <Supertip><Title resid="applyParagraph.Label"/><Description resid="applyParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="provideFeedbackSelection_OLC">
+                    <Label resid="provideFeedbackSelection.Label"/>
+                    <Supertip><Title resid="provideFeedbackSelection.Label"/><Description resid="provideFeedbackSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="provideFeedbackSelection.Icon16"/><bt:Image size="32" resid="provideFeedbackSelection.Icon32"/><bt:Image size="80" resid="provideFeedbackSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackSelection</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="provideFeedbackParagraph_OLC">
+                    <Label resid="provideFeedbackParagraph.Label"/>
+                    <Supertip><Title resid="provideFeedbackParagraph.Label"/><Description resid="provideFeedbackParagraph.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="provideFeedbackParagraph.Icon16"/><bt:Image size="32" resid="provideFeedbackParagraph.Icon32"/><bt:Image size="80" resid="provideFeedbackParagraph.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>provideFeedbackParagraph</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="requestFeedback_OLC">
+                    <Label resid="requestFeedback.Label"/>
+                    <Supertip><Title resid="requestFeedback.Label"/><Description resid="requestFeedback.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="requestFeedback.Icon16"/><bt:Image size="32" resid="requestFeedback.Icon32"/><bt:Image size="80" resid="requestFeedback.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>requestFeedback</FunctionName></Action>
+                  </Control>
+                </Group>
+
+                <Group id="grpArticle_OLC">
+                  <Label resid="grpArticle.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                  <Control xsi:type="Button" id="createArticle_OLC">
+                    <Label resid="createArticle.Label"/>
+                    <Supertip><Title resid="createArticle.Label"/><Description resid="createArticle.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="createArticle.Icon16"/><bt:Image size="32" resid="createArticle.Icon32"/><bt:Image size="80" resid="createArticle.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>createArticle</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listArticles_OLC">
+                    <Label resid="listArticles.Label"/>
+                    <Supertip><Title resid="listArticles.Label"/><Description resid="listArticles.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listArticles</FunctionName></Action>
+                  </Control>
+                </Group>
+
+                <Group id="grpHistory_OLC">
+                  <Label resid="grpHistory.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                  <Control xsi:type="Button" id="flaggedSelection_OLC">
+                    <Label resid="flaggedSelection.Label"/>
+                    <Supertip><Title resid="flaggedSelection.Label"/><Description resid="flaggedSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="flaggedSelection.Icon16"/><bt:Image size="32" resid="flaggedSelection.Icon32"/><bt:Image size="80" resid="flaggedSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>flaggedSelection</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listAnalysis_OLC">
+                    <Label resid="listAnalysis.Label"/>
+                    <Supertip><Title resid="listAnalysis.Label"/><Description resid="listAnalysis.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listAnalysis</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listFeedback_OLC">
+                    <Label resid="listFeedback.Label"/>
+                    <Supertip><Title resid="listFeedback.Label"/><Description resid="listFeedback.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listFeedback.Icon16"/><bt:Image size="32" resid="listFeedback.Icon32"/><bt:Image size="80" resid="listFeedback.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listRetained_OLC">
+                    <Label resid="listRetained.Label"/>
+                    <Supertip><Title resid="listRetained.Label"/><Description resid="listRetained.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listRetained.Icon16"/><bt:Image size="32" resid="listRetained.Icon32"/><bt:Image size="80" resid="listRetained.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listRetained</FunctionName></Action>
+                  </Control>
+                </Group>
+
+                <Group id="grpAbout_OLC">
+                  <Label resid="grpAbout.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                  <Control xsi:type="Button" id="communicationConfig_OLC">
+                    <Label resid="communicationConfig.Label"/>
+                    <Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="requestSLFeedback_OLC">
+                    <Label resid="requestSLFeedback.Label"/>
+                    <Supertip><Title resid="requestSLFeedback.Label"/><Description resid="requestSLFeedback.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="requestSLFeedback.Icon16"/><bt:Image size="32" resid="requestSLFeedback.Icon32"/><bt:Image size="80" resid="requestSLFeedback.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="help_OLC">
+                    <Label resid="help.Label"/>
+                    <Supertip><Title resid="help.Label"/><Description resid="help.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="help.Icon16"/><bt:Image size="32" resid="help.Icon32"/><bt:Image size="80" resid="help.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="about_OLC">
+                    <Label resid="about.Label"/>
+                    <Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action>
+                  </Control>
+                </Group>
+
+                <Label resid="tabSpeakLogic.Label"/>
+              </CustomTab>
+            </ExtensionPoint>
+          </DesktopFormFactor>
+        </Host>
+      </Hosts>
+
+      <Resources>
+        <bt:Images>
+          <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3000/assets/icon-16.png"/>
+          <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+          <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3000/assets/icon-80.png"/>
+          <bt:Image id="analyzeSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-analyze-sel-16.png"/>
+          <bt:Image id="analyzeSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-analyze-sel-32.png"/>
+          <bt:Image id="analyzeSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-analyze-sel-80.png"/>
+          <bt:Image id="analyzeParagraph.Icon16" DefaultValue="https://localhost:3000/assets/btn-analyze-para-16.png"/>
+          <bt:Image id="analyzeParagraph.Icon32" DefaultValue="https://localhost:3000/assets/btn-analyze-para-32.png"/>
+          <bt:Image id="analyzeParagraph.Icon80" DefaultValue="https://localhost:3000/assets/btn-analyze-para-80.png"/>
+          <bt:Image id="flagSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flag-sel-16.png"/>
+          <bt:Image id="flagSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flag-sel-32.png"/>
+          <bt:Image id="flagSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-flag-sel-80.png"/>
+          <bt:Image id="flagParagraph.Icon16" DefaultValue="https://localhost:3000/assets/btn-flag-para-16.png"/>
+          <bt:Image id="flagParagraph.Icon32" DefaultValue="https://localhost:3000/assets/btn-flag-para-32.png"/>
+          <bt:Image id="flagParagraph.Icon80" DefaultValue="https://localhost:3000/assets/btn-flag-para-80.png"/>
+          <bt:Image id="selectionConfig.Icon16" DefaultValue="https://localhost:3000/assets/btn-sel-config-16.png"/>
+          <bt:Image id="selectionConfig.Icon32" DefaultValue="https://localhost:3000/assets/btn-sel-config-32.png"/>
+          <bt:Image id="selectionConfig.Icon80" DefaultValue="https://localhost:3000/assets/btn-sel-config-80.png"/>
+          <bt:Image id="applySelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-apply-sel-16.png"/>
+          <bt:Image id="applySelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-apply-sel-32.png"/>
+          <bt:Image id="applySelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-apply-sel-80.png"/>
+          <bt:Image id="applyParagraph.Icon16" DefaultValue="https://localhost:3000/assets/btn-apply-para-16.png"/>
+          <bt:Image id="applyParagraph.Icon32" DefaultValue="https://localhost:3000/assets/btn-apply-para-32.png"/>
+          <bt:Image id="applyParagraph.Icon80" DefaultValue="https://localhost:3000/assets/btn-apply-para-80.png"/>
+          <bt:Image id="provideFeedbackSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-16.png"/>
+          <bt:Image id="provideFeedbackSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-32.png"/>
+          <bt:Image id="provideFeedbackSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-provide-fb-sel-80.png"/>
+          <bt:Image id="provideFeedbackParagraph.Icon16" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-16.png"/>
+          <bt:Image id="provideFeedbackParagraph.Icon32" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-32.png"/>
+          <bt:Image id="provideFeedbackParagraph.Icon80" DefaultValue="https://localhost:3000/assets/btn-provide-fb-para-80.png"/>
+          <bt:Image id="requestFeedback.Icon16" DefaultValue="https://localhost:3000/assets/btn-req-fb-16.png"/>
+          <bt:Image id="requestFeedback.Icon32" DefaultValue="https://localhost:3000/assets/btn-req-fb-32.png"/>
+          <bt:Image id="requestFeedback.Icon80" DefaultValue="https://localhost:3000/assets/btn-req-fb-80.png"/>
+          <bt:Image id="createArticle.Icon16" DefaultValue="https://localhost:3000/assets/btn-create-article-16.png"/>
+          <bt:Image id="createArticle.Icon32" DefaultValue="https://localhost:3000/assets/btn-create-article-32.png"/>
+          <bt:Image id="createArticle.Icon80" DefaultValue="https://localhost:3000/assets/btn-create-article-80.png"/>
+          <bt:Image id="listArticles.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-articles-16.png"/>
+          <bt:Image id="listArticles.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-articles-32.png"/>
+          <bt:Image id="listArticles.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-articles-80.png"/>
+          <bt:Image id="flaggedSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
+          <bt:Image id="flaggedSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
+          <bt:Image id="flaggedSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
+          <bt:Image id="listAnalysis.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-analysis-16.png"/>
+          <bt:Image id="listAnalysis.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-analysis-32.png"/>
+          <bt:Image id="listAnalysis.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-analysis-80.png"/>
+          <bt:Image id="listFeedback.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-feedback-16.png"/>
+          <bt:Image id="listFeedback.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-feedback-32.png"/>
+          <bt:Image id="listFeedback.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-feedback-80.png"/>
+          <bt:Image id="listRetained.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-retained-16.png"/>
+          <bt:Image id="listRetained.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-retained-32.png"/>
+          <bt:Image id="listRetained.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-retained-80.png"/>
+          <bt:Image id="communicationConfig.Icon16" DefaultValue="https://localhost:3000/assets/btn-comm-config-16.png"/>
+          <bt:Image id="communicationConfig.Icon32" DefaultValue="https://localhost:3000/assets/btn-comm-config-32.png"/>
+          <bt:Image id="communicationConfig.Icon80" DefaultValue="https://localhost:3000/assets/btn-comm-config-80.png"/>
+          <bt:Image id="requestSLFeedback.Icon16" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-16.png"/>
+          <bt:Image id="requestSLFeedback.Icon32" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-32.png"/>
+          <bt:Image id="requestSLFeedback.Icon80" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-80.png"/>
+          <bt:Image id="help.Icon16" DefaultValue="https://localhost:3000/assets/btn-help-16.png"/>
+          <bt:Image id="help.Icon32" DefaultValue="https://localhost:3000/assets/btn-help-32.png"/>
+          <bt:Image id="help.Icon80" DefaultValue="https://localhost:3000/assets/btn-help-80.png"/>
+          <bt:Image id="about.Icon16" DefaultValue="https://localhost:3000/assets/btn-about-16.png"/>
+          <bt:Image id="about.Icon32" DefaultValue="https://localhost:3000/assets/btn-about-32.png"/>
+          <bt:Image id="about.Icon80" DefaultValue="https://localhost:3000/assets/btn-about-80.png"/>
+        </bt:Images>
+        <bt:Urls>
+          <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/commands.html"/>
+        </bt:Urls>
+        <bt:ShortStrings>
+          <bt:String id="tabSpeakLogic.Label" DefaultValue="Speak Logic"/>
+          <bt:String id="grpAnalysis.Label" DefaultValue="Analysis"/>
+          <bt:String id="grpFeedback.Label" DefaultValue="Feedback"/>
+          <bt:String id="grpArticle.Label" DefaultValue="Article"/>
+          <bt:String id="grpHistory.Label" DefaultValue="History"/>
+          <bt:String id="grpAbout.Label" DefaultValue="About"/>
+          <bt:String id="analyzeSelection.Label" DefaultValue="Analyze Selection"/>
+          <bt:String id="analyzeParagraph.Label" DefaultValue="Analyze Paragraph"/>
+          <bt:String id="flagSelection.Label" DefaultValue="Flag Selection"/>
+          <bt:String id="flagParagraph.Label" DefaultValue="Flag Paragraph"/>
+          <bt:String id="selectionConfig.Label" DefaultValue="Selection Config"/>
+          <bt:String id="applySelection.Label" DefaultValue="Apply Selection"/>
+          <bt:String id="applyParagraph.Label" DefaultValue="Apply Paragraph"/>
+          <bt:String id="provideFeedbackSelection.Label" DefaultValue="Provide Feedback"/>
+          <bt:String id="provideFeedbackParagraph.Label" DefaultValue="Feedback Paragraph"/>
+          <bt:String id="requestFeedback.Label" DefaultValue="Request Feedback"/>
+          <bt:String id="createArticle.Label" DefaultValue="Create Article"/>
+          <bt:String id="listArticles.Label" DefaultValue="List Articles"/>
+          <bt:String id="flaggedSelection.Label" DefaultValue="Flagged Selection"/>
+          <bt:String id="listAnalysis.Label" DefaultValue="List of Analysis"/>
+          <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
+          <bt:String id="listRetained.Label" DefaultValue="List of Retained"/>
+          <bt:String id="communicationConfig.Label" DefaultValue="Communication Config"/>
+          <bt:String id="requestSLFeedback.Label" DefaultValue="Request SL Feedback"/>
+          <bt:String id="help.Label" DefaultValue="Help"/>
+          <bt:String id="about.Label" DefaultValue="About"/>
+        </bt:ShortStrings>
+        <bt:LongStrings>
+          <bt:String id="analyzeSelection.Tooltip" DefaultValue="Analyze the selected text"/>
+          <bt:String id="analyzeParagraph.Tooltip" DefaultValue="Analyze the current paragraph"/>
+          <bt:String id="flagSelection.Tooltip" DefaultValue="Flag selected text for later analysis"/>
+          <bt:String id="flagParagraph.Tooltip" DefaultValue="Flag current paragraph for later analysis"/>
+          <bt:String id="selectionConfig.Tooltip" DefaultValue="Configure selection behavior"/>
+          <bt:String id="applySelection.Tooltip" DefaultValue="Apply analysis as feedback to selection"/>
+          <bt:String id="applyParagraph.Tooltip" DefaultValue="Apply analysis as feedback to paragraph"/>
+          <bt:String id="provideFeedbackSelection.Tooltip" DefaultValue="Send analysis as email feedback"/>
+          <bt:String id="provideFeedbackParagraph.Tooltip" DefaultValue="Send paragraph analysis as email feedback"/>
+          <bt:String id="requestFeedback.Tooltip" DefaultValue="Request feedback from another person"/>
+          <bt:String id="createArticle.Tooltip" DefaultValue="Create a new article"/>
+          <bt:String id="listArticles.Tooltip" DefaultValue="View saved articles"/>
+          <bt:String id="flaggedSelection.Tooltip" DefaultValue="View flagged selections"/>
+          <bt:String id="listAnalysis.Tooltip" DefaultValue="View all saved analyses"/>
+          <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>
+          <bt:String id="listRetained.Tooltip" DefaultValue="View retained analyses"/>
+          <bt:String id="communicationConfig.Tooltip" DefaultValue="Configure your name and email for analysis and feedback"/>
+          <bt:String id="requestSLFeedback.Tooltip" DefaultValue="Send feedback to the Speak Logic team"/>
+          <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
+          <bt:String id="about.Tooltip" DefaultValue="About Speak Logic"/>
+        </bt:LongStrings>
+      </Resources>
+    </VersionOverrides>
+  </VersionOverrides>
+</OfficeApp>

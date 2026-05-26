@@ -1,0 +1,1559 @@
+// src/commands/commands.ts
+
+/* global Office Word */
+
+const DIALOG_BASE = window.location.origin;
+
+import { initDb, nowDate } from "@/db/db";
+import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis } from "@/db/queries/analysis";
+import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback } from "@/db/queries/feedback";
+import { saveFlag, getAllFlaggedSelections, deleteFlag } from "@/db/queries/flag";
+import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection } from "@/db/queries/principle";
+import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
+import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
+import { dbg, clearLog } from "@/debug/log";
+import { openInterpretedPrincipleReport } from "@/dialog/utils/reportGenerator";
+
+function buildPeopleList(commPersonName?: string): string[] {
+  const names = getPeopleNames();
+  if (commPersonName && !names.includes(commPersonName)) {
+    return [commPersonName, ...names];
+  }
+  return names;
+}
+import type {
+  DialogAction,
+  DialogInitPayload,
+  FlagEntityForAnalysis,
+  HostMessage,
+  HostSource,
+  SaveAnalysisPayload,
+  SaveCommunicationConfigPayload,
+  SaveFeedbackPayload,
+  SaveRelatedSelectionPayload,
+  SavePrincipleInSelectionPayload,
+  SaveRequestFeedbackPayload,
+  SaveRequestSLFeedbackPayload,
+  SelectionMode,
+} from "@/types/db";
+
+const DIALOG_SIZE = { height: 69, width: 43 } as const;
+// Flag dialog: 480×479.59px → 58% height, 25% width ≈ 480px on 1920px screens
+const FLAG_DIALOG_SIZE = { height: 58, width: 25 } as const;
+// Selection Config dialog: 480×428px → 52% height, 25% width (same ref as FLAG_DIALOG_SIZE)
+const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: 25 } as const;
+// About dialog: 604×292px → 27% height, 32% width on 1920×1080
+const ABOUT_DIALOG_SIZE = { height: 27, width: 32 } as const;
+
+let dbInitialized = false;
+
+Office.onReady(() => {
+  clearLog();
+  dbg("HOST", "Office.onReady — commands.ts loaded, registering handlers");
+  registerHandlers();
+  ensureDb();
+});
+
+async function ensureDb(): Promise<void> {
+  if (dbInitialized) return;
+  await initDb();
+  dbInitialized = true;
+}
+
+function registerHandlers(): void {
+  Office.actions.associate("analyzeSelection", (event) => openAnalyzeDialog("selection", event));
+  Office.actions.associate("analyzeParagraph", (event) => openAnalyzeDialog("paragraph", event));
+  Office.actions.associate("flagSelection", (event) =>
+    openFlagDialogFromRibbon("selection", event)
+  );
+  Office.actions.associate("flagParagraph", (event) =>
+    openFlagDialogFromRibbon("paragraph", event)
+  );
+  Office.actions.associate("selectionConfig", (event) =>
+    openSelectionConfigDialog(event)
+  );
+  Office.actions.associate("applySelection", (event) =>
+    openApplyDialogFromRibbon("selection", event)
+  );
+  Office.actions.associate("applyParagraph", (event) =>
+    openApplyDialogFromRibbon("paragraph", event)
+  );
+  Office.actions.associate("provideFeedbackSelection", (event) =>
+    openProvideFeedbackFromRibbon("selection", event)
+  );
+  Office.actions.associate("provideFeedbackParagraph", (event) =>
+    openProvideFeedbackFromRibbon("paragraph", event)
+  );
+  Office.actions.associate("requestFeedback", (event) =>
+    void openRequestFeedbackFromRibbon(event)
+  );
+  Office.actions.associate("flaggedSelection", (event) =>
+    openFlaggedHistoryDialog(event)
+  );
+  Office.actions.associate("listAnalysis", (event) =>
+    openAnalysisHistoryDialog(event)
+  );
+  Office.actions.associate("listFeedback", (event) =>
+    openFeedbackHistoryDialog(event)
+  );
+  Office.actions.associate("listRetained", (event) =>
+    openRetainedHistoryDialog(event)
+  );
+  Office.actions.associate("requestSLFeedback", (event) =>
+    void openRequestSLFeedbackDialog(event)
+  );
+  Office.actions.associate("help", (event) => openViewDialogSimple("help", event));
+  Office.actions.associate("about", (event) => openAboutDialog(event));
+  Office.actions.associate("communicationConfig", (event) => openCommunicationConfigDialog(event));
+  Office.actions.associate("createArticle", (event) =>
+    openViewDialogSimple("create-article", event)
+  );
+  Office.actions.associate("listArticles", (event) =>
+    openViewDialogSimple("list-articles", event)
+  );
+}
+
+// Handles displayDialogAsync failure codes that need explicit treatment.
+// 12007: a dialog is already open from this host window — user can interact with the existing one.
+// 12009: user blocked the dialog on Office on the web — no task pane to show alternate feedback.
+// 12011: browser pop-up config blocks the dialog (Safari, Edge Legacy) — same limitation.
+// All other codes: unexpected platform/network error — still must complete the event.
+function handleDialogOpenError(
+  _error: { code: number; message: string },
+  event: Office.AddinCommands.Event
+): void {
+  event.completed();
+}
+
+// overhead = header(58) + divider(1) + body-padding(40) + footer(64) = 163px
+// +50 for Office.js chrome + safety buffer
+// Desktop Word: % is of screen height (~1080px). Word Online: % is of the Office frame (smaller).
+function estimateMessageDialogPct(text: string): number {
+  const lines = Math.max(1, Math.ceil(text.length / 60));
+  const dialogPx = 163 + lines * 22 + 50;
+  const isOnline = Office.context.platform === Office.PlatformType.OfficeOnline;
+  const ref = isOnline ? 900 : 1080;
+  return Math.min(Math.max(Math.ceil((dialogPx / ref) * 100), 22), 60);
+}
+
+function showNoSelectionMessage(
+  title: string,
+  text: string,
+  event: Office.AddinCommands.Event
+): void {
+  const heightPct = estimateMessageDialogPct(text);
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=message&title=${encodeURIComponent(title)}&text=${encodeURIComponent(text)}`,
+    { height: heightPct, width: 26, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (args) => {
+        if (!("message" in args)) return;
+        const msg = JSON.parse((args as { message: string }).message) as { action: string };
+        if (msg.action === "CLOSE") {
+          dialog.close();
+          event.completed();
+        }
+      });
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        // 12006 = user closed via X; 12002/12003 = nav errors — all paths must complete the event.
+        void (evt as { error: number }).error;
+        event.completed();
+      });
+    }
+  );
+}
+
+function getSource(): HostSource {
+  if (Office.context.host === Office.HostType.Outlook) return "Outlook Mail";
+  if (Office.context.host === Office.HostType.PowerPoint) return "PowerPoint Document";
+  return "Word Document";
+}
+
+function getUserIdentity(): { personName: string; personEmail: string } {
+  try {
+    if (Office.context.host === Office.HostType.Outlook) {
+      const p = Office.context.mailbox.userProfile;
+      return { personName: p.displayName ?? "", personEmail: p.emailAddress ?? "" };
+    }
+    const p = (Office.context as { userProfile?: { displayName?: string; email?: string } })
+      .userProfile;
+    return { personName: p?.displayName ?? "", personEmail: p?.email ?? "" };
+  } catch {
+    return { personName: "", personEmail: "" };
+  }
+}
+
+async function getPowerPointText(_mode: SelectionMode): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    Office.context.document.getSelectedDataAsync(
+      Office.CoercionType.Text,
+      (result) => {
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          reject(new Error(result.error?.message ?? "Failed to get selection"));
+          return;
+        }
+        resolve((result.value as string)?.trim() ?? "");
+      }
+    );
+  });
+}
+
+async function getPowerPointTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string }> {
+  const text = await getPowerPointText(mode);
+  const url = (Office.context.document as { url?: string }).url ?? "";
+  const documentName = url ? (url.split("/").pop()?.split("\\").pop() ?? "") : "";
+  return { text, documentTitle: "", documentName };
+}
+
+async function getOutlookText(_mode: SelectionMode): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const item = (Office.context.mailbox.item) as any;
+    if (!item) { resolve(""); return; }
+    item.body.getAsync(
+      Office.CoercionType.Text,
+      (result: Office.AsyncResult<string>) => {
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          reject(new Error(result.error?.message ?? "Failed to get email body"));
+          return;
+        }
+        resolve(result.value?.trim() ?? "");
+      }
+    );
+  });
+}
+
+async function getOutlookTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string }> {
+  const text = await getOutlookText(mode);
+  let subject = "";
+  try {
+    const rawSubject = (Office.context.mailbox.item as { subject?: string | { getAsync?: unknown } }).subject;
+    if (typeof rawSubject === "string") subject = rawSubject;
+  } catch { /* ignore */ }
+  return { text, documentTitle: subject, documentName: subject };
+}
+
+async function getHostText(mode: SelectionMode): Promise<string> {
+  if (Office.context.host === Office.HostType.Outlook) return getOutlookText(mode);
+  if (Office.context.host === Office.HostType.PowerPoint) return getPowerPointText(mode);
+  return getWordText(mode);
+}
+
+async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string }> {
+  if (Office.context.host === Office.HostType.Outlook) return getOutlookTextAndMeta(mode);
+  if (Office.context.host === Office.HostType.PowerPoint) return getPowerPointTextAndMeta(mode);
+  return getWordTextAndMeta(mode);
+}
+
+async function getWordText(mode: SelectionMode): Promise<string> {
+  return Word.run(async (context) => {
+    if (mode === "selection") {
+      const sel = context.document.getSelection();
+      sel.load("text");
+      await context.sync();
+      return sel.text.trim();
+    }
+    const sel = context.document.getSelection();
+    const para = sel.paragraphs.getFirst();
+    para.load("text");
+    await context.sync();
+    return para.text.trim();
+  });
+}
+
+async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string }> {
+  return Word.run(async (context) => {
+    let text = "";
+    if (mode === "selection") {
+      const sel = context.document.getSelection();
+      sel.load("text");
+      await context.sync();
+      text = sel.text.trim();
+    } else {
+      const sel = context.document.getSelection();
+      const para = sel.paragraphs.getFirst();
+      para.load("text");
+      await context.sync();
+      text = para.text.trim();
+    }
+    const props = context.document.properties;
+    props.load("title");
+    await context.sync();
+    const url = (Office.context.document as { url?: string }).url ?? "";
+    const documentName = url ? (url.split("/").pop()?.split("\\").pop() ?? "") : "";
+    return { text, documentTitle: props.title ?? "", documentName };
+  });
+}
+
+function buildEntityName(documentTitle: string, documentName: string): string {
+  try {
+    const raw = localStorage.getItem("sl-selection-config");
+    const cfg = raw ? JSON.parse(raw) : {};
+    const useName  = cfg.titleAsApplicationName    !== false;
+    const useFile  = cfg.showFileNameInApplication !== false;
+    const usePage  = cfg.showPageNumberInFileName  !== false;
+    let result = "";
+    if (useName  && documentTitle)  result = documentTitle;
+    if (useFile  && documentName)   result = result ? result + "  File: " + documentName : "File: " + documentName;
+    if (usePage)                    result = result; // page number not available in Word.js API
+    return result;
+  } catch {
+    return "";
+  }
+}
+
+function buildMailtoUrl(payload: SaveFeedbackPayload): string {
+  const email = payload.toPersonEmail ?? "";
+  if (!email) return "";
+  const subject = encodeURIComponent(payload.feedback.feedbackSubject);
+  const bodyText = payload.feedback.feedbackApplication.replace(/<[^>]*>/g, "").slice(0, 1800);
+  const body = encodeURIComponent(bodyText);
+  return `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+}
+
+async function openAnalyzeDialog(
+  mode: SelectionMode,
+  event: Office.AddinCommands.Event
+): Promise<void> {
+  dbg("HOST", "openAnalyzeDialog start", { mode });
+  await ensureDb();
+  let selection = "";
+  try {
+    selection = await getHostText(mode);
+  } catch (err) {
+    dbg("HOST", "getWordText threw — completing event", String(err));
+    event.completed();
+    return;
+  }
+  if (!selection) {
+    dbg("HOST", "empty selection — showing message dialog");
+    const title =
+      mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message";
+    const text =
+      "In order to analyze an entity, that entity must exist.  In order " +
+      "to perform an analysis to an entity, that entity must be identified. " +
+      "It is not possible to analyze an entity if that entity is not identified " +
+      "or cannot be identified.  Here I will need to specify the entity that " +
+      "I need to analyze.  In this case, I will to select the actual text or put " +
+      "the cursor or point the mouse to the text that needs to be analyzed.";
+    showNoSelectionMessage(title, text, event);
+    return;
+  }
+
+  dbg("HOST", "selection obtained, building initPayload", { selectionLength: selection.length });
+  const { personName, personEmail } = getUserIdentity();
+  const commConfig = getCommunicationConfig();
+  const initPayload: DialogInitPayload = {
+    selection,
+    mode,
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: buildPeopleList(commConfig?.personName),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+  };
+
+  const params = new URLSearchParams({ view: "analyze", mode });
+  dbg("HOST", "calling displayDialogAsync for analyze");
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?${params.toString()}`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        dbg("HOST", "displayDialogAsync FAILED (analyze)", { code: (result.error as { code: number }).code, message: result.error.message });
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      dbg("HOST", "analyze dialog opened successfully");
+      const dialog = result.value;
+
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        dbg("HOST", "DialogMessageReceived", { action: m.action });
+        switch (m.action) {
+          case "READY":
+            dbg("HOST", "READY received — sending INIT");
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "SAVE_ANALYSIS": {
+            const payload = m.payload as SaveAnalysisPayload;
+            dbg("HOST", "SAVE_ANALYSIS received", { whatToDo: payload.analysis.whatToDoWithAnalysis });
+            let savedId: number;
+            try {
+              savedId = saveFullAnalysis(payload);
+              if (payload.analysis.fromPerson) upsertPersonName(payload.analysis.fromPerson);
+              dbg("HOST", "saveFullAnalysis OK", { savedId });
+            } catch (err) {
+              dbg("HOST", "saveFullAnalysis THREW — closing dialog", String(err));
+              dialog.close();
+              event.completed();
+              break;
+            }
+            if (payload.analysis.whatToDoWithAnalysis === "ApplyAnalysisAsFeedback") {
+              const { personName, personEmail } = getUserIdentity();
+              const applyAnalyses = getAllAnalyses().map((a) => {
+                if (!a.id) return a;
+                return { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) };
+              });
+              const applyFeedbacks = getAllFeedbacks().map((f) => {
+                if (!f.analysisId) return f;
+                return { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+              });
+              const applyPayload: DialogInitPayload = {
+                selection: payload.analysis.entityUnderAnalysis,
+                mode: payload.analysis.selectionType === "Selection" ? "selection" : "paragraph",
+                source: payload.analysis.source,
+                personName,
+                personEmail,
+                applicationName: payload.analysis.applicationName,
+                communicationFunction: payload.analysis.communicationFunction,
+                communicationSignal: payload.analysis.communicationSignal,
+                projectName: payload.analysis.projectName,
+                peopleList: [],
+                analysisData: {
+                  id: savedId,
+                  entityUnderAnalysis: payload.analysis.entityUnderAnalysis,
+                  analysisSubject: payload.analysis.analysisSubject ?? "",
+                  actualAnalysis: payload.analysis.actualAnalysis,
+                  fromPerson: payload.analysis.fromPerson ?? "",
+                  errors: payload.errors,
+                  compensators: payload.compensators,
+                  questions: payload.questions,
+                  answers: payload.answers,
+                  files: payload.files,
+                  correctedItems: [],
+                },
+                analyses: applyAnalyses,
+                feedbacks: applyFeedbacks,
+              };
+              dbg("HOST", "sending NAVIGATE to apply view");
+              dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: applyPayload } as HostMessage));
+            } else if (payload.analysis.whatToDoWithAnalysis === "ProvideFeedbackWithAnalysis") {
+              const { personName, personEmail } = getUserIdentity();
+              const providePayload: DialogInitPayload = {
+                selection: payload.analysis.entityUnderAnalysis,
+                mode: payload.analysis.selectionType === "Selection" ? "selection" : "paragraph",
+                source: payload.analysis.source,
+                personName,
+                personEmail,
+                applicationName: payload.analysis.applicationName,
+                communicationFunction: payload.analysis.communicationFunction,
+                communicationSignal: payload.analysis.communicationSignal,
+                projectName: payload.analysis.projectName,
+                peopleList: getPeopleNames(),
+                peopleEmailMap: getPeopleEmailMap(),
+                analysisData: {
+                  id: savedId,
+                  entityUnderAnalysis: payload.analysis.entityUnderAnalysis,
+                  analysisSubject: payload.analysis.analysisSubject ?? "",
+                  actualAnalysis: payload.analysis.actualAnalysis,
+                  fromPerson: payload.analysis.fromPerson ?? "",
+                  errors: payload.errors,
+                  compensators: payload.compensators,
+                  questions: payload.questions,
+                  answers: payload.answers,
+                  files: payload.files,
+                  correctedItems: [],
+                },
+              };
+              dbg("HOST", "sending NAVIGATE to provide-feedback view");
+              dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "provide-feedback", payload: providePayload } as HostMessage));
+            } else {
+              dbg("HOST", "whatToDo === Retain — writing audit record, sending RETAIN_SAVED");
+              saveFeedbackHistory({
+                selectionAction: "Retain as Needed",
+                entityName: payload.analysis.entityUnderAnalysis,
+                actualSelection: payload.analysis.entityUnderAnalysis,
+                selectionType: payload.analysis.selectionType ?? "",
+                source: payload.analysis.source,
+                applicationName: payload.analysis.applicationName ?? "",
+                communicationFunction: payload.analysis.communicationFunction ?? "",
+                communicationSignal: payload.analysis.communicationSignal ?? "",
+                projectName: payload.analysis.projectName ?? "",
+                personName: payload.analysis.personName ?? "",
+                personEmail: payload.analysis.personEmail ?? "",
+              });
+              dialog.messageChild(JSON.stringify({ type: "RETAIN_SAVED" } as HostMessage));
+              // Stay open — wait for CLOSE from the success screen
+            }
+            break;
+          }
+          case "SAVE_FEEDBACK": {
+            dbg("HOST", "SAVE_FEEDBACK received (from apply/provide view)");
+            const fbPayload = m.payload as SaveFeedbackPayload;
+            try {
+              saveFeedback(fbPayload);
+              dbg("HOST", "saveFeedback OK");
+            } catch (err) {
+              dbg("HOST", "saveFeedback THREW", String(err));
+              dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+              break;
+            }
+            // Save recipient to PeopleInProject (mirrors C# behaviour)
+            if (fbPayload.feedback.feedbackType === "Provided" && fbPayload.feedback.toPerson) {
+              upsertPersonWithEmail(fbPayload.feedback.toPerson, fbPayload.toPersonEmail ?? "");
+            }
+            // Audit trail — mirrors C# ProvideFeedbackSelection.cs lines 217-224
+            if (fbPayload.feedback.feedbackType === "Provided") {
+              const f = fbPayload.feedback;
+              saveFeedbackHistory({
+                selectionAction: "Provided as Feedback",
+                entityName: f.internalFeedbackName || `Text selected from ${f.source} on ${f.feedbackDate}`,
+                actualSelection: f.feedbackApplication,
+                selectionType: f.selectionType,
+                source: f.source,
+                applicationName: f.applicationName,
+                communicationFunction: f.communicationFunction,
+                communicationSignal: f.communicationSignal,
+                projectName: f.projectName,
+                personName: f.personName,
+                personEmail: f.personEmail,
+              });
+            }
+            // For "Provided" feedback: send SAVED with a mailto URL back to the dialog
+            // so the user can open it via a user-initiated click (window.open from dialog
+            // context opens a new browser tab in Office Online instead of the OS handler).
+            if (fbPayload.feedback.feedbackType === "Provided") {
+              const mailtoUrl = buildMailtoUrl(fbPayload);
+              dbg("HOST", "sending SAVED to dialog", { hasMailto: !!mailtoUrl });
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+              // Do NOT close here — wait for the dialog to send CLOSE after the user clicks.
+            } else {
+              dialog.close();
+              event.completed();
+            }
+            break;
+          }
+          case "CLOSE":
+            dbg("HOST", "CLOSE received — closing dialog, completing event");
+            dialog.close();
+            event.completed();
+            break;
+          default:
+            dbg("HOST", "unknown action received", { action: (m as { action: string }).action });
+            break;
+        }
+      });
+
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        const code = (evt as { error?: number }).error;
+        dbg("HOST", "DialogEventReceived (dialog closed by user or error)", { code });
+        event.completed();
+      });
+    }
+  );
+}
+
+async function openRequestFeedbackFromRibbon(event: Office.AddinCommands.Event): Promise<void> {
+  await ensureDb();
+  let selection = "";
+  try {
+    selection = await getHostText("paragraph");
+  } catch {
+    event.completed();
+    return;
+  }
+  if (!selection) {
+    showNoSelectionMessage(
+      "Paragraph Selection Message",
+      "In order to request feedback, the entity must exist. Place the cursor in the paragraph you want to request feedback on, then click the button again.",
+      event
+    );
+    return;
+  }
+  const { personName, personEmail } = getUserIdentity();
+  const commConfig = getCommunicationConfig();
+  openRequestFeedbackDialog({
+    selection,
+    mode: "paragraph",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: buildPeopleList(commConfig?.personName),
+    peopleEmailMap: getPeopleEmailMap(),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+  }, event);
+}
+
+function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: Office.AddinCommands.Event, attempt = 0): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=request-feedback`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openRequestFeedbackDialog(initPayload, addInEvent, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, addInEvent);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        void (evt as { error: number }).error;
+        addInEvent.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "SAVE_REQUEST_FEEDBACK": {
+            const p = m.payload as SaveRequestFeedbackPayload;
+            const entityName = `Text selected from ${p.selectionType} on ${nowDate()}`;
+            try {
+              saveCommSignalInfo({ ...p, entitySelected: entityName });
+              saveFeedbackHistory({
+                selectionAction: "Requested Feedback With",
+                entityName,
+                actualSelection: p.actualSelection,
+                selectionType: "Web Contain",
+                source: p.selectionType,
+                applicationName: p.applicationName,
+                communicationFunction: p.communicationFunction,
+                communicationSignal: p.communicationSignalType,
+                projectName: "",
+                personName: initPayload.personName,
+                personEmail: initPayload.personEmail,
+              });
+            } catch (err) {
+              dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+              break;
+            }
+            if (p.toPerson) {
+              upsertPersonWithEmail(p.toPerson, p.toPersonEmail);
+            }
+            const mailtoUrl = buildRequestMailtoUrl(p);
+            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+            break;
+          }
+          case "CLOSE":
+            dialog.close();
+            addInEvent.completed();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+function buildRequestMailtoUrl(p: SaveRequestFeedbackPayload): string {
+  if (!p.toPersonEmail) return "";
+  const subject = encodeURIComponent(p.communicationSubject);
+  const prefix = `Application Name: ${p.applicationName}\nCommunication Function: ${p.communicationFunction}\nCommunication Signal: ${p.communicationSignalType}\n${"=".repeat(60)}\n\n`;
+  const bodyText = (prefix + p.actualCommunication.replace(/<[^>]*>/g, "")).slice(0, 1800);
+  const body = encodeURIComponent(bodyText);
+  return `mailto:${encodeURIComponent(p.toPersonEmail)}?subject=${subject}&body=${body}`;
+}
+
+function openViewDialog(
+  view: string,
+  mode: SelectionMode | undefined,
+  initPayload: DialogInitPayload,
+  event: Office.AddinCommands.Event
+): void {
+  const params = new URLSearchParams({ view });
+  if (mode) params.set("mode", mode);
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?${params.toString()}`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        void (evt as { error: number }).error;
+        event.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        if (m.action === "READY") {
+          const hostMsg: HostMessage = { type: "INIT", payload: initPayload };
+          dialog.messageChild(JSON.stringify(hostMsg));
+        }
+        if (m.action === "CLOSE") {
+          dialog.close();
+          event.completed();
+        }
+      });
+    }
+  );
+}
+
+function openAboutDialog(addInEvent: Office.AddinCommands.Event, attempt = 0): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=about`,
+    { ...ABOUT_DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openAboutDialog(addInEvent, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, addInEvent);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        addInEvent.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as { action: string };
+        if (m.action === "CLOSE") {
+          dialog.close();
+          addInEvent.completed();
+        }
+      });
+    }
+  );
+}
+
+function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 0): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=analysis-history`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openAnalysisHistoryDialog(event, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        event.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        if (m.action === "READY") {
+          const { personName, personEmail } = getUserIdentity();
+          const analyses = getAllAnalyses().map((a) => {
+            if (!a.id) return a;
+            return {
+              ...a,
+              questions: getQuestionsByAnalysis(a.id),
+              errors: getErrorsByAnalysis(a.id),
+              compensators: getCompensatorsByAnalysis(a.id),
+              answers: getAnswersByAnalysis(a.id),
+              problems: getProblemsByAnalysis(a.id),
+              files: getFilesByAnalysis(a.id),
+            };
+          });
+          const hostMsg: HostMessage = {
+            type: "INIT",
+            payload: {
+              selection: "",
+              mode: "selection",
+              source: getSource(),
+              personName,
+              personEmail,
+              applicationName: "",
+              communicationFunction: "",
+              communicationSignal: "",
+              projectName: "",
+              peopleList: [],
+              analyses,
+            },
+          };
+          dialog.messageChild(JSON.stringify(hostMsg));
+        }
+        if (m.action === "CLOSE") {
+          dialog.close();
+          event.completed();
+        }
+        if (m.action === "NAVIGATE_TO_APPLY") {
+          const navM = m as { action: string; analysisId: number };
+          const analysis = getAnalysisById(navM.analysisId);
+          if (!analysis) return;
+          const { personName, personEmail } = getUserIdentity();
+          const allAnalyses = getAllAnalyses().map((a) => {
+            if (!a.id) return a;
+            return { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) };
+          });
+          const allFeedbacks = getAllFeedbacks().map((f) => {
+            if (!f.analysisId) return f;
+            return { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+          });
+          const applyPayload: DialogInitPayload = {
+            selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "",
+            mode: "selection",
+            source: getSource(),
+            personName,
+            personEmail,
+            applicationName: "",
+            communicationFunction: "",
+            communicationSignal: "",
+            projectName: "",
+            peopleList: getPeopleNames(),
+            analyses: allAnalyses,
+            feedbacks: allFeedbacks,
+            analysisData: {
+              id: navM.analysisId,
+              entityUnderAnalysis: analysis.entityUnderAnalysis ?? "",
+              analysisSubject: analysis.analysisSubject ?? "",
+              actualAnalysis: analysis.actualAnalysis ?? "",
+              fromPerson: analysis.fromPerson ?? "",
+              errors: getErrorsByAnalysis(navM.analysisId),
+              compensators: getCompensatorsByAnalysis(navM.analysisId),
+              questions: getQuestionsByAnalysis(navM.analysisId),
+              answers: getAnswersByAnalysis(navM.analysisId),
+              files: getFilesByAnalysis(navM.analysisId),
+              correctedItems: [],
+            },
+          };
+          const navMsg: HostMessage = { type: "NAVIGATE", view: "apply", payload: applyPayload };
+          dialog.messageChild(JSON.stringify(navMsg));
+        }
+        if (m.action === "NAVIGATE_TO_PROVIDE") {
+          const navM = m as { action: string; analysisId: number };
+          const analysis = getAnalysisById(navM.analysisId);
+          if (!analysis) return;
+          const { personName, personEmail } = getUserIdentity();
+          const commConfig = getCommunicationConfig();
+          const providePayload: DialogInitPayload = {
+            selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "",
+            mode: "selection",
+            source: getSource(),
+            personName,
+            personEmail,
+            applicationName: "",
+            communicationFunction: "",
+            communicationSignal: "",
+            projectName: "",
+            peopleList: buildPeopleList(commConfig?.personName),
+            peopleEmailMap: getPeopleEmailMap(),
+            communicationPersonName: commConfig?.personName ?? "",
+            communicationPersonEmail: commConfig?.personEmail ?? "",
+          };
+          const navMsg: HostMessage = { type: "NAVIGATE", view: "provide-feedback", payload: providePayload };
+          dialog.messageChild(JSON.stringify(navMsg));
+        }
+      });
+    }
+  );
+}
+
+function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 0): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=feedback-history`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openFeedbackHistoryDialog(event, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        event.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        if (m.action === "READY") {
+          const { personName, personEmail } = getUserIdentity();
+          const feedbacks = getAllFeedbacks().map((f) => {
+            if (!f.analysisId) return f;
+            return {
+              ...f,
+              questions: getQuestionsByAnalysis(f.analysisId),
+              compensators: getCompensatorsByAnalysis(f.analysisId),
+              answers: getAnswersByAnalysis(f.analysisId),
+              files: getFilesByAnalysis(f.analysisId),
+            };
+          });
+          const hostMsg: HostMessage = {
+            type: "INIT",
+            payload: {
+              selection: "",
+              mode: "selection",
+              source: getSource(),
+              personName,
+              personEmail,
+              applicationName: "",
+              communicationFunction: "",
+              communicationSignal: "",
+              projectName: "",
+              peopleList: [],
+              feedbacks,
+            },
+          };
+          dialog.messageChild(JSON.stringify(hostMsg));
+        }
+        if (m.action === "DELETE_FEEDBACK") {
+          deleteFeedback((m as { action: string; id: number }).id);
+        }
+        if (m.action === "CLOSE") {
+          dialog.close();
+          event.completed();
+        }
+      });
+    }
+  );
+}
+
+function openRetainedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=retained-history`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openRetainedHistoryDialog(event, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        event.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        if (m.action === "READY") {
+          const { personName, personEmail } = getUserIdentity();
+          const analyses = getRetainedAnalyses().map((a) => {
+            if (!a.id) return a;
+            return {
+              ...a,
+              questions: getQuestionsByAnalysis(a.id),
+              errors: getErrorsByAnalysis(a.id),
+              compensators: getCompensatorsByAnalysis(a.id),
+              answers: getAnswersByAnalysis(a.id),
+              problems: getProblemsByAnalysis(a.id),
+              files: getFilesByAnalysis(a.id),
+            };
+          });
+          const hostMsg: HostMessage = {
+            type: "INIT",
+            payload: {
+              selection: "",
+              mode: "selection",
+              source: getSource(),
+              personName,
+              personEmail,
+              applicationName: "",
+              communicationFunction: "",
+              communicationSignal: "",
+              projectName: "",
+              peopleList: [],
+              analyses,
+            },
+          };
+          dialog.messageChild(JSON.stringify(hostMsg));
+        }
+        if (m.action === "DELETE_ANALYSIS") {
+          deleteAnalysis((m as { action: string; id: number }).id);
+        }
+        if (m.action === "CLOSE") {
+          dialog.close();
+          event.completed();
+        }
+      });
+    }
+  );
+}
+
+function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=flagged-history`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openFlaggedHistoryDialog(event, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        event.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        if (m.action === "READY") {
+          const { personName, personEmail } = getUserIdentity();
+          const flaggedEntities = getAllFlaggedSelections();
+          const principleInterpretations = getAllInterpretations();
+          const filesByInterpretationId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+          for (const pi of principleInterpretations) {
+            if (pi.id !== undefined) {
+              filesByInterpretationId[pi.id] = getFilesByPrincipleInterpretation(pi.id);
+            }
+          }
+          const hostMsg: HostMessage = {
+            type: "INIT",
+            payload: {
+              selection: "",
+              mode: "selection",
+              source: getSource(),
+              personName,
+              personEmail,
+              applicationName: "",
+              communicationFunction: "",
+              communicationSignal: "",
+              projectName: "",
+              peopleList: [],
+              flaggedEntities,
+              principleInterpretations,
+              filesByInterpretationId,
+            },
+          };
+          dialog.messageChild(JSON.stringify(hostMsg));
+        }
+        if (m.action === "DELETE_FLAG") {
+          deleteFlag((m as { action: string; id: number }).id);
+        }
+        if (m.action === "DELETE_INTERPRETED_PRINCIPLE") {
+          deleteInterpretation((m as { action: string; id: number }).id);
+        }
+        if (m.action === "REPORT_INTERPRETED_PRINCIPLE") {
+          const { interpretation } = m as { action: string; interpretation: import("@/types/db").PrincipleInterpretation };
+          openInterpretedPrincipleReport(interpretation);
+        }
+        if (m.action === "ADD_ATTACHED_FILE") {
+          const { file } = m as { action: string; file: import("@/types/db").AttachFileToProject };
+          const newId = addAttachedFile(file as Omit<import("@/types/db").AttachFileToProject, "id">);
+          dialog.messageChild(JSON.stringify({ type: "FILE_ADDED", id: newId }));
+        }
+        if (m.action === "REMOVE_ATTACHED_FILE") {
+          removeAttachedFile((m as { action: string; id: number }).id);
+        }
+        if (m.action === "SAVE_RELATED_SELECTION") {
+          const { payload } = m as { action: string; payload: SaveRelatedSelectionPayload };
+          const newId = saveSelectionWithPrinciple(payload.record);
+          for (const file of payload.files) {
+            addAttachedFile({ ...file, selectionWithPrincipleId: newId });
+          }
+        }
+        if (m.action === "SAVE_PRINCIPLE_IN_SELECTION") {
+          const { payload } = m as { action: string; payload: SavePrincipleInSelectionPayload };
+          const newId = savePrincipleInSelection(payload.record);
+          for (const file of payload.files) {
+            addAttachedFile({ ...file, principleInSelectionId: newId });
+          }
+        }
+        if (m.action === "CLOSE") {
+          dialog.close();
+          event.completed();
+        }
+      });
+    }
+  );
+}
+
+function openViewDialogSimple(
+  view: string,
+  event: Office.AddinCommands.Event
+): void {
+  const { personName, personEmail } = getUserIdentity();
+  openViewDialog(view, undefined, {
+    selection: "",
+    mode: "selection",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: [],
+  }, event);
+}
+
+
+function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: Office.AddinCommands.Event, attempt = 0): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=provide-feedback`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openProvideFeedbackDialog(initPayload, addInEvent, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, addInEvent);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        void (evt as { error: number }).error;
+        addInEvent.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "SAVE_FEEDBACK": {
+            const fbPayload = m.payload as SaveFeedbackPayload;
+            try {
+              saveFeedback(fbPayload);
+            } catch (err) {
+              dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+              break;
+            }
+            if (fbPayload.feedback.toPerson) {
+              upsertPersonWithEmail(fbPayload.feedback.toPerson, fbPayload.toPersonEmail ?? "");
+            }
+            const f = fbPayload.feedback;
+            saveFeedbackHistory({
+              selectionAction: "Applied as Feedback",
+              entityName: f.internalFeedbackName || `Text selected from ${f.source} on ${f.feedbackDate}`,
+              actualSelection: f.feedbackApplication,
+              selectionType: f.selectionType,
+              source: f.source,
+              applicationName: f.applicationName,
+              communicationFunction: f.communicationFunction,
+              communicationSignal: f.communicationSignal,
+              projectName: f.projectName,
+              personName: f.personName,
+              personEmail: f.personEmail,
+            });
+            const mailtoUrl = buildMailtoUrl(fbPayload);
+            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+            // Stay open — wait for CLOSE from the success screen.
+            break;
+          }
+          case "CLOSE":
+            dialog.close();
+            addInEvent.completed();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
+  await ensureDb();
+  let selection = "";
+  try {
+    selection = await getHostText(mode);
+  } catch {
+    event.completed();
+    return;
+  }
+  if (!selection) {
+    const title = mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message";
+    const text =
+      "In order to provide feedback, the entity must exist. " +
+      "Select the text you want to provide feedback on, then click the button again.";
+    showNoSelectionMessage(title, text, event);
+    return;
+  }
+  const { personName, personEmail } = getUserIdentity();
+  const commConfig = getCommunicationConfig();
+  openProvideFeedbackDialog({
+    selection,
+    mode,
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: buildPeopleList(commConfig?.personName),
+    peopleEmailMap: getPeopleEmailMap(),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+  }, event);
+}
+
+function openApplyDialog(initPayload: DialogInitPayload, addInEvent: Office.AddinCommands.Event, attempt = 0): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=apply`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        // 12007 = previous dialog not fully torn down yet; retry up to 15×300ms = 4.5s.
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openApplyDialog(initPayload, addInEvent, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, addInEvent);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        void (evt as { error: number }).error;
+        addInEvent.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "SAVE_FEEDBACK":
+            try {
+              saveFeedback(m.payload as SaveFeedbackPayload);
+            } catch (err) {
+              dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+            }
+            dialog.close();
+            addInEvent.completed();
+            break;
+          case "CLOSE":
+            dialog.close();
+            addInEvent.completed();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
+  await ensureDb();
+  let selection = "";
+  try {
+    selection = await getHostText(mode);
+  } catch {
+    event.completed();
+    return;
+  }
+  if (!selection) {
+    const title = mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message";
+    const text =
+      "In order to apply an entity as feedback, that entity must exist. " +
+      "If an entity does not exist, then that entity cannot be applied as " +
+      "feedback.  In order for me to apply a paragraph or a selected text " +
+      "as feedback, I must I must select that paragraph by pointing to it " +
+      "or select the portion of the text that I want to apply as feedback.";
+    showNoSelectionMessage(title, text, event);
+    return;
+  }
+  const { personName, personEmail } = getUserIdentity();
+  const analyses = getAllAnalyses().map((a) => {
+    if (!a.id) return a;
+    return { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) };
+  });
+  const feedbacks = getAllFeedbacks().map((f) => {
+    if (!f.analysisId) return f;
+    return { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+  });
+  openApplyDialog({
+    selection,
+    mode,
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: getPeopleNames(),
+    analyses,
+    feedbacks,
+  }, event);
+}
+
+function openSelectionConfigDialog(addInEvent: Office.AddinCommands.Event): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=selection-config`,
+    { ...SELECTION_CONFIG_DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        handleDialogOpenError(result.error, addInEvent);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        void (evt as { error: number }).error;
+        addInEvent.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: {
+              selection: "", mode: "selection" as const, source: getSource(),
+              personName: "", personEmail: "", applicationName: "",
+            } } as HostMessage));
+            break;
+          case "CLOSE":
+            dialog.close();
+            addInEvent.completed();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+function openFlagDialog(initPayload: DialogInitPayload, addInEvent: Office.AddinCommands.Event): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=flag`,
+    { ...FLAG_DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        handleDialogOpenError(result.error, addInEvent);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        void (evt as { error: number }).error;
+        addInEvent.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "SAVE_FLAG": {
+            const flag = m.payload as Omit<FlagEntityForAnalysis, "id">;
+            try {
+              saveFlag(flag);
+            } catch (err) {
+              dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+              break;
+            }
+            // Stay open — dialog shows success state, user clicks Close → sends CLOSE
+            break;
+          }
+          case "CLOSE":
+            dialog.close();
+            addInEvent.completed();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
+  await ensureDb();
+  let selection = "";
+  let documentTitle = "";
+  let documentName = "";
+  try {
+    const meta = await getHostTextAndMeta(mode);
+    selection = meta.text;
+    documentTitle = meta.documentTitle;
+    documentName = meta.documentName;
+  } catch {
+    event.completed();
+    return;
+  }
+  if (!selection) {
+    const title = mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message";
+    const text =
+      "In order to flag an entity for analysis, that entity must exist. " +
+      "In order to flag an entity for analysis, that entity must be identified. " +
+      "It is not possible to flag an entity for analysis if that entity is not " +
+      "identified or cannot be identified. Here I will need to select the actual " +
+      "text or put the cursor or point the mouse to the text that needs to be flagged.";
+    showNoSelectionMessage(title, text, event);
+    return;
+  }
+  const entityName = buildEntityName(documentTitle, documentName);
+  const { personName, personEmail } = getUserIdentity();
+  const commConfig = getCommunicationConfig();
+  openFlagDialog({
+    selection,
+    mode,
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: entityName,
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: documentTitle,
+    peopleList: buildPeopleList(commConfig?.personName),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+  }, event);
+}
+
+async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Event, attempt = 0): Promise<void> {
+  await ensureDb();
+  const commConfig = getCommunicationConfig();
+  const { personName, personEmail } = getUserIdentity();
+  const peopleList = buildPeopleList(commConfig?.personName);
+
+  const initPayload: DialogInitPayload = {
+    selection: "",
+    mode: "selection",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList,
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+  };
+
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=request-sl-feedback`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => void openRequestSLFeedbackDialog(addInEvent, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, addInEvent);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        addInEvent.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "SAVE_REQUEST_SL_FEEDBACK": {
+            const p = m.payload as SaveRequestSLFeedbackPayload;
+            try {
+              saveCommSignalInfo({
+                fromPerson: p.fromPerson,
+                toPerson: "Speak Logic",
+                toPersonEmail: "support@speaklogic.org",
+                applicationName: p.applicationName,
+                communicationFunction: p.communicationFunction,
+                communicationSignalType: p.communicationSignalType,
+                communicationSubject: p.communicationSubject,
+                actualCommunication: p.actualCommunication,
+                actualSelection: "",
+                selectionType: "Speak Logic Request",
+                entitySelected: `Speak Logic feedback request on ${nowDate()}`,
+                files: p.files,
+              });
+              saveFeedbackHistory({
+                selectionAction: "Requested Feedback From Speak Logic",
+                entityName: `Speak Logic feedback request on ${nowDate()}`,
+                actualSelection: "",
+                selectionType: "Web Contain",
+                source: initPayload.source,
+                applicationName: p.applicationName,
+                communicationFunction: p.communicationFunction,
+                communicationSignal: p.communicationSignalType,
+                projectName: "",
+                personName,
+                personEmail,
+              });
+            } catch (err) {
+              dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+              break;
+            }
+            const mailtoUrl = buildRequestSLMailtoUrl(p);
+            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+            break;
+          }
+          case "CLOSE":
+            dialog.close();
+            addInEvent.completed();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+function buildRequestSLMailtoUrl(p: SaveRequestSLFeedbackPayload): string {
+  const subject = encodeURIComponent(p.communicationSubject);
+  const prefix = `Application Name: ${p.applicationName}\nCommunication Function: ${p.communicationFunction}\nCommunication Signal: ${p.communicationSignalType}\n${"=".repeat(60)}\n\n`;
+  const bodyText = (prefix + p.actualCommunication.replace(/<[^>]*>/g, "")).slice(0, 1800);
+  const body = encodeURIComponent(bodyText);
+  return `mailto:support@speaklogic.org?subject=${subject}&body=${body}`;
+}
+
+function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void {
+  ensureDb().then(() => {
+    const commConfig = getCommunicationConfig();
+    const initPayload: DialogInitPayload = {
+      selection: "",
+      mode: "selection",
+      source: getSource(),
+      personName: "",
+      personEmail: "",
+      applicationName: "",
+      communicationFunction: "",
+      communicationSignal: "",
+      projectName: "",
+      peopleList: [],
+      communicationPersonName: commConfig?.personName ?? "",
+      communicationPersonEmail: commConfig?.personEmail ?? "",
+    };
+    Office.context.ui.displayDialogAsync(
+      `${DIALOG_BASE}/dialog.html?view=communication-config`,
+      { height: 36, width: 28, displayInIframe: true },
+      (result) => {
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          handleDialogOpenError(result.error, event);
+          return;
+        }
+        const dialog = result.value;
+        dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+          event.completed();
+        });
+        dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+          const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+          switch (m.action) {
+            case "READY":
+              dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+              break;
+            case "SAVE_COMMUNICATION_CONFIG":
+              saveCommunicationConfig(m.payload as SaveCommunicationConfigPayload);
+              dialog.close();
+              event.completed();
+              break;
+            case "CLOSE":
+              dialog.close();
+              event.completed();
+              break;
+            default:
+              break;
+          }
+        });
+      }
+    );
+  });
+}
