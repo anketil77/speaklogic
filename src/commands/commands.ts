@@ -60,8 +60,13 @@ Office.onReady(() => {
 
 async function ensureDb(): Promise<void> {
   if (dbInitialized) return;
-  await initDb();
-  dbInitialized = true;
+  try {
+    await initDb();
+    dbInitialized = true;
+  } catch (err) {
+    dbg("HOST", "ensureDb FAILED", String(err));
+    throw err;
+  }
 }
 
 function registerHandlers(): void {
@@ -325,7 +330,7 @@ async function openAnalyzeDialog(
   event: Office.AddinCommands.Event
 ): Promise<void> {
   dbg("HOST", "openAnalyzeDialog start", { mode });
-  await ensureDb();
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   let selection = "";
   try {
     selection = await getHostText(mode);
@@ -559,7 +564,7 @@ async function openAnalyzeDialog(
 }
 
 async function openRequestFeedbackFromRibbon(event: Office.AddinCommands.Event): Promise<void> {
-  await ensureDb();
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   let selection = "";
   try {
     selection = await getHostText("paragraph");
@@ -1094,7 +1099,7 @@ function openViewDialogSimple(
 
 
 async function openCreateArticleDialog(event: Office.AddinCommands.Event): Promise<void> {
-  await ensureDb();
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const { personName, personEmail } = getUserIdentity();
   const initPayload: DialogInitPayload = {
     selection: "",
@@ -1218,7 +1223,7 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
 }
 
 async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
-  await ensureDb();
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   let selection = "";
   try {
     selection = await getHostText(mode);
@@ -1300,7 +1305,7 @@ function openApplyDialog(initPayload: DialogInitPayload, addInEvent: Office.Addi
 }
 
 async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
-  await ensureDb();
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   let selection = "";
   try {
     selection = await getHostText(mode);
@@ -1423,7 +1428,7 @@ function openFlagDialog(initPayload: DialogInitPayload, addInEvent: Office.Addin
 }
 
 async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
-  await ensureDb();
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   let selection = "";
   let documentTitle = "";
   let documentName = "";
@@ -1467,7 +1472,7 @@ async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.Addin
 }
 
 async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Event, attempt = 0): Promise<void> {
-  await ensureDb();
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), addInEvent); return; }
   const commConfig = getCommunicationConfig();
   const { personName, personEmail } = getUserIdentity();
   const peopleList = buildPeopleList(commConfig?.personName);

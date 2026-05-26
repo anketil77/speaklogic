@@ -12,7 +12,7 @@ export async function initDb(): Promise<Database> {
   if (db) return db;
 
   const SQL = await initSqlJs({
-    locateFile: (file: string) => `/assets/${file}`,
+    locateFile: (file: string) => `${window.location.origin}/assets/${file}`,
   });
 
   const saved = localStorage.getItem(DB_STORAGE_KEY);
