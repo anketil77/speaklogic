@@ -1,6 +1,6 @@
 // src/db/db.ts
 
-/* global localStorage */
+/* global localStorage console */
 
 import initSqlJs, { Database } from "sql.js";
 import { CREATE_TABLES_SQL } from "@/db/schema";
@@ -11,9 +11,13 @@ let db: Database | null = null;
 export async function initDb(): Promise<Database> {
   if (db) return db;
 
-  const SQL = await initSqlJs({
-    locateFile: (file: string) => `${window.location.origin}/assets/${file}`,
-  });
+  const wasmUrl = `${window.location.origin}/assets/sql-wasm.wasm`;
+  console.log("[SL][DB] fetching wasm from", wasmUrl);
+  const wasmResp = await fetch(wasmUrl);
+  if (!wasmResp.ok) throw new Error(`Wasm fetch failed: ${wasmResp.status} from ${wasmUrl}`);
+  const wasmBinary = await wasmResp.arrayBuffer();
+
+  const SQL = await initSqlJs({ wasmBinary });
 
   const saved = localStorage.getItem(DB_STORAGE_KEY);
   if (saved) {
