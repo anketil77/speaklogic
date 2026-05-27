@@ -30,7 +30,8 @@ import AboutView from "@/dialog/views/AboutView";
 
 // Lazy-loaded: heavy views that aren't on the critical path.
 // WebView2 caches the chunks after first use, so subsequent opens are instant.
-const CreateArticleView = lazy(() => import("@/dialog/views/CreateArticleView"));
+const CreateArticleView       = lazy(() => import("@/dialog/views/CreateArticleView"));
+const CreateArticlePickerView = lazy(() => import("@/dialog/views/CreateArticlePickerView"));
 const ApplyFeedbackView = lazy(() => import("@/dialog/views/feedback/ApplyFeedbackView"));
 const ProvideFeedbackView = lazy(() => import("@/dialog/views/feedback/ProvideFeedbackView"));
 const AnalysisHistoryView = lazy(() => import("@/dialog/views/AnalysisHistoryView"));
@@ -136,6 +137,8 @@ function DialogApp() {
         return <FlagView />;
       case "selection-config":
         return <SelectionConfigView />;
+      case "create-article-picker":
+        return <CreateArticlePickerView />;
       case "create-article":
         return <CreateArticleView />;
       case "about":

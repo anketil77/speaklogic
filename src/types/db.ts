@@ -610,7 +610,9 @@ export type DialogAction =
   | { action: "REMOVE_ATTACHED_FILE"; id: number }
   | { action: "SAVE_RELATED_SELECTION"; payload: SaveRelatedSelectionPayload }
   | { action: "SAVE_PRINCIPLE_IN_SELECTION"; payload: SavePrincipleInSelectionPayload }
-  | { action: "SAVE_ARTICLE"; payload: SaveArticlePayload };
+  | { action: "SAVE_ARTICLE"; payload: SaveArticlePayload }
+  | { action: "BLANK_SELECTED" }
+  | { action: "TEMPLATE_SELECTED" };
 
 export interface SaveRelatedSelectionPayload {
   record: Omit<SelectionWithPrinciple, "id">;

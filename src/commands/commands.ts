@@ -47,6 +47,8 @@ const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: 25 } as const;
 // About dialog: 604×292px → 27% height, 32% width on 1920×1080
 const ABOUT_DIALOG_SIZE = { height: 27, width: 32 } as const;
 // Create Article dialog: 520×508px → 61% height, 27% width (height % is of Word viewport ~827px, not raw 1080)
+// Picker (260×163px on 1920×1080): width=14%, height≈20% of Word viewport (~827px)
+const CREATE_ARTICLE_PICKER_SIZE = { height: 20, width: 14 } as const;
 const CREATE_ARTICLE_DIALOG_SIZE = { height: 61, width: 27 } as const;
 
 let dbInitialized = false;
@@ -1101,6 +1103,47 @@ function openViewDialogSimple(
 async function openCreateArticleDialog(event: Office.AddinCommands.Event): Promise<void> {
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const { personName, personEmail } = getUserIdentity();
+
+  // ── Step 1: open the small entry picker (260×163px) ───────────────────────
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=create-article-picker`,
+    { ...CREATE_ARTICLE_PICKER_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const pickerDialog = result.value;
+
+      pickerDialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        // User closed the picker via the native OS X
+        event.completed();
+      });
+
+      pickerDialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+
+        if (m.action === "BLANK_SELECTED" || m.action === "TEMPLATE_SELECTED") {
+          // Close the picker, then open the full article form
+          pickerDialog.close();
+          openArticleFormDialog(event, personName, personEmail);
+
+        } else if (m.action === "CLOSE") {
+          pickerDialog.close();
+          event.completed();
+        }
+      });
+    }
+  );
+}
+
+/** Step 2 — open the full article creation form after the picker closes. */
+function openArticleFormDialog(
+  event: Office.AddinCommands.Event,
+  personName: string,
+  personEmail: string,
+  attempt = 0,
+): void {
   const initPayload: DialogInitPayload = {
     selection: "",
     mode: "selection",
@@ -1118,12 +1161,16 @@ async function openCreateArticleDialog(event: Office.AddinCommands.Event): Promi
     { ...CREATE_ARTICLE_DIALOG_SIZE, displayInIframe: true },
     (result) => {
       if (result.status === Office.AsyncResultStatus.Failed) {
+        // 12007 = picker dialog still closing; retry up to 15×
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openArticleFormDialog(event, personName, personEmail, attempt + 1), 300);
+          return;
+        }
         handleDialogOpenError(result.error, event);
         return;
       }
       const dialog = result.value;
-      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
-        void (evt as { error: number }).error;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
         event.completed();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
