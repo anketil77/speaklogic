@@ -10,20 +10,18 @@ export interface WizardStepDef {
   readonly label:   string;
 }
 
-/** All 8 steps in the wizard (steps 1–2 are pre-completed from the template picker). */
+/** Wizard steps shown in the step bar — Category and Template are done in the picker, not shown here. */
 export const WIZARD_STEPS: readonly WizardStepDef[] = [
-  { stepNum: 1, label: "Category"  },
-  { stepNum: 2, label: "Template"  },
-  { stepNum: 3, label: "Article"   },
-  { stepNum: 4, label: "Given Set" },
-  { stepNum: 5, label: "Event"     },
-  { stepNum: 6, label: "Info"      },
-  { stepNum: 7, label: "Content"   },
-  { stepNum: 8, label: "Done"      },
+  { stepNum: 1, label: "Article"   },
+  { stepNum: 2, label: "Given Set" },
+  { stepNum: 3, label: "Event"     },
+  { stepNum: 4, label: "Info"      },
+  { stepNum: 5, label: "Content"   },
+  { stepNum: 6, label: "Done"      },
 ] as const;
 
-export const WIZARD_FIRST_EDITABLE_STEP = 3;
-export const WIZARD_DONE_STEP           = 8;
+export const WIZARD_FIRST_EDITABLE_STEP = 1;
+export const WIZARD_DONE_STEP           = 6;
 
 // ─── Form data model ─────────────────────────────────────────────────────────
 

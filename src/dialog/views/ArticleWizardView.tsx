@@ -89,7 +89,7 @@ export default function ArticleWizardView() {
   // ── Navigation ──────────────────────────────────────────────────────────────
 
   const handleNext = useCallback(() => {
-    if (step === 7) {
+    if (step === 5) {
       // Finish — send payload to host
       const payload: SaveArticleWizardPayload = {
         articleTitle:               data.articleTitle,
@@ -143,23 +143,23 @@ export default function ArticleWizardView() {
 
   const renderStep = () => {
     switch (step) {
-      case 3:  return <Step3Article  {...stepProps} />;
-      case 4:  return <Step4GivenSet {...stepProps} />;
-      case 5:  return <Step5Event    {...stepProps} />;
-      case 6:  return <Step6Info     {...stepProps} />;
-      case 7:  return <Step7Content  {...stepProps} />;
-      case 8:  return <Step8Done data={data} onClose={handleClose} />;
+      case 1:  return <Step3Article  {...stepProps} />;
+      case 2:  return <Step4GivenSet {...stepProps} />;
+      case 3:  return <Step5Event    {...stepProps} />;
+      case 4:  return <Step6Info     {...stepProps} />;
+      case 5:  return <Step7Content  {...stepProps} />;
+      case 6:  return <Step8Done data={data} onClose={handleClose} />;
       default: return null;
     }
   };
 
   const stepTitles: Record<number, string> = {
+    1: "Create Article",
+    2: "Create Article",
     3: "Create Article",
     4: "Create Article",
     5: "Create Article",
     6: "Create Article",
-    7: "Create Article",
-    8: "Create Article",
   };
 
   return (
