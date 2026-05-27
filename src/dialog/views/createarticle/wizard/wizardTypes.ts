@@ -34,9 +34,10 @@ export interface WizardData {
   personLocation: string;
 
   // Step 4 — Given Set
-  isGivenSet:   boolean;   // true = Yes (provider uses the given set)
-  peopleLocation: string;
-  consideration: string;
+  isGivenSet:           boolean;   // true = Yes (provider uses the given set)
+  articleBasisReference: string;
+  peopleLocation:        string;
+  consideration:         string;
 
   // Step 5 — Event
   eventName:     string;
@@ -51,6 +52,7 @@ export interface WizardData {
   motherNatureConsiderations: string;
   negativeFunction:           string;
   problemDetails:             string;
+  relationshipDetails:        string;
 }
 
 export const INITIAL_WIZARD_DATA: WizardData = {
@@ -59,9 +61,10 @@ export const INITIAL_WIZARD_DATA: WizardData = {
   providerName:    "",
   personName:      "",
   personLocation:  "",
-  isGivenSet:      false,
-  peopleLocation:  "",
-  consideration:   "",
+  isGivenSet:            false,
+  articleBasisReference: "",
+  peopleLocation:        "",
+  consideration:         "",
   eventName:       "",
   eventLocation:   "",
   eventDate:       "",
@@ -70,6 +73,7 @@ export const INITIAL_WIZARD_DATA: WizardData = {
   motherNatureConsiderations: "",
   negativeFunction:           "",
   problemDetails:             "",
+  relationshipDetails:        "",
 };
 
 // ─── Shared step-component prop type ────────────────────────────────────────

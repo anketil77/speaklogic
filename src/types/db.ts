@@ -207,6 +207,7 @@ export interface Article {
   motherNatureConsiderations?: string;
   negativeFunction?: string;
   problemDetails?: string;
+  relationshipDetails?: string;
   templateName?: string;
   wizardCategory?: string;
 }
@@ -235,9 +236,11 @@ export interface SaveArticleWizardPayload {
   eventDate: string;
   eventTime: string;
   infoBeforeEvent: string;
+  articleBasisReference: string;
   motherNatureConsiderations: string;
   negativeFunction: string;
   problemDetails: string;
+  relationshipDetails: string;
   templateName: string;
   wizardCategory: string;
 }

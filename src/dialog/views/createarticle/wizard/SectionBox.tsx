@@ -46,7 +46,7 @@ export function SectionBox({
           alignItems:     "center",
           padding:        "7px 11px",
           width:          "100%",
-          height:         28,
+          minHeight:      28,
           background:     "#F5F5F5",
           boxSizing:      "border-box",
           flexShrink:     0,

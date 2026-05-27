@@ -98,6 +98,7 @@ export default function ArticleWizardView() {
         personName:                 data.personName,
         personLocation:             data.personLocation,
         isGivenSet:                 data.isGivenSet ? 1 : 0,
+        articleBasisReference:      data.articleBasisReference,
         peopleLocation:             data.peopleLocation,
         consideration:              data.consideration,
         eventName:                  data.eventName,
@@ -108,6 +109,7 @@ export default function ArticleWizardView() {
         motherNatureConsiderations: data.motherNatureConsiderations,
         negativeFunction:           data.negativeFunction,
         problemDetails:             data.problemDetails,
+        relationshipDetails:        data.relationshipDetails,
         templateName:               initData?.templateName  ?? "",
         wizardCategory:             initData?.wizardCategory ?? data.category,
       };

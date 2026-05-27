@@ -1,10 +1,10 @@
 // src/dialog/views/createarticle/wizard/steps/Step4GivenSet.tsx
 //
-// Wizard Step 4 — "Given Set" step.
+// Wizard Step 4 — "Given Set" step (Template 2 Non-Sport & Game).
 // Sections:
-//   1. About The Given Set — Yes/No toggle (isGivenSet)
-//   2. About People Information Directed To — Location + Consideration inputs
-// Footer hint: "Describe the given set and target audience"
+//   1. About The Given Set — pill-style Yes/No toggle + Article Basis Reference input
+//   2. About People Information Directed To — People Location + Consideration inputs
+// Footer hint: "Fill in given set and people information"
 
 import React, { useCallback } from "react";
 import { SectionBox }   from "../SectionBox";
@@ -14,8 +14,8 @@ import type { StepProps } from "../wizardTypes";
 
 export function Step4GivenSet({ data, onChange, onNext, onBack, onCancel }: StepProps) {
   const handleToggle = useCallback(
-    (val: boolean) => onChange({ isGivenSet: val }),
-    [onChange],
+    () => onChange({ isGivenSet: !data.isGivenSet }),
+    [onChange, data.isGivenSet],
   );
 
   return (
@@ -42,6 +42,7 @@ export function Step4GivenSet({ data, onChange, onNext, onBack, onCancel }: Step
       >
         {/* ── About The Given Set ── */}
         <SectionBox title="About The Given Set" showHelp>
+          {/* Toggle row */}
           <div
             style={{
               display:        "flex",
@@ -55,17 +56,86 @@ export function Step4GivenSet({ data, onChange, onNext, onBack, onCancel }: Step
               style={{
                 fontFamily: "'Inter','Segoe UI',sans-serif",
                 fontWeight:  400,
-                fontSize:    10.7,
-                lineHeight:  "13px",
-                color:       "#616161",
+                fontSize:    11.1,
+                lineHeight:  "17px",
+                color:       "#1B1B1B",
+                flex:        1,
+                paddingRight: 8,
               }}
             >
-              Provider uses the given set of information
+              Does provider use The Given Set to provide this information?
             </span>
 
-            <ToggleGroup
-              value={data.isGivenSet}
-              onChange={handleToggle}
+            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5, flexShrink: 0 }}>
+              <span
+                style={{
+                  fontFamily: "'Inter','Segoe UI',sans-serif",
+                  fontWeight:  700,
+                  fontSize:    11,
+                  lineHeight:  "13px",
+                  color:       "#616161",
+                }}
+              >
+                {data.isGivenSet ? "Yes" : "No"}
+              </span>
+
+              {/* Pill toggle */}
+              <button
+                onClick={handleToggle}
+                aria-pressed={data.isGivenSet}
+                style={{
+                  display:        "flex",
+                  flexDirection:  "column",
+                  alignItems:     "flex-end",
+                  padding:        data.isGivenSet ? "3px 3px 3px 17px" : "3px 17px 3px 3px",
+                  width:          32,
+                  height:         18,
+                  background:     data.isGivenSet ? "#0078D4" : "#C7C7C7",
+                  borderRadius:   18,
+                  border:         "none",
+                  cursor:         "pointer",
+                  transition:     "background 0.15s, padding 0.15s",
+                  flexShrink:     0,
+                }}
+              >
+                <div
+                  style={{
+                    width:        12,
+                    height:       12,
+                    background:   "#FFFFFF",
+                    borderRadius: 6,
+                    flexShrink:   0,
+                  }}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Article Basis Reference */}
+          <div
+            style={{
+              display:       "flex",
+              flexDirection: "column",
+              gap:           4,
+              width:         "100%",
+              paddingTop:    4,
+            }}
+          >
+            <label
+              style={{
+                fontFamily: "'Inter','Segoe UI',sans-serif",
+                fontWeight:  700,
+                fontSize:    9.8,
+                lineHeight:  "12px",
+                color:       "#1B1B1B",
+              }}
+            >
+              Article Basis Reference
+            </label>
+            <FormInput
+              placeholder="Enter reference number"
+              value={data.articleBasisReference}
+              onChange={(v) => onChange({ articleBasisReference: v })}
             />
           </div>
         </SectionBox>
@@ -87,60 +157,11 @@ export function Step4GivenSet({ data, onChange, onNext, onBack, onCancel }: Step
 
       {/* Footer */}
       <WizardFooter
-        hintText="Describe the given set and target audience"
+        hintText="Fill in given set and people information"
         onBack={onBack}
         onCancel={onCancel}
         onNext={onNext}
       />
     </div>
-  );
-}
-
-// ─── Yes / No toggle pair ────────────────────────────────────────────────────
-
-interface ToggleGroupProps {
-  value:    boolean;
-  onChange: (v: boolean) => void;
-}
-
-function ToggleGroup({ value, onChange }: ToggleGroupProps) {
-  return (
-    <div style={{ display: "flex", flexDirection: "row", gap: 6 }}>
-      <ToggleBtn label="Yes" active={value}  onClick={() => onChange(true)}  />
-      <ToggleBtn label="No"  active={!value} onClick={() => onChange(false)} />
-    </div>
-  );
-}
-
-interface ToggleBtnProps {
-  label:   string;
-  active:  boolean;
-  onClick: () => void;
-}
-
-function ToggleBtn({ label, active, onClick }: ToggleBtnProps) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display:        "flex",
-        alignItems:     "center",
-        justifyContent: "center",
-        width:          42,
-        height:         24,
-        background:     active ? "#0078D4" : "#FFFFFF",
-        border:         `1px solid ${active ? "#0078D4" : "#C7C7C7"}`,
-        borderRadius:   4,
-        cursor:         "pointer",
-        fontFamily:     "'Inter','Segoe UI',sans-serif",
-        fontWeight:     700,
-        fontSize:       10.5,
-        lineHeight:     "13px",
-        color:          active ? "#FFFFFF" : "#616161",
-        transition:     "background 0.1s, border-color 0.1s",
-      }}
-    >
-      {label}
-    </button>
   );
 }

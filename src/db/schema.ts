@@ -195,6 +195,7 @@ CREATE TABLE IF NOT EXISTS Article (
   motherNatureConsiderations TEXT DEFAULT '',
   negativeFunction TEXT DEFAULT '',
   problemDetails TEXT DEFAULT '',
+  relationshipDetails TEXT DEFAULT '',
   templateName TEXT DEFAULT '',
   wizardCategory TEXT DEFAULT ''
 );

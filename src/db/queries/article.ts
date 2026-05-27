@@ -96,13 +96,15 @@ export function saveArticleWizard(
       articleTitle, articleContent, articleDate, articleTime,
       personName, personEmail, source, articleNumber,
       category, isDraft,
+      articleBasisReference,
       providerName, personLocation,
       isGivenSet, peopleLocation, consideration,
       eventName, eventLocation, eventDate, eventTime,
       infoBeforeEvent,
       motherNatureConsiderations, negativeFunction, problemDetails,
+      relationshipDetails,
       templateName, wizardCategory
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       payload.articleTitle,
       "",                    // articleContent unused for wizard (infoBeforeEvent replaces it)
@@ -114,6 +116,7 @@ export function saveArticleWizard(
       articleNumber,
       payload.category,
       0,                     // isDraft = 0 (wizard always saves final)
+      payload.articleBasisReference,
       payload.providerName,
       payload.personLocation,
       payload.isGivenSet,
@@ -127,6 +130,7 @@ export function saveArticleWizard(
       payload.motherNatureConsiderations,
       payload.negativeFunction,
       payload.problemDetails,
+      payload.relationshipDetails,
       payload.templateName,
       payload.wizardCategory,
     ]
