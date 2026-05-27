@@ -6,7 +6,10 @@
 
 import React, { useState } from "react";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
-import { ArticleCloseIcon } from "@/dialog/components/Icons";
+import {
+  ArticlePickerBlankIcon,
+  ArticlePickerTemplateIcon,
+} from "@/dialog/components/Icons";
 
 export default function CreateArticlePickerView() {
   const { sendMessage } = useDialogComm();
@@ -23,11 +26,11 @@ export default function CreateArticlePickerView() {
         fontFamily: "'Inter','Segoe UI',sans-serif",
       }}
     >
-      {/* ── Header — 41px ────────────────────────────────────────────── */}
+      {/* ── Header — 41px (no custom X — native dialog chrome already has one) */}
       <div
         style={{
           display: "flex", flexDirection: "row",
-          justifyContent: "space-between", alignItems: "center",
+          alignItems: "center",
           padding: "12px 14px 10px",
           height: 41, boxSizing: "border-box", flexShrink: 0,
         }}
@@ -35,21 +38,10 @@ export default function CreateArticlePickerView() {
         <span style={{ fontWeight: 700, fontSize: 12.6, lineHeight: "15px", color: "#1B1B1B" }}>
           Create Article
         </span>
-        <button
-          onClick={() => sendMessage({ action: "CLOSE" })}
-          title="Close"
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: 3, width: 17, height: 17,
-            borderRadius: 3, border: "none", background: "transparent", cursor: "pointer",
-          }}
-        >
-          <ArticleCloseIcon />
-        </button>
       </div>
 
       {/* ── List ─────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", flexDirection: "column", padding: "8px 0", flex: 1 }}>
+      <div style={{ display: "flex", flexDirection: "column", padding: "8px 0 12px", flex: 1 }}>
 
         {/* Item 1 — Blank */}
         <button
@@ -57,20 +49,25 @@ export default function CreateArticlePickerView() {
           onMouseEnter={() => setBlankHover(true)}
           onMouseLeave={() => setBlankHover(false)}
           style={{
-            display: "flex", flexDirection: "column", alignItems: "flex-start",
-            padding: "10px 14px",
+            display: "flex", flexDirection: "row", alignItems: "flex-start",
+            padding: "10px 14px", gap: 11,
             width: "100%", height: 53,
             background: blankHover ? "#F5F5F5" : "transparent",
             border: "none", cursor: "pointer", textAlign: "left",
-            boxSizing: "border-box", flexShrink: 0, gap: 2,
+            boxSizing: "border-box", flexShrink: 0,
           }}
         >
-          <span style={{ fontWeight: 700, fontSize: 12, lineHeight: "15px", color: "#1B1B1B" }}>
-            Blank
-          </span>
-          <span style={{ fontWeight: 400, fontSize: 9.2, lineHeight: "14px", color: "#616161" }}>
-            Create article from scratch
-          </span>
+          <div style={{ width: 32, height: 32, background: "#EBF3FC", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <ArticlePickerBlankIcon />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center", height: 32 }}>
+            <span style={{ fontWeight: 700, fontSize: 12, lineHeight: "15px", color: "#1B1B1B" }}>
+              Blank
+            </span>
+            <span style={{ fontWeight: 400, fontSize: 9.2, lineHeight: "14px", color: "#616161" }}>
+              Create article from scratch
+            </span>
+          </div>
         </button>
 
         {/* Item 2 — Use Template */}
@@ -79,21 +76,26 @@ export default function CreateArticlePickerView() {
           onMouseEnter={() => setTmplHover(true)}
           onMouseLeave={() => setTmplHover(false)}
           style={{
-            display: "flex", flexDirection: "column", alignItems: "flex-start",
-            padding: "10px 14px",
+            display: "flex", flexDirection: "row", alignItems: "flex-start",
+            padding: "10px 14px", gap: 11,
             width: "100%", height: 53,
             background: tmplHover ? "#F5F5F5" : "transparent",
             border: "none", borderTop: "1px solid #E0E0E0",
             cursor: "pointer", textAlign: "left",
-            boxSizing: "border-box", flexShrink: 0, gap: 2,
+            boxSizing: "border-box", flexShrink: 0,
           }}
         >
-          <span style={{ fontWeight: 700, fontSize: 11.8, lineHeight: "14px", color: "#1B1B1B" }}>
-            Use Template
-          </span>
-          <span style={{ fontWeight: 400, fontSize: 9.2, lineHeight: "14px", color: "#616161" }}>
-            Create article using predefined template
-          </span>
+          <div style={{ width: 32, height: 32, background: "#EBF3FC", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <ArticlePickerTemplateIcon />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center", height: 32 }}>
+            <span style={{ fontWeight: 700, fontSize: 11.8, lineHeight: "14px", color: "#1B1B1B" }}>
+              Use Template
+            </span>
+            <span style={{ fontWeight: 400, fontSize: 9.2, lineHeight: "14px", color: "#616161" }}>
+              Create article using predefined template
+            </span>
+          </div>
         </button>
       </div>
     </div>
