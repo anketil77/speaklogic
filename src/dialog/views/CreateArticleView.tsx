@@ -7,6 +7,7 @@ import {
   CategoryPickerPanel,
   type ArticleCategory,
 } from "@/dialog/views/createarticle/CategoryPickerPanel";
+import { ArticleEditorPanel } from "@/dialog/views/createarticle/ArticleEditorPanel";
 
 export default function CreateArticleView() {
   const { sendMessage } = useDialogComm();
@@ -50,6 +51,23 @@ export default function CreateArticleView() {
     setContentEmpty(!text.trim());
     setError("");
   }, []);
+
+  // ── Article Editor Panel ─────────────────────────────────────────────────
+  const [showEditorPanel, setShowEditorPanel] = useState(false);
+
+  const openEditorPanel = useCallback(() => setShowEditorPanel(true), []);
+
+  const handlePanelSave = useCallback((html: string) => {
+    if (contentRef.current) {
+      contentRef.current.innerHTML = html;
+      const text = contentRef.current.innerText ?? "";
+      setContentEmpty(!text.trim());
+      if (error) setError("");
+    }
+    setShowEditorPanel(false);
+  }, [error]);
+
+  const handlePanelClose = useCallback(() => setShowEditorPanel(false), []);
 
   // ── Save / Draft ────────────────────────────────────────────────────────────
   const handleSave = useCallback(
@@ -437,7 +455,11 @@ export default function CreateArticleView() {
           >
             Article Content
           </span>
-          <div style={{ position: "relative" }}>
+          {/* Clicking anywhere on the content area opens the editor panel */}
+          <div
+            style={{ position: "relative", cursor: "text" }}
+            onClick={openEditorPanel}
+          >
             {contentEmpty && (
               <span
                 style={{
@@ -453,9 +475,9 @@ export default function CreateArticleView() {
                 Add article content here
               </span>
             )}
+            {/* Read-only preview of saved content; editing happens in panel */}
             <div
               ref={contentRef}
-              contentEditable
               suppressContentEditableWarning
               onInput={handleContentInput}
               style={{
@@ -470,6 +492,7 @@ export default function CreateArticleView() {
                 outline: "none",
                 fontFamily: "inherit",
                 wordBreak: "break-word",
+                cursor: "text",
               }}
             />
           </div>
@@ -546,6 +569,15 @@ export default function CreateArticleView() {
           selectedCategory={category}
           onSelect={handleCategorySelect}
           onClose={closeCategoryPicker}
+        />
+      )}
+
+      {/* ── Article Editor Panel portal ── */}
+      {showEditorPanel && (
+        <ArticleEditorPanel
+          initialContent={contentRef.current?.innerHTML ?? ""}
+          onSave={handlePanelSave}
+          onClose={handlePanelClose}
         />
       )}
     </div>
