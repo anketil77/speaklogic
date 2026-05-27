@@ -193,6 +193,22 @@ export interface Article {
   category?: string;
   articleBasisReference?: string;
   isDraft?: 0 | 1;
+  // Wizard-specific fields (Template 1 and future templates)
+  providerName?: string;
+  personLocation?: string;
+  isGivenSet?: 0 | 1;
+  peopleLocation?: string;
+  consideration?: string;
+  eventName?: string;
+  eventLocation?: string;
+  eventDate?: string;
+  eventTime?: string;
+  infoBeforeEvent?: string;
+  motherNatureConsiderations?: string;
+  negativeFunction?: string;
+  problemDetails?: string;
+  templateName?: string;
+  wizardCategory?: string;
 }
 
 export interface SaveArticlePayload {
@@ -202,6 +218,28 @@ export interface SaveArticlePayload {
   articleBasisReference: string;
   isProviderUseGivenSetOfInfo: 0 | 1;
   isDraft: 0 | 1;
+}
+
+/** Payload sent by ArticleWizardView when the user finishes the wizard. */
+export interface SaveArticleWizardPayload {
+  articleTitle: string;
+  category: string;
+  providerName: string;
+  personName: string;
+  personLocation: string;
+  isGivenSet: 0 | 1;
+  peopleLocation: string;
+  consideration: string;
+  eventName: string;
+  eventLocation: string;
+  eventDate: string;
+  eventTime: string;
+  infoBeforeEvent: string;
+  motherNatureConsiderations: string;
+  negativeFunction: string;
+  problemDetails: string;
+  templateName: string;
+  wizardCategory: string;
 }
 
 export interface AttachFileToProject {
@@ -552,6 +590,9 @@ export interface DialogInitPayload {
   principleInterpretations?: PrincipleInterpretation[];
   filesByInterpretationId?: Record<number, AttachFileToProject[]>;
   articles?: Article[];
+  /** Passed when opening the article wizard after template selection. */
+  templateName?: string;
+  wizardCategory?: string;
 }
 
 export interface SaveFeedbackPayload {
@@ -612,8 +653,12 @@ export type DialogAction =
   | { action: "SAVE_RELATED_SELECTION"; payload: SaveRelatedSelectionPayload }
   | { action: "SAVE_PRINCIPLE_IN_SELECTION"; payload: SavePrincipleInSelectionPayload }
   | { action: "SAVE_ARTICLE"; payload: SaveArticlePayload }
+  | { action: "SAVE_ARTICLE_WIZARD"; payload: SaveArticleWizardPayload }
   | { action: "BLANK_SELECTED" }
   | { action: "TEMPLATE_SELECTED" }
+  | { action: "TEMPLATE_CONFIRMED"; templateName: string; category: string }
+  | { action: "BACK" }
+  | { action: "BACK_TO_PICKER" }
   | { action: "DELETE_ARTICLE"; id: number };
 
 export interface SaveRelatedSelectionPayload {

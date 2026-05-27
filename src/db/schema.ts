@@ -180,7 +180,23 @@ CREATE TABLE IF NOT EXISTS Article (
   isProviderUseGivenSetOfInfo INTEGER DEFAULT 1,
   category TEXT DEFAULT '',
   articleBasisReference TEXT DEFAULT '',
-  isDraft INTEGER DEFAULT 0
+  isDraft INTEGER DEFAULT 0,
+  -- wizard-specific fields (Template 1 Non-Sport & Game and future templates)
+  providerName TEXT DEFAULT '',
+  personLocation TEXT DEFAULT '',
+  isGivenSet INTEGER DEFAULT 0,
+  peopleLocation TEXT DEFAULT '',
+  consideration TEXT DEFAULT '',
+  eventName TEXT DEFAULT '',
+  eventLocation TEXT DEFAULT '',
+  eventDate TEXT DEFAULT '',
+  eventTime TEXT DEFAULT '',
+  infoBeforeEvent TEXT DEFAULT '',
+  motherNatureConsiderations TEXT DEFAULT '',
+  negativeFunction TEXT DEFAULT '',
+  problemDetails TEXT DEFAULT '',
+  templateName TEXT DEFAULT '',
+  wizardCategory TEXT DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS AttachFileToProject (

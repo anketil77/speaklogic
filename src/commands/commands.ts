@@ -11,7 +11,7 @@ import { saveFlag, getAllFlaggedSelections, deleteFlag } from "@/db/queries/flag
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
-import { saveArticle, getAllArticles, deleteArticle } from "@/db/queries/article";
+import { saveArticle, saveArticleWizard, getAllArticles, deleteArticle } from "@/db/queries/article";
 import { dbg, clearLog } from "@/debug/log";
 import { openInterpretedPrincipleReport } from "@/dialog/utils/reportGenerator";
 
@@ -48,8 +48,10 @@ const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: 25 } as const;
 const ABOUT_DIALOG_SIZE = { height: 27, width: 32 } as const;
 // Create Article dialog: 520×508px → 61% height, 27% width (height % is of Word viewport ~827px, not raw 1080)
 // Picker (260×163px on 1920×1080): width=14%, height≈20% of Word viewport (~827px)
-const CREATE_ARTICLE_PICKER_SIZE = { height: 20, width: 14 } as const;
-const CREATE_ARTICLE_DIALOG_SIZE = { height: 61, width: 27 } as const;
+const CREATE_ARTICLE_PICKER_SIZE        = { height: 20, width: 14 } as const;
+const CREATE_ARTICLE_TEMPLATE_SIZE      = { height: 56, width: 27 } as const; // ~605×520px — fits 460×516 card
+const CREATE_ARTICLE_DIALOG_SIZE        = { height: 61, width: 27 } as const;
+const ARTICLE_WIZARD_SIZE               = { height: 75, width: 27 } as const; // ~810px — tallest step (step 7) needs ~647px
 
 let dbInitialized = false;
 
@@ -1125,10 +1127,15 @@ async function openCreateArticleDialog(event: Office.AddinCommands.Event): Promi
       pickerDialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
 
-        if (m.action === "BLANK_SELECTED" || m.action === "TEMPLATE_SELECTED") {
-          // Close the picker, then open the full article form
+        if (m.action === "BLANK_SELECTED") {
+          // Blank — go straight to the article form
           pickerDialog.close();
           openArticleFormDialog(event, personName, personEmail);
+
+        } else if (m.action === "TEMPLATE_SELECTED") {
+          // Use Template — close picker, open the template picker step
+          pickerDialog.close();
+          openTemplatePickerDialog(event, personName, personEmail);
 
         } else if (m.action === "CLOSE") {
           pickerDialog.close();
@@ -1136,6 +1143,148 @@ async function openCreateArticleDialog(event: Office.AddinCommands.Event): Promi
         }
       });
     }
+  );
+}
+
+/**
+ * Step 1b — open the template picker dialog so the user can choose a template
+ * category and specific template before creating the article.
+ */
+function openTemplatePickerDialog(
+  event:      Office.AddinCommands.Event,
+  personName: string,
+  personEmail: string,
+  attempt     = 0,
+): void {
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=template-picker`,
+    { ...CREATE_ARTICLE_TEMPLATE_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openTemplatePickerDialog(event, personName, personEmail, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const tplDialog = result.value;
+
+      tplDialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        event.completed();
+      });
+
+      tplDialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+
+        switch (m.action) {
+          case "TEMPLATE_CONFIRMED":
+            // User picked a template — close picker, open article wizard
+            tplDialog.close();
+            openArticleWizardDialog(event, personName, personEmail, m.templateName, m.category);
+            break;
+
+          case "BACK":
+            // Go back to entry picker (close template picker, reopen entry picker)
+            tplDialog.close();
+            openCreateArticleDialog(event);
+            break;
+
+          case "CLOSE":
+            tplDialog.close();
+            event.completed();
+            break;
+
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+/**
+ * Step 2 (wizard path) — open the Article Wizard after the user selects a template.
+ * Passes templateName + wizardCategory in the INIT payload so Step 3 can pre-fill category.
+ */
+function openArticleWizardDialog(
+  event:        Office.AddinCommands.Event,
+  personName:   string,
+  personEmail:  string,
+  templateName: string,
+  wizardCategory: string,
+  attempt       = 0,
+): void {
+  const initPayload: DialogInitPayload = {
+    selection:             "",
+    mode:                  "selection",
+    source:                getSource(),
+    personName,
+    personEmail,
+    applicationName:       "",
+    communicationFunction: "",
+    communicationSignal:   "",
+    projectName:           "",
+    peopleList:            [],
+    templateName,
+    wizardCategory,
+  };
+
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=article-wizard`,
+    { ...ARTICLE_WIZARD_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(
+            () => openArticleWizardDialog(event, personName, personEmail, templateName, wizardCategory, attempt + 1),
+            300,
+          );
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+
+      const wzDialog = result.value;
+
+      wzDialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        event.completed();
+      });
+
+      wzDialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+
+        switch (m.action) {
+          case "READY":
+            wzDialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+
+          case "SAVE_ARTICLE_WIZARD": {
+            try {
+              saveArticleWizard({ ...m.payload, personEmail, source: getSource() });
+              wzDialog.messageChild(JSON.stringify({ type: "SAVED" } as HostMessage));
+            } catch (err) {
+              wzDialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+            }
+            break;
+          }
+
+          case "BACK_TO_PICKER":
+            wzDialog.close();
+            openTemplatePickerDialog(event, personName, personEmail);
+            break;
+
+          case "CLOSE":
+            wzDialog.close();
+            event.completed();
+            break;
+
+          default:
+            break;
+        }
+      });
+    },
   );
 }
 
