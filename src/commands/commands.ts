@@ -11,7 +11,7 @@ import { saveFlag, getAllFlaggedSelections, deleteFlag } from "@/db/queries/flag
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
-import { saveArticle } from "@/db/queries/article";
+import { saveArticle, getAllArticles, deleteArticle } from "@/db/queries/article";
 import { dbg, clearLog } from "@/debug/log";
 import { openInterpretedPrincipleReport } from "@/dialog/utils/reportGenerator";
 
@@ -120,7 +120,7 @@ function registerHandlers(): void {
     void openCreateArticleDialog(event)
   );
   Office.actions.associate("listArticles", (event) =>
-    openViewDialogSimple("list-articles", event)
+    void openListArticlesDialog(event)
   );
 }
 
@@ -1102,7 +1102,9 @@ function openViewDialogSimple(
 
 async function openCreateArticleDialog(event: Office.AddinCommands.Event): Promise<void> {
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
-  const { personName, personEmail } = getUserIdentity();
+  const { personName: identityName, personEmail } = getUserIdentity();
+  const commConfig = getCommunicationConfig();
+  const personName = identityName || commConfig?.personName || "";
 
   // ── Step 1: open the small entry picker (260×163px) ───────────────────────
   Office.context.ui.displayDialogAsync(
@@ -1189,6 +1191,63 @@ function openArticleFormDialog(
             }
             dialog.close();
             event.completed();
+            break;
+          }
+          case "CLOSE":
+            dialog.close();
+            event.completed();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+/** Opens the List of Articles full-screen dialog. */
+async function openListArticlesDialog(event: Office.AddinCommands.Event): Promise<void> {
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
+  const { personName, personEmail } = getUserIdentity();
+
+  const initPayload: DialogInitPayload = {
+    selection: "",
+    mode: "selection",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: [],
+    articles: getAllArticles(),
+  };
+
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=list-articles`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        event.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "DELETE_ARTICLE": {
+            try {
+              deleteArticle((m as { action: string; id: number }).id);
+            } catch (err) {
+              dbg("commands", "DELETE_ARTICLE failed", String(err));
+            }
             break;
           }
           case "CLOSE":

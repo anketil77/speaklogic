@@ -46,11 +46,17 @@ export default function CreateArticleView() {
   // ── Content area ────────────────────────────────────────────────────────────
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const handleContentInput = useCallback(() => {
-    const text = contentRef.current?.innerText ?? "";
-    setContentEmpty(!text.trim());
-    setError("");
+  const isContentEmpty = useCallback((el: HTMLDivElement | null): boolean => {
+    if (!el) return true;
+    if (el.innerText.trim()) return false;
+    if (el.querySelector("img, video")) return false;
+    return true;
   }, []);
+
+  const handleContentInput = useCallback(() => {
+    setContentEmpty(isContentEmpty(contentRef.current ?? null));
+    setError("");
+  }, [isContentEmpty]);
 
   // ── Article Editor Panel ─────────────────────────────────────────────────
   const [showEditorPanel, setShowEditorPanel] = useState(false);
@@ -60,12 +66,11 @@ export default function CreateArticleView() {
   const handlePanelSave = useCallback((html: string) => {
     if (contentRef.current) {
       contentRef.current.innerHTML = html;
-      const text = contentRef.current.innerText ?? "";
-      setContentEmpty(!text.trim());
+      setContentEmpty(isContentEmpty(contentRef.current));
       if (error) setError("");
     }
     setShowEditorPanel(false);
-  }, [error]);
+  }, [error, isContentEmpty]);
 
   const handlePanelClose = useCallback(() => setShowEditorPanel(false), []);
 
@@ -78,8 +83,7 @@ export default function CreateArticleView() {
           setError("Article Title is required.");
           return;
         }
-        const plainText = contentRef.current?.innerText?.trim() ?? "";
-        if (!plainText) {
+        if (isContentEmpty(contentRef.current ?? null)) {
           setError("Article Content is required.");
           return;
         }
@@ -97,7 +101,7 @@ export default function CreateArticleView() {
         },
       });
     },
-    [title, category, articleBasisReference, givenSetOn, sendMessage],
+    [title, category, articleBasisReference, givenSetOn, sendMessage, isContentEmpty],
   );
 
   // ── Render ──────────────────────────────────────────────────────────────────

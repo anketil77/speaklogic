@@ -1,0 +1,501 @@
+// src/dialog/components/ViewArticleDialog.tsx
+// Medium/blog-style article viewer.
+// Gradient cover banner → featured image (extracted from content) → title → body → details.
+
+import React, { useCallback } from "react";
+import { createPortal } from "react-dom";
+import { useDraggable } from "@/dialog/hooks/useDraggable";
+import { ArticleHeaderIcon, ArticleCloseIcon } from "@/dialog/components/Icons";
+import { colors } from "@/styles/tokens";
+import type { Article } from "@/types/db";
+
+interface Props {
+  article: Article;
+  onClose: () => void;
+}
+
+// Each category has its own gradient — gives every article a unique visual identity.
+const CATEGORY_GRADIENTS: Record<string, [string, string]> = {
+  Art:            ["#7C3AED", "#4C1D95"],
+  Business:       ["#0078D4", "#003F73"],
+  Technology:     ["#2563EB", "#1E3A8A"],
+  Health:         ["#059669", "#064E3B"],
+  Education:      ["#D97706", "#78350F"],
+  Finance:        ["#0E7490", "#0C4A6E"],
+  Entertainment:  ["#DB2777", "#831843"],
+  Travel:         ["#0891B2", "#164E63"],
+  Food:           ["#EA580C", "#7C2D12"],
+  Fashion:        ["#BE185D", "#500724"],
+  Sports:         ["#16A34A", "#14532D"],
+  Science:        ["#7C3AED", "#3B0764"],
+  Environment:    ["#15803D", "#052E16"],
+  Politics:       ["#DC2626", "#450A0A"],
+};
+
+function getBannerGradient(category?: string | null): string {
+  const pair = category ? CATEGORY_GRADIENTS[category] : null;
+  const [from, to] = pair ?? ["#0078D4", "#003F73"];
+  return `linear-gradient(135deg, ${from} 0%, ${to} 100%)`;
+}
+
+
+function MetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 16,
+        padding: "9px 0",
+        borderBottom: "1px solid #F3F4F6",
+      }}
+    >
+      <div
+        style={{
+          width: 200,
+          minWidth: 200,
+          fontSize: 12.5,
+          color: "#9CA3AF",
+          fontFamily: "Inter, Segoe UI, sans-serif",
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          flex: 1,
+          fontSize: 12.5,
+          fontWeight: 500,
+          color: "#374151",
+          fontFamily: "Inter, Segoe UI, sans-serif",
+          wordBreak: "break-word",
+        }}
+      >
+        {value || <span style={{ color: "#D1D5DB", fontStyle: "italic" }}>—</span>}
+      </div>
+    </div>
+  );
+}
+
+export function ViewArticleDialog({ article, onClose }: Props) {
+  const { pos, onHeaderMouseDown } = useDraggable();
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
+    [onClose]
+  );
+
+  const givenSet = article.isProviderUseGivenSetOfInfo === 1 ? "Yes" : "No";
+  const isDraft = article.isDraft === 1;
+  const authorInitial = (article.personName || "?")[0].toUpperCase();
+  const bannerGradient = getBannerGradient(article.category);
+
+  return createPortal(
+    <>
+      {/* Scrim */}
+      <div
+        style={{ position: "fixed", inset: 0, zIndex: 199, background: "rgba(0,0,0,0.28)" }}
+        onClick={onClose}
+      />
+
+      {/* Dialog */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="View Article"
+        onKeyDown={handleKeyDown}
+        tabIndex={-1}
+        style={{
+          position: "fixed",
+          left: pos.x,
+          top: pos.y,
+          width: 760,
+          maxWidth: "96vw",
+          maxHeight: "90vh",
+          zIndex: 200,
+          background: "#fff",
+          border: "1px solid #E5E7EB",
+          borderRadius: 10,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.22)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          fontFamily: "Inter, Segoe UI, sans-serif",
+        }}
+      >
+        {/* ── Drag header ── */}
+        <div
+          onMouseDown={onHeaderMouseDown}
+          style={{
+            height: 56,
+            minHeight: 56,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 14px",
+            background: "#fff",
+            borderBottom: "1px solid #F3F4F6",
+            cursor: "move",
+            userSelect: "none",
+            gap: 10,
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 6,
+              background: "#EBF3FC",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <ArticleHeaderIcon />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 13.5,
+                fontWeight: 700,
+                color: "#111827",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              View Article
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: "#9CA3AF",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                marginTop: 1,
+              }}
+            >
+              {article.articleTitle || "Untitled Article"}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            title="Close"
+            style={{
+              width: 24,
+              height: 24,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "none",
+              border: "none",
+              borderRadius: 4,
+              cursor: "pointer",
+              flexShrink: 0,
+              padding: 0,
+            }}
+          >
+            <ArticleCloseIcon />
+          </button>
+        </div>
+
+        {/* ── Tab bar ── */}
+        <div
+          style={{
+            height: 34,
+            minHeight: 34,
+            display: "flex",
+            alignItems: "flex-end",
+            padding: "0 16px",
+            borderBottom: "1px solid #F3F4F6",
+            background: "#fff",
+          }}
+        >
+          <div
+            style={{
+              height: 32,
+              display: "flex",
+              alignItems: "center",
+              borderBottom: "2px solid #0078D4",
+              fontSize: 12.4,
+              fontWeight: 600,
+              color: "#0078D4",
+              paddingLeft: 2,
+              paddingRight: 2,
+            }}
+          >
+            About Article
+          </div>
+        </div>
+
+        {/* ── Scrollable body ── */}
+        <div style={{ flex: 1, overflow: "auto", background: "#fff" }}>
+
+          {/* ── Cover banner (reduced height) ── */}
+          <div
+            style={{
+              position: "relative",
+              height: 82,
+              background: bannerGradient,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "flex-end",
+              padding: "0 28px 14px",
+              overflow: "hidden",
+            }}
+          >
+            {/* Decorative circles */}
+            <div
+              style={{
+                position: "absolute",
+                top: -24,
+                right: -24,
+                width: 110,
+                height: 110,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.08)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: 12,
+                right: 72,
+                width: 50,
+                height: 50,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.05)",
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Category + Draft tags */}
+            <div style={{ display: "flex", gap: 6, position: "relative" }}>
+              {article.category ? (
+                <span
+                  style={{
+                    background: "rgba(255,255,255,0.2)",
+                    color: "#fff",
+                    borderRadius: 20,
+                    padding: "3px 11px",
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    border: "1px solid rgba(255,255,255,0.3)",
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  {article.category}
+                </span>
+              ) : null}
+              {isDraft ? (
+                <span
+                  style={{
+                    background: "rgba(254,240,138,0.2)",
+                    color: "#FEF08A",
+                    borderRadius: 20,
+                    padding: "3px 11px",
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    border: "1px solid rgba(254,240,138,0.35)",
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  DRAFT
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          {/* ── Article layout ── */}
+          <div style={{ padding: "22px 28px 32px" }}>
+
+            {/* Source chip */}
+            {article.source ? (
+              <div style={{ marginBottom: 14 }}>
+                <span
+                  style={{
+                    background: "#EBF3FC",
+                    color: "#0057A0",
+                    borderRadius: 4,
+                    padding: "3px 10px",
+                    fontSize: 11.5,
+                    fontWeight: 500,
+                  }}
+                >
+                  {article.source}
+                </span>
+              </div>
+            ) : null}
+
+            {/* Title */}
+            <div
+              style={{
+                fontSize: 26,
+                fontWeight: 800,
+                color: "#0F1419",
+                lineHeight: "1.22",
+                letterSpacing: "-0.5px",
+                marginBottom: 16,
+                wordBreak: "break-word",
+              }}
+            >
+              {article.articleTitle || (
+                <span style={{ color: "#D1D5DB", fontStyle: "italic", fontWeight: 400 }}>
+                  Untitled Article
+                </span>
+              )}
+            </div>
+
+            {/* Author + date */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 20,
+                paddingBottom: 20,
+                borderBottom: "1px solid #F3F4F6",
+              }}
+            >
+              <div
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  background: bannerGradient,
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+                }}
+              >
+                {authorInitial}
+              </div>
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: "#111827", lineHeight: "18px" }}>
+                  {article.personName || "—"}
+                </div>
+                {(article.articleDate || article.articleTime) ? (
+                  <div style={{ fontSize: 12, color: "#9CA3AF", lineHeight: "16px", marginTop: 2 }}>
+                    {[article.articleDate, article.articleTime].filter(Boolean).join("  ·  ")}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Article body — full content rendered as-is, images included */}
+            <style>
+              {`
+                .sl-article-content { font-size: 15px; line-height: 1.8; color: #374151; word-break: break-word; }
+                .sl-article-content p { margin: 0 0 14px; }
+                .sl-article-content img { max-width: 100% !important; height: auto !important; display: block; margin: 14px 0; border-radius: 6px; }
+                .sl-article-content video { max-width: 100%; }
+                .sl-article-content h1, .sl-article-content h2, .sl-article-content h3 { color: #0F1419; margin: 20px 0 8px; line-height: 1.25; }
+                .sl-article-content h1 { font-size: 22px; }
+                .sl-article-content h2 { font-size: 18px; }
+                .sl-article-content h3 { font-size: 16px; }
+                .sl-article-content blockquote { border-left: 3px solid #0078D4; margin: 0 0 14px; padding: 6px 16px; color: #6B7280; font-style: italic; background: #F8FAFF; border-radius: 0 4px 4px 0; }
+                .sl-article-content a { color: #0078D4; }
+                .sl-article-content ul, .sl-article-content ol { padding-left: 22px; margin: 0 0 14px; }
+                .sl-article-content li { margin-bottom: 5px; }
+                .sl-article-content pre { background: #F3F4F6; border-radius: 4px; padding: 10px 14px; overflow-x: auto; font-size: 13px; margin: 0 0 14px; }
+              `}
+            </style>
+
+            {article.articleContent ? (
+              <div
+                className="sl-article-content"
+                // eslint-disable-next-line react/no-danger
+                dangerouslySetInnerHTML={{ __html: article.articleContent }}
+              />
+            ) : (
+              <div style={{ textAlign: "center", padding: "36px 0", color: "#D1D5DB" }}>
+                <svg
+                  width="38"
+                  height="38"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                  style={{ display: "block", margin: "0 auto 10px" }}
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+                <div style={{ fontSize: 13, fontStyle: "italic" }}>No content written for this article.</div>
+              </div>
+            )}
+
+            {/* ── Article Details ── */}
+            <div style={{ marginTop: 28, paddingTop: 20, borderTop: "1px solid #F3F4F6" }}>
+              <div
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: "#C4CAC7",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.9px",
+                  marginBottom: 4,
+                }}
+              >
+                Article Details
+              </div>
+              <MetaRow
+                label="Article Number"
+                value={article.articleNumber ? String(article.articleNumber) : ""}
+              />
+              <MetaRow label="Provider Uses Given Set?" value={givenSet} />
+              {article.articleBasisReference ? (
+                <MetaRow label="Article Basis Reference" value={article.articleBasisReference} />
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Footer ── */}
+        <div
+          style={{
+            height: 52,
+            minHeight: 52,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            padding: "0 20px",
+            borderTop: "1px solid #F3F4F6",
+            background: "#fff",
+          }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              height: 28,
+              padding: "0 16px",
+              background: "#fff",
+              border: `1px solid ${colors.grey88}`,
+              borderRadius: 4,
+              cursor: "pointer",
+              fontSize: 12.4,
+              fontWeight: 600,
+              color: colors.grey38,
+              fontFamily: "inherit",
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}

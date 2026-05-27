@@ -2,6 +2,32 @@
 
 import React from "react";
 
+/** 18×18 open-book / articles icon for the ListArticlesView header badge. */
+export function ListArticlesHeaderIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Left page */}
+      <path d="M9 4V15C9 15 6.5 13.5 3 14V3C6.5 2 9 4 9 4Z" stroke="#0078D4" strokeWidth="1.2" strokeLinejoin="round" fill="none" />
+      {/* Right page */}
+      <path d="M9 4V15C9 15 11.5 13.5 15 14V3C11.5 2 9 4 9 4Z" stroke="#0078D4" strokeWidth="1.2" strokeLinejoin="round" fill="none" />
+      {/* Left text lines */}
+      <line x1="5" y1="6.5" x2="8" y2="6" stroke="#0078D4" strokeWidth="0.9" strokeLinecap="round" />
+      <line x1="5" y1="8.5" x2="8" y2="8" stroke="#0078D4" strokeWidth="0.9" strokeLinecap="round" />
+      <line x1="5" y1="10.5" x2="8" y2="10" stroke="#0078D4" strokeWidth="0.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** 16×16 "view article" eye icon (white, for primary button). */
+export function ViewArticleIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 6.5C1 6.5 3 2.5 6.5 2.5C10 2.5 12 6.5 12 6.5C12 6.5 10 10.5 6.5 10.5C3 10.5 1 6.5 1 6.5Z" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="6.5" cy="6.5" r="1.8" stroke="white" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 export function ArticleHeaderIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">

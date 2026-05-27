@@ -32,6 +32,7 @@ import AboutView from "@/dialog/views/AboutView";
 // WebView2 caches the chunks after first use, so subsequent opens are instant.
 const CreateArticleView       = lazy(() => import("@/dialog/views/CreateArticleView"));
 const CreateArticlePickerView = lazy(() => import("@/dialog/views/CreateArticlePickerView"));
+const ListArticlesView        = lazy(() => import("@/dialog/views/ListArticlesView"));
 const ApplyFeedbackView = lazy(() => import("@/dialog/views/feedback/ApplyFeedbackView"));
 const ProvideFeedbackView = lazy(() => import("@/dialog/views/feedback/ProvideFeedbackView"));
 const AnalysisHistoryView = lazy(() => import("@/dialog/views/AnalysisHistoryView"));
@@ -141,6 +142,8 @@ function DialogApp() {
         return <CreateArticlePickerView />;
       case "create-article":
         return <CreateArticleView />;
+      case "list-articles":
+        return <ListArticlesView />;
       case "about":
         return <AboutView />;
       case "analysis-history":

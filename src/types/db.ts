@@ -551,6 +551,7 @@ export interface DialogInitPayload {
   flaggedEntities?: FlagEntityForAnalysis[];
   principleInterpretations?: PrincipleInterpretation[];
   filesByInterpretationId?: Record<number, AttachFileToProject[]>;
+  articles?: Article[];
 }
 
 export interface SaveFeedbackPayload {
@@ -612,7 +613,8 @@ export type DialogAction =
   | { action: "SAVE_PRINCIPLE_IN_SELECTION"; payload: SavePrincipleInSelectionPayload }
   | { action: "SAVE_ARTICLE"; payload: SaveArticlePayload }
   | { action: "BLANK_SELECTED" }
-  | { action: "TEMPLATE_SELECTED" };
+  | { action: "TEMPLATE_SELECTED" }
+  | { action: "DELETE_ARTICLE"; id: number };
 
 export interface SaveRelatedSelectionPayload {
   record: Omit<SelectionWithPrinciple, "id">;
