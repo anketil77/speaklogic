@@ -158,23 +158,6 @@ export default function CreateArticleView() {
           overflowY: "auto",
         }}
       >
-        {/* Error bar */}
-        {error && (
-          <div
-            style={{
-              background: "#FFF4CE",
-              border: "1px solid #F0C808",
-              borderRadius: 4,
-              padding: "6px 10px",
-              fontSize: 11,
-              color: "#1B1B1B",
-              flexShrink: 0,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
         {/* ── Title + Category card ── */}
         <div
           style={{
@@ -197,7 +180,9 @@ export default function CreateArticleView() {
               alignItems: "flex-start",
               padding: "1px 0px 12px",
               width: "100%",
-              borderBottom: "1px solid #F0F0F0",
+              borderBottom: error.includes("Title")
+                ? "1.5px solid #D13438"
+                : "1px solid #F0F0F0",
             }}
           >
             <input
@@ -484,7 +469,9 @@ export default function CreateArticleView() {
                 boxSizing: "border-box",
                 padding: "12px 11px",
                 minHeight: 121,
-                border: "1px solid #E0E0E0",
+                border: error.includes("Content")
+                  ? "1.5px solid #D13438"
+                  : "1px solid #E0E0E0",
                 borderRadius: 6,
                 fontSize: 11.1,
                 lineHeight: "15px",
@@ -504,7 +491,7 @@ export default function CreateArticleView() {
         style={{
           display: "flex",
           flexDirection: "row",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
           alignItems: "center",
           padding: "10px 16px",
           gap: 8,
@@ -512,6 +499,34 @@ export default function CreateArticleView() {
           flexShrink: 0,
         }}
       >
+        {/* ── Error indicator (bottom-left) ── */}
+        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+          {error && (
+            <>
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M6.5 1.5L12 11.5H1L6.5 1.5Z" stroke="#D13438" strokeWidth="1.2" strokeLinejoin="round"/>
+                <path d="M6.5 5.5V8" stroke="#D13438" strokeWidth="1.3" strokeLinecap="round"/>
+                <circle cx="6.5" cy="10" r="0.7" fill="#D13438"/>
+              </svg>
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  lineHeight: "13px",
+                  color: "#D13438",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {error}
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* ── Action buttons (bottom-right) ── */}
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
         <button
           onClick={() => handleSave(1)}
           onMouseEnter={() => setDraftHover(true)}
@@ -560,6 +575,7 @@ export default function CreateArticleView() {
         >
           Save Article
         </button>
+        </div>{/* end buttons wrapper */}
       </div>
 
       {/* ── Category picker portal ── */}
