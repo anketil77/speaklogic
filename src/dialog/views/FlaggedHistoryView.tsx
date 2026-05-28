@@ -12,7 +12,7 @@ import { RelateSelectionWithPrincipleDialog } from "@/dialog/components/RelateSe
 import { IdentifyPrincipleInSelectionDialog } from "@/dialog/components/IdentifyPrincipleInSelectionDialog";
 import {
   FlaggedHistoryHeaderIcon,
-  ViewSelectionCmdIcon,
+
   AnalyzeSelectionCmdIcon,
   DeleteSelectionIcon,
   ApplySelectionFeedbackIcon,
@@ -284,7 +284,6 @@ export default function FlaggedHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ViewSelectionCmdIcon />
           View This Selection
         </button>
 

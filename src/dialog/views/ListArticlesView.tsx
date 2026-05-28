@@ -8,7 +8,7 @@ import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { ViewArticleDialog } from "@/dialog/components/ViewArticleDialog";
 import {
   ListArticlesHeaderIcon,
-  ViewArticleIcon,
+
   DeleteSelectedIcon,
   EditSelectedAnalysisIcon,
   FilterFunnelIcon,
@@ -281,7 +281,6 @@ export default function ListArticlesView() {
             flexShrink: 0,
           }}
         >
-          <ViewArticleIcon />
           View Selected Article
         </button>
 

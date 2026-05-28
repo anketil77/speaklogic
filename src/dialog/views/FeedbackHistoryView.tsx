@@ -18,7 +18,7 @@ import {
   FbHistoryListRequestedIcon,
   FbHistoryListAppliedIcon,
   FbHistoryListProvidedIcon,
-  FbHistoryViewSelectedIcon,
+
   FbHistoryViewReportIcon,
 } from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
@@ -277,7 +277,6 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <FbHistoryViewSelectedIcon />
           View Selected Feedback
         </button>
 

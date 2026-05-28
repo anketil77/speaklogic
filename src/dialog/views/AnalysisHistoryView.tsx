@@ -8,7 +8,7 @@ import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import { ViewAnalysisDialog } from "@/dialog/components/ViewAnalysisDialog";
 import {
   AnalysisHistoryHeaderIcon,
-  ViewSelectedIcon,
+
   SmallCaretDownIcon,
   DeleteSelectedIcon,
   EditSelectedAnalysisIcon,
@@ -267,7 +267,6 @@ export default function AnalysisHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ViewSelectedIcon />
           View Selected Analysis
           <SmallCaretDownIcon color="white" />
         </button>

@@ -7,7 +7,7 @@ import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { ViewAnalysisDialog } from "@/dialog/components/ViewAnalysisDialog";
 import {
   AnalysisHistoryHeaderIcon,
-  ViewSelectedIcon,
+
   SmallCaretDownIcon,
   DeleteSelectedIcon,
   EditSelectedAnalysisIcon,
@@ -267,7 +267,6 @@ export default function RetainedHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ViewSelectedIcon />
           View Selected Analysis
         </button>
 
