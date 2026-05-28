@@ -39,6 +39,162 @@ function getBannerGradient(category?: string | null): string {
 }
 
 
+// ─── WizardContent ────────────────────────────────────────────────────────────
+
+function WizardSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <div style={{
+        fontSize: 10.5, fontWeight: 700, color: "#9CA3AF", textTransform: "uppercase" as const,
+        letterSpacing: "0.9px", marginBottom: 10,
+      }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function WizardField({ label, value, html }: { label: string; value?: string | null; html?: boolean }) {
+  if (!value) return null;
+  return (
+    <div style={{ display: "flex", gap: 16, padding: "8px 0", borderBottom: "1px solid #F3F4F6" }}>
+      <div style={{ width: 200, minWidth: 200, fontSize: 12.5, color: "#9CA3AF", flexShrink: 0 }}>{label}</div>
+      {html ? (
+        <div
+          className="sl-article-content"
+          style={{ flex: 1, fontSize: 14 }}
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: value }}
+        />
+      ) : (
+        <div style={{ flex: 1, fontSize: 12.5, fontWeight: 500, color: "#374151", wordBreak: "break-word" }}>{value}</div>
+      )}
+    </div>
+  );
+}
+
+function WizardContent({ article }: { article: Article }) {
+  const isProduct = (article.wizardCategory ?? "").toLowerCase().includes("product");
+
+  const hasEvent    = article.eventName || article.eventLocation || article.eventDate;
+  const hasGivenSet = article.peopleLocation || article.consideration || article.articleBasisReference;
+  const hasContent  = article.motherNatureConsiderations || article.negativeFunction ||
+                      article.problemDetails || article.funcExecuteFromEvent || article.relationshipDetails;
+  const hasObs      = article.preEventObservation || article.postEventObservation;
+  const hasProvider = article.providerName || article.reviewerName;
+  const hasProduct  = article.productName || article.modelNumber || article.productType || article.productFunction;
+  const hasReview   = article.functionExecutedDuringReview;
+  const hasAdditional = article.additionalInformation || article.productURL;
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      {/* Template label */}
+      <div style={{ marginBottom: 18, display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{
+          background: "#EBF3FC", color: "#0057A0", borderRadius: 4,
+          padding: "3px 10px", fontSize: 11.5, fontWeight: 500,
+        }}>
+          {article.templateName}
+        </span>
+      </div>
+
+      {/* Provider (non-product) */}
+      {!isProduct && hasProvider && (
+        <WizardSection title="Provider Information">
+          <WizardField label="Provider Name"  value={article.providerName} />
+          <WizardField label="Reviewer Name"  value={article.reviewerName} />
+          <WizardField label="Uses Given Set" value={article.isGivenSet === 1 ? "Yes" : article.isGivenSet === 0 ? "No" : null} />
+        </WizardSection>
+      )}
+
+      {/* Given Set */}
+      {!isProduct && hasGivenSet && (
+        <WizardSection title="Given Set">
+          <WizardField label="Basis Reference"  value={article.articleBasisReference} />
+          <WizardField label="People Location"  value={article.peopleLocation} />
+          <WizardField label="Consideration"    value={article.consideration} />
+        </WizardSection>
+      )}
+
+      {/* Event */}
+      {!isProduct && hasEvent && (
+        <WizardSection title="Event">
+          <WizardField label="Event Name"     value={article.eventName} />
+          <WizardField label="Event Location" value={article.eventLocation} />
+          <WizardField label="Event Date"     value={[article.eventDate, article.eventTime].filter(Boolean).join("  ·  ")} />
+        </WizardSection>
+      )}
+
+      {/* Pre/Post observations (Sport Template 1) */}
+      {hasObs && (
+        <WizardSection title="Observations">
+          <WizardField label="Pre-event Observation"  value={article.preEventObservation} />
+          <WizardField label="Post-event Observation" value={article.postEventObservation} />
+        </WizardSection>
+      )}
+
+      {/* Info before event */}
+      {article.infoBeforeEvent && (
+        <WizardSection title="Information Before Event">
+          <div
+            className="sl-article-content"
+            style={{ fontSize: 14, paddingBottom: 4 }}
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: article.infoBeforeEvent }}
+          />
+        </WizardSection>
+      )}
+
+      {/* Content sections */}
+      {hasContent && (
+        <WizardSection title="Content">
+          <WizardField label="Mother Nature Considerations" value={article.motherNatureConsiderations} />
+          <WizardField label="Negative Function Executed"  value={article.negativeFunction} />
+          <WizardField label="Problem Developed"           value={article.problemDetails} />
+          <WizardField label="Function Executed from Event" value={article.funcExecuteFromEvent} />
+          <WizardField label="Relationship"                value={article.relationshipDetails} />
+        </WizardSection>
+      )}
+
+      {/* Product Review fields */}
+      {isProduct && (hasProvider || article.isProviderUseGivenSetOfInfo1 !== undefined) && (
+        <WizardSection title="Provider Information">
+          <WizardField label="Provider Name"     value={article.providerName} />
+          <WizardField label="Reviewer Name"     value={article.reviewerName} />
+          <WizardField label="Uses Given Set"    value={article.isProviderUseGivenSetOfInfo1 === 1 ? "Yes" : "No"} />
+        </WizardSection>
+      )}
+
+      {isProduct && hasProduct && (
+        <WizardSection title="Product Details">
+          <WizardField label="Product Name"     value={article.productName} />
+          <WizardField label="Model Number"     value={article.modelNumber} />
+          <WizardField label="Product Type"     value={article.productType} />
+          <WizardField label="Product Function" value={article.productFunction} />
+          <WizardField label="Problem Solved"   value={article.problemSolved} />
+        </WizardSection>
+      )}
+
+      {isProduct && hasReview && (
+        <WizardSection title="Review">
+          <WizardField label="Function During Review" value={article.functionExecutedDuringReview} />
+          <WizardField label="Problem Solved by Product" value={article.isSolvedProblem === 1 ? "Yes" : article.isSolvedProblem === 0 ? "No" : null} />
+        </WizardSection>
+      )}
+
+      {isProduct && hasAdditional && (
+        <WizardSection title="Additional Information">
+          <WizardField label="Additional Information" value={article.additionalInformation} />
+          <WizardField label="Product URL"            value={article.productURL} />
+        </WizardSection>
+      )}
+    </div>
+  );
+}
+
+// ─── MetaRow ──────────────────────────────────────────────────────────────────
+
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div
@@ -391,7 +547,7 @@ export function ViewArticleDialog({ article, onClose }: Props) {
               </div>
             </div>
 
-            {/* Article body — full content rendered as-is, images included */}
+            {/* Article body */}
             <style>
               {`
                 .sl-article-content { font-size: 15px; line-height: 1.8; color: #374151; word-break: break-word; }
@@ -416,17 +572,9 @@ export function ViewArticleDialog({ article, onClose }: Props) {
                 // eslint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: article.articleContent }}
               />
-            ) : (
+            ) : !article.templateName ? (
               <div style={{ textAlign: "center", padding: "36px 0", color: "#D1D5DB" }}>
-                <svg
-                  width="38"
-                  height="38"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.2"
-                  style={{ display: "block", margin: "0 auto 10px" }}
-                >
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ display: "block", margin: "0 auto 10px" }}>
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                   <line x1="16" y1="13" x2="8" y2="13" />
@@ -435,7 +583,10 @@ export function ViewArticleDialog({ article, onClose }: Props) {
                 </svg>
                 <div style={{ fontSize: 13, fontStyle: "italic" }}>No content written for this article.</div>
               </div>
-            )}
+            ) : null}
+
+            {/* Wizard content sections — shown for template-based articles */}
+            {article.templateName && <WizardContent article={article} />}
 
             {/* ── Article Details ── */}
             <div style={{ marginTop: 28, paddingTop: 20, borderTop: "1px solid #F3F4F6" }}>

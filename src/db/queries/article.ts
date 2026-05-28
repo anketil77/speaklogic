@@ -44,11 +44,7 @@ export function saveArticle(
 export function getAllArticles(): Article[] {
   const db = getDb();
   const result = db.exec(
-    `SELECT id, articleTitle, articleContent, articleDate, articleTime,
-            personName, personEmail, source, articleNumber,
-            isProviderUseGivenSetOfInfo, category, articleBasisReference, isDraft
-     FROM Article
-     ORDER BY articleDate DESC, articleTime DESC`
+    `SELECT * FROM Article ORDER BY articleDate DESC, articleTime DESC`
   );
   if (!result.length || !result[0].values.length) return [];
   const cols = result[0].columns;
@@ -61,13 +57,7 @@ export function getAllArticles(): Article[] {
 
 export function getArticleById(id: number): Article | null {
   const db = getDb();
-  const result = db.exec(
-    `SELECT id, articleTitle, articleContent, articleDate, articleTime,
-            personName, personEmail, source, articleNumber,
-            isProviderUseGivenSetOfInfo, category, articleBasisReference, isDraft
-     FROM Article WHERE id = ?`,
-    [id]
-  );
+  const result = db.exec(`SELECT * FROM Article WHERE id = ?`, [id]);
   if (!result.length || !result[0].values.length) return null;
   const cols = result[0].columns;
   const row = result[0].values[0];

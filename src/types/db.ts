@@ -193,7 +193,7 @@ export interface Article {
   category?: string;
   articleBasisReference?: string;
   isDraft?: 0 | 1;
-  // Wizard-specific fields (Template 1 and future templates)
+  // Wizard-specific fields
   providerName?: string;
   personLocation?: string;
   isGivenSet?: 0 | 1;
@@ -210,6 +210,20 @@ export interface Article {
   relationshipDetails?: string;
   templateName?: string;
   wizardCategory?: string;
+  funcExecuteFromEvent?: string;
+  preEventObservation?: string;
+  postEventObservation?: string;
+  isProviderUseGivenSetOfInfo1?: 0 | 1;
+  productName?: string;
+  modelNumber?: string;
+  productType?: string;
+  productFunction?: string;
+  problemSolved?: string;
+  functionExecutedDuringReview?: string;
+  isSolvedProblem?: 0 | 1;
+  additionalInformation?: string;
+  productURL?: string;
+  reviewerName?: string;
 }
 
 export interface SaveArticlePayload {
