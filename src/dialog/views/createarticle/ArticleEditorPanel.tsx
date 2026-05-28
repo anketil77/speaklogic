@@ -336,13 +336,19 @@ export function ArticleEditorPanel({
   const handleImgLoad = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    restoreSelection();
-    // Insert as HTML so we can constrain max-width — prevents horizontal scroll
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    document.execCommand("insertHTML", false, `<img src="${url}" style="max-width:100%;height:auto;display:block;" alt="" />`);
-    editorRef.current?.focus();
     e.target.value = "";
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const dataUrl = evt.target?.result as string;
+      if (!dataUrl) return;
+      restoreSelection();
+      // Insert as HTML so we can constrain max-width — prevents horizontal scroll.
+      // Use data URL (base64) not blob URL — blob URLs expire with the session.
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      document.execCommand("insertHTML", false, `<img src="${dataUrl}" style="max-width:100%;height:auto;display:block;" alt="" />`);
+      editorRef.current?.focus();
+    };
+    reader.readAsDataURL(file);
   }, [restoreSelection]);
 
   // ── Button / separator helpers ────────────────────────────────────────────

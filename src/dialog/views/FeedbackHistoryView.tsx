@@ -10,8 +10,8 @@ import {
   FeedbackHistoryHeaderIcon,
   ViewSelectedIcon,
   SmallCaretDownIcon,
-  DeleteSelectedIcon,
-  EditSelectedAnalysisIcon,
+  CmdDeleteFeedbackIcon,
+  CmdEditFeedbackIcon,
   ProvideFeedbackAnalysisIcon,
   FlagAnalysisCommunicationIcon,
   FilterFunnelIcon,
@@ -303,7 +303,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <DeleteSelectedIcon />
+          <CmdDeleteFeedbackIcon />
         </button>
 
         {/* Edit Selected Feedback (info-only) */}
@@ -326,7 +326,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <EditSelectedAnalysisIcon />
+          <CmdEditFeedbackIcon />
         </button>
 
         <CmdSepBar />
