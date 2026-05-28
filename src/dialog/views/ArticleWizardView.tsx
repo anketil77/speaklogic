@@ -1,30 +1,29 @@
 // src/dialog/views/ArticleWizardView.tsx
 //
 // Main container for the Article Creation Wizard (?view=article-wizard).
-// Manages step state (3–8) and WizardData, renders the shared header +
-// WizardStepBar + the active step component.
+// Step routing is template-driven via getTemplateSequence() — supports all 9 templates.
 //
 // Communication pattern:
-//   Step 7 Finish → sendMessage(SAVE_ARTICLE_WIZARD) → host saves → sends SAVED
-//   SAVED received → advance to Step 8 (Done screen)
-//   Back on Step 3 → sendMessage(BACK_TO_PICKER) → host reopens template picker
-//   Cancel (any step) / Close (Step 8) → sendMessage(CLOSE)
+//   Last step Finish → sendMessage(SAVE_ARTICLE_WIZARD) → host saves → sends SAVED → Done screen
+//   Back on first step → sendMessage(BACK_TO_PICKER) → host reopens template picker
+//   Cancel (any step) / Close (Done screen) → sendMessage(CLOSE)
 
-import React, { useCallback, useEffect, useReducer, useState } from "react";
-import { useDialogComm }   from "@/dialog/hooks/useDialogComm";
-import { WizardStepBar }   from "./createarticle/wizard/WizardStepBar";
-import { Step3Article }    from "./createarticle/wizard/steps/Step3Article";
-import { Step4GivenSet }   from "./createarticle/wizard/steps/Step4GivenSet";
-import { Step5Event }      from "./createarticle/wizard/steps/Step5Event";
-import { Step6Info }       from "./createarticle/wizard/steps/Step6Info";
-import { Step7Content }    from "./createarticle/wizard/steps/Step7Content";
-import { Step8Done }       from "./createarticle/wizard/steps/Step8Done";
-import {
-  INITIAL_WIZARD_DATA,
-  WIZARD_FIRST_EDITABLE_STEP,
-  WIZARD_DONE_STEP,
-} from "./createarticle/wizard/wizardTypes";
-import type { WizardData, StepProps } from "./createarticle/wizard/wizardTypes";
+import React, { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useDialogComm }       from "@/dialog/hooks/useDialogComm";
+import { WizardStepBar }       from "./createarticle/wizard/WizardStepBar";
+import { Step3Article }        from "./createarticle/wizard/steps/Step3Article";
+import { Step4GivenSet }       from "./createarticle/wizard/steps/Step4GivenSet";
+import { Step5Event }          from "./createarticle/wizard/steps/Step5Event";
+import { Step6Info }           from "./createarticle/wizard/steps/Step6Info";
+import { Step7Content }        from "./createarticle/wizard/steps/Step7Content";
+import { Step8Done }           from "./createarticle/wizard/steps/Step8Done";
+import { StepPrePostObs }      from "./createarticle/wizard/steps/StepPrePostObs";
+import { StepProductProvider } from "./createarticle/wizard/steps/StepProductProvider";
+import { StepFuncDuringReview }from "./createarticle/wizard/steps/StepFuncDuringReview";
+import { StepAdditionalInfo }  from "./createarticle/wizard/steps/StepAdditionalInfo";
+import { getTemplateSequence } from "./createarticle/wizard/templateSequences";
+import { INITIAL_WIZARD_DATA } from "./createarticle/wizard/wizardTypes";
+import type { WizardData, StepProps, StepId } from "./createarticle/wizard/wizardTypes";
 import type { SaveArticleWizardPayload } from "@/types/db";
 
 // ─── Reducer ─────────────────────────────────────────────────────────────────
@@ -39,15 +38,15 @@ function WizardHeader({ title }: { title: string }) {
   return (
     <div
       style={{
-        display:        "flex",
-        flexDirection:  "row",
-        alignItems:     "center",
-        padding:        "0 16px",
-        height:         42,
-        background:     "#FFFFFF",
-        borderBottom:   "1px solid #E0E0E0",
-        flexShrink:     0,
-        boxSizing:      "border-box",
+        display:       "flex",
+        flexDirection: "row",
+        alignItems:    "center",
+        padding:       "0 16px",
+        height:        42,
+        background:    "#FFFFFF",
+        borderBottom:  "1px solid #E0E0E0",
+        flexShrink:    0,
+        boxSizing:     "border-box",
       }}
     >
       <span
@@ -70,27 +69,32 @@ function WizardHeader({ title }: { title: string }) {
 export default function ArticleWizardView() {
   const { initData, sendMessage } = useDialogComm();
 
-  const [step, setStep]      = useState(WIZARD_FIRST_EDITABLE_STEP);   // 3–8
-  const [data, dispatch]     = useReducer(wizardDataReducer, {
+  const [stepIdx, setStepIdx] = useState(0);
+  const [data, dispatch]      = useReducer(wizardDataReducer, {
     ...INITIAL_WIZARD_DATA,
-    // Pre-fill category from template picker if provided
     category: initData?.wizardCategory ?? "",
   });
 
-  // Pre-fill templateName / wizardCategory once initData arrives
   useEffect(() => {
-    if (initData?.wizardCategory) {
-      dispatch({ category: initData.wizardCategory });
-    }
+    if (initData?.wizardCategory) dispatch({ category: initData.wizardCategory });
   }, [initData?.wizardCategory]);
 
   const onChange = useCallback((patch: Partial<WizardData>) => dispatch(patch), []);
 
+  // Derive sequence once per template (initData won't change mid-wizard)
+  const { steps, contentConfig } = useMemo(
+    () => getTemplateSequence(initData?.templateName ?? "", initData?.wizardCategory ?? ""),
+    [initData?.templateName, initData?.wizardCategory]
+  );
+
   // ── Navigation ──────────────────────────────────────────────────────────────
 
   const handleNext = useCallback(() => {
-    if (step === 5) {
-      // Finish — send payload to host
+    const currentId: StepId = steps[stepIdx]?.id;
+
+    // Last real step before "done" — send save payload
+    const doneIdx = steps.findIndex((s) => s.id === "done");
+    if (stepIdx === doneIdx - 1) {
       const payload: SaveArticleWizardPayload = {
         articleTitle:               data.articleTitle,
         category:                   data.category,
@@ -112,56 +116,68 @@ export default function ArticleWizardView() {
         relationshipDetails:        data.relationshipDetails,
         templateName:               initData?.templateName  ?? "",
         wizardCategory:             initData?.wizardCategory ?? data.category,
+        funcExecuteFromEvent:       data.funcExecuteFromEvent,
+        preEventObservation:        data.preEventObservation,
+        postEventObservation:       data.postEventObservation,
+        isProviderUseGivenSetOfInfo1: data.isProviderUseGivenSetOfInfo1 ? 1 : 0,
+        productName:                data.productName,
+        modelNumber:                data.modelNumber,
+        productType:                data.productType,
+        productFunction:            data.productFunction,
+        problemSolved:              data.problemSolved,
+        functionExecutedDuringReview: data.functionExecutedDuringReview,
+        isSolvedProblem:            data.isSolvedProblem ? 1 : 0,
+        additionalInformation:      data.additionalInformation,
+        productURL:                 data.productURL,
+        reviewerName:               data.reviewerName,
       };
       sendMessage({ action: "SAVE_ARTICLE_WIZARD", payload });
-      // Host will send SAVED → handled by index.tsx SAVED case.
-      // We advance to Done here optimistically (host confirms via SAVED).
-      setStep(WIZARD_DONE_STEP);
-    } else {
-      setStep((s) => s + 1);
+      setStepIdx(doneIdx);
+      return;
     }
-  }, [step, data, initData, sendMessage]);
+
+    // "done" step — Close button handled by handleClose, not Next
+    if (currentId !== "done") {
+      setStepIdx((i) => i + 1);
+    }
+  }, [stepIdx, steps, data, initData, sendMessage]);
 
   const handleBack = useCallback(() => {
-    if (step === WIZARD_FIRST_EDITABLE_STEP) {
-      // Back from step 3 → back to template picker
+    if (stepIdx === 0) {
       sendMessage({ action: "BACK_TO_PICKER" });
     } else {
-      setStep((s) => s - 1);
+      setStepIdx((i) => i - 1);
     }
-  }, [step, sendMessage]);
+  }, [stepIdx, sendMessage]);
 
-  const handleCancel = useCallback(() => {
-    sendMessage({ action: "CLOSE" });
-  }, [sendMessage]);
+  const handleCancel = useCallback(() => sendMessage({ action: "CLOSE" }), [sendMessage]);
+  const handleClose  = useCallback(() => sendMessage({ action: "CLOSE" }), [sendMessage]);
 
-  const handleClose = useCallback(() => {
-    sendMessage({ action: "CLOSE" });
-  }, [sendMessage]);
-
-  // ── Resolve active step component ───────────────────────────────────────────
+  // ── Step renderer ──────────────────────────────────────────────────────────
 
   const stepProps: StepProps = { data, onChange, onNext: handleNext, onBack: handleBack, onCancel: handleCancel };
 
-  const renderStep = () => {
-    switch (step) {
-      case 1:  return <Step3Article  {...stepProps} />;
-      case 2:  return <Step4GivenSet {...stepProps} />;
-      case 3:  return <Step5Event    {...stepProps} />;
-      case 4:  return <Step6Info     {...stepProps} />;
-      case 5:  return <Step7Content  {...stepProps} />;
-      case 6:  return <Step8Done data={data} onClose={handleClose} />;
-      default: return null;
-    }
-  };
+  const currentId: StepId = steps[stepIdx]?.id ?? "done";
+  const isLastBeforeDone   = stepIdx === steps.findIndex((s) => s.id === "done") - 1;
 
-  const stepTitles: Record<number, string> = {
-    1: "Create Article",
-    2: "Create Article",
-    3: "Create Article",
-    4: "Create Article",
-    5: "Create Article",
-    6: "Create Article",
+  const renderStep = () => {
+    switch (currentId) {
+      case "article":         return <Step3Article        {...stepProps} />;
+      case "givenSet":        return <Step4GivenSet       {...stepProps} />;
+      case "event":           return <Step5Event          {...stepProps} />;
+      case "info":            return <Step6Info           {...stepProps} />;
+      case "prePostObs":      return <StepPrePostObs      {...stepProps} />;
+      case "content":
+        return contentConfig
+          ? <Step7Content {...stepProps} config={contentConfig} isFinish={isLastBeforeDone} />
+          : null;
+      case "productProvider": return <StepProductProvider {...stepProps} />;
+      case "productArticle":  return <Step3Article        {...stepProps} />;
+      case "funcReview":      return <StepFuncDuringReview {...stepProps} />;
+      case "additionalInfo":  return <StepAdditionalInfo  {...stepProps} />;
+      case "done":            return <Step8Done data={data} onClose={handleClose} />;
+      default:                return null;
+    }
   };
 
   return (
@@ -175,8 +191,8 @@ export default function ArticleWizardView() {
         fontFamily:    "'Inter','Segoe UI',sans-serif",
       }}
     >
-      <WizardHeader title={stepTitles[step] ?? "Create Article"} />
-      <WizardStepBar currentStep={step} />
+      <WizardHeader title="Create Article" />
+      <WizardStepBar steps={steps} currentIdx={stepIdx} />
       {renderStep()}
     </div>
   );

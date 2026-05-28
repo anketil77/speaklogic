@@ -27,6 +27,7 @@ import SelectionConfigView from "@/dialog/views/SelectionConfigView";
 import RequestFeedbackView from "@/dialog/views/feedback/RequestFeedbackView";
 import RequestSLFeedbackView from "@/dialog/views/feedback/RequestSLFeedbackView";
 import AboutView from "@/dialog/views/AboutView";
+import HelpView from "@/dialog/views/HelpView";
 
 // Lazy-loaded: heavy views that aren't on the critical path.
 // WebView2 caches the chunks after first use, so subsequent opens are instant.
@@ -153,6 +154,8 @@ function DialogApp() {
         return <ArticleWizardView />;
       case "about":
         return <AboutView />;
+      case "help":
+        return <HelpView />;
       case "analysis-history":
         return <AnalysisHistoryView />;
       case "flagged-history":

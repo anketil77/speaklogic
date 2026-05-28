@@ -3,22 +3,34 @@
 // Shared types, step definitions, and initial state for the Article Wizard.
 // Kept in a separate file so all step components share one source of truth.
 
-// ─── Step definitions ────────────────────────────────────────────────────────
+// ─── Step IDs ────────────────────────────────────────────────────────────────
 
-export interface WizardStepDef {
-  readonly stepNum: number;
-  readonly label:   string;
+export type StepId =
+  | "article"         // title + category + provider info (all non-product templates)
+  | "givenSet"        // given set toggle + people location + consideration
+  | "event"           // event name / location / date / time
+  | "info"            // info existed before event (rich text)
+  | "prePostObs"      // Sport Template 1: pre/post event observation
+  | "content"         // configurable content sections (neg func, func exec, relationship, etc.)
+  | "productProvider" // Product Review: provider info page
+  | "productArticle"  // Product Review: add article page (product name, model, etc.)
+  | "funcReview"      // Product Review: function executed during review
+  | "additionalInfo"  // Product Review: additional info, URL, names
+  | "done";
+
+export interface StepDef {
+  readonly id:    StepId;
+  readonly label: string;
 }
 
-/** Wizard steps shown in the step bar — Category and Template are done in the picker, not shown here. */
-export const WIZARD_STEPS: readonly WizardStepDef[] = [
-  { stepNum: 1, label: "Article"   },
-  { stepNum: 2, label: "Given Set" },
-  { stepNum: 3, label: "Event"     },
-  { stepNum: 4, label: "Info"      },
-  { stepNum: 5, label: "Content"   },
-  { stepNum: 6, label: "Done"      },
-] as const;
+// ContentConfig determines which sections appear in the "content" step.
+export interface ContentConfig {
+  motherNature: boolean;
+  negFunc:      boolean;
+  problem:      boolean;
+  funcExec:     boolean;
+  relationship: boolean;
+}
 
 export const WIZARD_FIRST_EDITABLE_STEP = 1;
 export const WIZARD_DONE_STEP           = 6;
@@ -48,11 +60,29 @@ export interface WizardData {
   // Step 6 — Info (rich text HTML)
   infoBeforeEvent: string;
 
-  // Step 7 — Content
+  // Step 7 — Content (configurable sections)
   motherNatureConsiderations: string;
   negativeFunction:           string;
   problemDetails:             string;
+  funcExecuteFromEvent:       string;  // Non-Sport 3/4, all Sport
   relationshipDetails:        string;
+
+  // Sport Template 1 only
+  preEventObservation:  string;
+  postEventObservation: string;
+
+  // Product Review
+  isProviderUseGivenSetOfInfo1: boolean;
+  productName:                  string;
+  modelNumber:                  string;
+  productType:                  string;
+  productFunction:              string;
+  problemSolved:                string;
+  functionExecutedDuringReview: string;
+  isSolvedProblem:              boolean;
+  additionalInformation:        string;
+  productURL:                   string;
+  reviewerName:                 string;
 }
 
 export const INITIAL_WIZARD_DATA: WizardData = {
@@ -73,7 +103,21 @@ export const INITIAL_WIZARD_DATA: WizardData = {
   motherNatureConsiderations: "",
   negativeFunction:           "",
   problemDetails:             "",
+  funcExecuteFromEvent:       "",
   relationshipDetails:        "",
+  preEventObservation:  "",
+  postEventObservation: "",
+  isProviderUseGivenSetOfInfo1: false,
+  productName:                  "",
+  modelNumber:                  "",
+  productType:                  "",
+  productFunction:              "",
+  problemSolved:                "",
+  functionExecutedDuringReview: "",
+  isSolvedProblem:              false,
+  additionalInformation:        "",
+  productURL:                   "",
+  reviewerName:                 "",
 };
 
 // ─── Shared step-component prop type ────────────────────────────────────────

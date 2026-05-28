@@ -197,7 +197,21 @@ CREATE TABLE IF NOT EXISTS Article (
   problemDetails TEXT DEFAULT '',
   relationshipDetails TEXT DEFAULT '',
   templateName TEXT DEFAULT '',
-  wizardCategory TEXT DEFAULT ''
+  wizardCategory TEXT DEFAULT '',
+  funcExecuteFromEvent TEXT DEFAULT '',
+  preEventObservation TEXT DEFAULT '',
+  postEventObservation TEXT DEFAULT '',
+  isProviderUseGivenSetOfInfo1 INTEGER DEFAULT 0,
+  productName TEXT DEFAULT '',
+  modelNumber TEXT DEFAULT '',
+  productType TEXT DEFAULT '',
+  productFunction TEXT DEFAULT '',
+  problemSolved TEXT DEFAULT '',
+  functionExecutedDuringReview TEXT DEFAULT '',
+  isSolvedProblem INTEGER DEFAULT 0,
+  additionalInformation TEXT DEFAULT '',
+  productURL TEXT DEFAULT '',
+  reviewerName TEXT DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS AttachFileToProject (

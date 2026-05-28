@@ -103,11 +103,15 @@ export function saveArticleWizard(
       infoBeforeEvent,
       motherNatureConsiderations, negativeFunction, problemDetails,
       relationshipDetails,
-      templateName, wizardCategory
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      templateName, wizardCategory,
+      funcExecuteFromEvent, preEventObservation, postEventObservation,
+      isProviderUseGivenSetOfInfo1, productName, modelNumber, productType,
+      productFunction, problemSolved, functionExecutedDuringReview, isSolvedProblem,
+      additionalInformation, productURL, reviewerName
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       payload.articleTitle,
-      "",                    // articleContent unused for wizard (infoBeforeEvent replaces it)
+      "",
       nowDate(),
       nowTime(),
       payload.personName,
@@ -115,7 +119,7 @@ export function saveArticleWizard(
       payload.source,
       articleNumber,
       payload.category,
-      0,                     // isDraft = 0 (wizard always saves final)
+      0,
       payload.articleBasisReference,
       payload.providerName,
       payload.personLocation,
@@ -133,6 +137,20 @@ export function saveArticleWizard(
       payload.relationshipDetails,
       payload.templateName,
       payload.wizardCategory,
+      payload.funcExecuteFromEvent,
+      payload.preEventObservation,
+      payload.postEventObservation,
+      payload.isProviderUseGivenSetOfInfo1,
+      payload.productName,
+      payload.modelNumber,
+      payload.productType,
+      payload.productFunction,
+      payload.problemSolved,
+      payload.functionExecutedDuringReview,
+      payload.isSolvedProblem,
+      payload.additionalInformation,
+      payload.productURL,
+      payload.reviewerName,
     ]
   );
 

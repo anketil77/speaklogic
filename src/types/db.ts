@@ -243,6 +243,33 @@ export interface SaveArticleWizardPayload {
   relationshipDetails: string;
   templateName: string;
   wizardCategory: string;
+  // New fields for non-NS2 templates
+  funcExecuteFromEvent: string;
+  preEventObservation: string;
+  postEventObservation: string;
+  // Product Review fields
+  isProviderUseGivenSetOfInfo1: 0 | 1;
+  productName: string;
+  modelNumber: string;
+  productType: string;
+  productFunction: string;
+  problemSolved: string;
+  functionExecutedDuringReview: string;
+  isSolvedProblem: 0 | 1;
+  additionalInformation: string;
+  productURL: string;
+  reviewerName: string;
+}
+
+export interface SaveProblemSolutionPayload {
+  actualProblem:        string;
+  feedbackApplied:      string;
+  errorCorrected:       string;
+  compensatorReplaced:  string;
+  additionalExplanation: string;
+  files: Omit<AttachFileToProject, "id" | "analysisId" | "feedbackId" | "flagId" | "articleId" | "principleInterpretationId" | "selectionWithPrincipleId" | "principleInSelectionId">[];
+  removeProblem:        boolean;
+  problemIdx:           number;
 }
 
 export interface AttachFileToProject {
@@ -658,6 +685,7 @@ export type DialogAction =
   | { action: "SAVE_PRINCIPLE_IN_SELECTION"; payload: SavePrincipleInSelectionPayload }
   | { action: "SAVE_ARTICLE"; payload: SaveArticlePayload }
   | { action: "SAVE_ARTICLE_WIZARD"; payload: SaveArticleWizardPayload }
+  | { action: "SAVE_PROBLEM_SOLUTION"; payload: SaveProblemSolutionPayload }
   | { action: "BLANK_SELECTED" }
   | { action: "TEMPLATE_SELECTED" }
   | { action: "TEMPLATE_CONFIRMED"; templateName: string; category: string }

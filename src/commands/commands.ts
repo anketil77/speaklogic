@@ -12,6 +12,7 @@ import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpr
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { saveArticle, saveArticleWizard, getAllArticles, deleteArticle } from "@/db/queries/article";
+import { saveProblemSolution } from "@/db/queries/problem";
 import { dbg, clearLog } from "@/debug/log";
 import { openInterpretedPrincipleReport } from "@/dialog/utils/reportGenerator";
 
@@ -565,6 +566,22 @@ async function openAnalyzeDialog(
             } else {
               dialog.close();
               event.completed();
+            }
+            break;
+          }
+          case "SAVE_PROBLEM_SOLUTION": {
+            const p = m.payload as import("@/types/db").SaveProblemSolutionPayload;
+            try {
+              saveProblemSolution({
+                actualProblem:         p.actualProblem,
+                feedbackApplied:       p.feedbackApplied,
+                errorCorrected:        p.errorCorrected,
+                compensatorReplaced:   p.compensatorReplaced,
+                additionalExplanation: p.additionalExplanation,
+                files:                 p.files,
+              });
+            } catch (err) {
+              dbg("HOST", "saveProblemSolution THREW", String(err));
             }
             break;
           }

@@ -6,21 +6,22 @@
 
 import React from "react";
 import { WizardStepCheckIcon } from "@/dialog/components/Icons";
-import { WIZARD_STEPS } from "./wizardTypes";
+import type { StepDef } from "./wizardTypes";
 
 type StepStatus = "completed" | "active" | "pending";
 
-function getStatus(stepNum: number, currentStep: number): StepStatus {
-  if (stepNum < currentStep)  return "completed";
-  if (stepNum === currentStep) return "active";
+function getStatus(idx: number, currentIdx: number): StepStatus {
+  if (idx < currentIdx)  return "completed";
+  if (idx === currentIdx) return "active";
   return "pending";
 }
 
 interface Props {
-  currentStep: number;
+  steps:      StepDef[];
+  currentIdx: number;  // 0-based index into steps array
 }
 
-export function WizardStepBar({ currentStep }: Props) {
+export function WizardStepBar({ steps, currentIdx }: Props) {
   return (
     <div
       style={{
@@ -34,13 +35,13 @@ export function WizardStepBar({ currentStep }: Props) {
         boxSizing:     "border-box",
       }}
     >
-      {WIZARD_STEPS.map((step, idx) => (
-        <React.Fragment key={step.stepNum}>
+      {steps.map((step, idx) => (
+        <React.Fragment key={step.id}>
           {idx > 0 && <StepSep />}
           <StepItem
-            stepNum={step.stepNum}
+            stepNum={idx + 1}
             label={step.label}
-            status={getStatus(step.stepNum, currentStep)}
+            status={getStatus(idx, currentIdx)}
           />
         </React.Fragment>
       ))}

@@ -29,10 +29,11 @@ interface ProblemPanelProps {
   items: ProblemDraft[];
   onOpenAdd: () => void;
   onOpenView: (problem: ProblemDraft) => void;
+  onOpenSolve: (problem: ProblemDraft, idx: number) => void;
   onRemove: (index: number) => void;
 }
 
-export function ProblemPanel({ items, onOpenAdd, onOpenView, onRemove }: ProblemPanelProps) {
+export function ProblemPanel({ items, onOpenAdd, onOpenView, onOpenSolve, onRemove }: ProblemPanelProps) {
   const [menu, setMenu] = useState<{ x: number; y: number; rowIdx: number | null } | null>(null);
   const [pendingRemove, setPendingRemove] = useState<number | null>(null);
 
@@ -44,7 +45,11 @@ export function ProblemPanel({ items, onOpenAdd, onOpenView, onRemove }: Problem
 
   const menuItems: PanelMenuEntry[] = [
     { label: "Add Identify Problem", onClick: () => onOpenAdd() },
-    { label: "Response To Identify Problem", disabled: true, onClick: () => undefined },
+    {
+      label: "Response To Identify Problem",
+      disabled: menu?.rowIdx == null,
+      onClick: () => { if (menu?.rowIdx != null) { onOpenSolve(items[menu.rowIdx], menu.rowIdx); closeMenu(); } },
+    },
     {
       label: "Remove Identify Problem",
       disabled: menu?.rowIdx == null,

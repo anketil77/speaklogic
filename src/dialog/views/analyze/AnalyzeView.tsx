@@ -19,6 +19,7 @@ import { ViewCompensatorDialog } from "@/dialog/components/ViewCompensatorDialog
 import { ProblemPanel } from "@/dialog/views/analyze/panels/ProblemPanel";
 import { ProblemIdentificationDialog } from "@/dialog/components/ProblemIdentificationDialog";
 import { ViewProblemDialog } from "@/dialog/components/ViewProblemDialog";
+import { SolveProblemDialog } from "@/dialog/components/SolveProblemDialog";
 import { ViewAnswerDialog } from "@/dialog/components/ViewAnswerDialog";
 import { AttachFilePanel } from "@/dialog/views/analyze/panels/AttachFilePanel";
 import { AttachFileDialog } from "@/dialog/components/AttachFileDialog";
@@ -454,6 +455,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
   const [showAddCompensator, setShowAddCompensator] = useState(false);
   const [showAddProblem, setShowAddProblem] = useState(false);
   const [viewProblem, setViewProblem] = useState<ProblemDraft | null>(null);
+  const [solveProblem, setSolveProblem] = useState<{ problem: ProblemDraft; idx: number } | null>(null);
   const [viewAnswer, setViewAnswer] = useState<AnswerDraft | null>(null);
   const [showAddFile, setShowAddFile] = useState(false);
   const [viewFile, setViewFile] = useState<FileDraft | null>(null);
@@ -810,6 +812,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
             items={problems}
             onOpenAdd={() => setShowAddProblem(true)}
             onOpenView={(p) => setViewProblem(p)}
+            onOpenSolve={(p, idx) => setSolveProblem({ problem: p, idx })}
             onRemove={removeProblem}
           />
         )}
@@ -894,6 +897,18 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         <ViewProblemDialog
           problem={viewProblem}
           onClose={() => setViewProblem(null)}
+        />
+      )}
+      {solveProblem && (
+        <SolveProblemDialog
+          problem={solveProblem.problem}
+          existingErrors={errors.map((e) => e.actualError)}
+          existingCompensators={compensators.map((c) => c.actualCompensator)}
+          onSolve={(solution) => {
+            sendMessage({ action: "SAVE_PROBLEM_SOLUTION", payload: { ...solution, problemIdx: solveProblem.idx } });
+            if (solution.removeProblem) removeProblem(solveProblem.idx);
+          }}
+          onClose={() => setSolveProblem(null)}
         />
       )}
       {viewAnswer && (
