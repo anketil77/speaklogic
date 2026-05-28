@@ -1,346 +1,500 @@
 // src/dialog/components/SolveProblemDialog.tsx
 // Portal dialog — "Solve Problem" opened from Problems tab context menu.
 // C# ref: SolveProblem.cs + SolveProblem.Designer.cs
-// Two tabs: About Solution | Attached Files
-// Required: Feedback Applied, Error Corrected, Compensator Replaced
+// Styling matches reference portal dialogs (IdentifyPrincipleInSelectionDialog pattern).
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import { useDraggable } from "@/dialog/hooks/useDraggable";
-import { AttachFilePanel } from "@/dialog/views/analyze/panels/AttachFilePanel";
-import { AttachFileDialog } from "@/dialog/components/AttachFileDialog";
-import { ViewFileInformationDialog } from "@/dialog/components/ViewFileInformationDialog";
-import { RichEditor } from "@/dialog/components/RichEditor";
+import { useDraggable }    from "@/dialog/hooks/useDraggable";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
+import { RichEditor }      from "@/dialog/components/RichEditor";
+import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
+import { ProblemIcon }     from "@/dialog/components/Icons";
 import type { ProjectProblem, AttachFileToProject } from "@/types/db";
 
-type FileDraft = Omit<AttachFileToProject, "id" | "analysisId" | "feedbackId" | "flagId" | "articleId" | "principleInterpretationId" | "selectionWithPrincipleId" | "principleInSelectionId">;
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type FileDraft = Omit<
+  AttachFileToProject,
+  "id" | "analysisId" | "feedbackId" | "flagId" | "articleId" |
+  "principleInterpretationId" | "selectionWithPrincipleId" | "principleInSelectionId"
+>;
 
 interface Props {
   problem:              ProjectProblem;
   existingErrors:       string[];
   existingCompensators: string[];
   onSolve: (solution: {
-    feedbackApplied:      string;
-    errorCorrected:       string;
-    compensatorReplaced:  string;
+    feedbackApplied:       string;
+    errorCorrected:        string;
+    compensatorReplaced:   string;
     additionalExplanation: string;
-    files:                FileDraft[];
-    removeProblem:        boolean;
+    files:                 FileDraft[];
+    removeProblem:         boolean;
   }) => void;
   onClose: () => void;
 }
 
-const VALIDATION_MSGS = {
-  feedbackApplied: "In order for a problem to be solved, a feedback must be applied. By applying a feedback, it is possible for us to solve an identified problem. It is not possible to solve an identified problem with the absence of feedback. Here I need to select the feedback or feedbacks that have applied to solve the problem.",
-  errorCorrected:  "In order to solve an identified problem, feedback must be applied where the error that gives rise to that problem must be corrected. If the error itself is not corrected, it is not possible for the identified problem to be solved. Here I need to identified the error or errors that were corrected.",
-  compensatorReplaced: "In order for an identified problem to be solved, error must be corrected, where the error itself is replaced by a compensator. The correction itself is not possible without the replacing compensator. The overall solution process of a problem is not possible as well with the absence of a compensator. Here I need to select the compensator or compensators that are replaced to enable the identified problem to be solved.",
+type TabId = "solution" | "files";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const C = {
+  blue:     "#0078D4",
+  blueHov:  "#106EBE",
+  grey11:   "#1B1B1B",
+  grey38:   "#616161",
+  grey78:   "#C7C7C7",
+  grey88:   "#E0E0E0",
+  grey96:   "#F5F5F5",
+  iconBg:   "#EBF3FC",
+  white:    "#FFFFFF",
 } as const;
 
-const DIALOG_W = 760;
-const DIALOG_H = 600;
+const TABS: { id: TabId; label: string }[] = [
+  { id: "solution", label: "About Solution"  },
+  { id: "files",    label: "Attached Files"  },
+];
 
-export function SolveProblemDialog({ problem, existingErrors, existingCompensators, onSolve, onClose }: Props) {
-  const { pos, onHeaderMouseDown } = useDraggable({
-    initialX: Math.round((window.innerWidth - DIALOG_W) / 2),
-    initialY: Math.round((window.innerHeight - DIALOG_H) / 2),
-  });
+const VALIDATION_MSGS = {
+  feedbackApplied:
+    "In order for a problem to be solved, a feedback must be applied. By applying a feedback, it is possible for us to solve an identified problem. It is not possible to solve an identified problem with the absence of feedback. Here I need to select the feedback or feedbacks that have applied to solve the problem.",
+  errorCorrected:
+    "In order to solve an identified problem, feedback must be applied where the error that gives rise to that problem must be corrected. If the error itself is not corrected, it is not possible for the identified problem to be solved. Here I need to identified the error or errors that were corrected.",
+  compensatorReplaced:
+    "In order for an identified problem to be solved, error must be corrected, where the error itself is replaced by a compensator. The correction itself is not possible without the replacing compensator. The overall solution process of a problem is not possible as well with the absence of a compensator. Here I need to select the compensator or compensators that are replaced to enable the identified problem to be solved.",
+} as const;
 
-  const [activeTab, setActiveTab] = useState<"solution" | "files">("solution");
-  const [feedbackApplied, setFeedbackApplied]     = useState("");
-  const [selectedErrors, setSelectedErrors]       = useState<string[]>([]);
-  const [errorText, setErrorText]                 = useState("");
-  const [selectedComps, setSelectedComps]         = useState<string[]>([]);
-  const [compText, setCompText]                   = useState("");
-  const [additionalExplanation, setAdditional]    = useState("");
-  const [files, setFiles]                         = useState<FileDraft[]>([]);
-  const [validationMsg, setValidationMsg]         = useState("");
+const FILE_COLS: PanelTableCol<FileDraft>[] = [
+  { header: "File Name",  width: "28%", render: (f) => f.fileName  || "—", truncate: true },
+  { header: "File Type",  width: "15%", render: (f) => f.fileType  || "—" },
+  { header: "File Date",  width: "17%", render: (f) => f.fileDate  || "—" },
+  { header: "File Time",  width: "15%", render: (f) => f.fileTime  || "—" },
+  { header: "File Size",  width: "15%", render: (f) => f.fileSize  || "—" },
+];
 
-  const [showAddFile, setShowAddFile]             = useState(false);
-  const [viewFile, setViewFile]                   = useState<FileDraft | null>(null);
-  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+const inputStyle: React.CSSProperties = {
+  boxSizing: "border-box", width: "100%", height: 32,
+  border: `1px solid ${C.grey78}`, borderRadius: 4, padding: "0 10px",
+  fontSize: "12.2px", fontFamily: "inherit", color: C.grey11,
+  background: C.white, outline: "none",
+};
 
-  const editorRef = React.useRef<HTMLDivElement>(null);
+// ─── Main dialog ──────────────────────────────────────────────────────────────
 
-  const toggleError = (val: string) =>
-    setSelectedErrors((prev) => prev.includes(val) ? prev.filter((x) => x !== val) : [...prev, val]);
-  const toggleComp = (val: string) =>
-    setSelectedComps((prev) => prev.includes(val) ? prev.filter((x) => x !== val) : [...prev, val]);
+export function SolveProblemDialog({
+  problem, existingErrors, existingCompensators, onSolve, onClose,
+}: Props) {
+  const { pos, onHeaderMouseDown } = useDraggable();
 
-  const effectiveFeedback     = feedbackApplied.trim();
-  const effectiveError        = existingErrors.length > 0 ? selectedErrors.join(", ") : errorText.trim();
-  const effectiveCompensator  = existingCompensators.length > 0 ? selectedComps.join(", ") : compText.trim();
+  const [activeTab, setActiveTab]         = useState<TabId>("solution");
+  const [feedbackApplied, setFeedback]    = useState("");
+  const [selectedErrors, setSelErrors]    = useState<string[]>([]);
+  const [errorText, setErrorText]         = useState("");
+  const [selectedComps, setSelComps]      = useState<string[]>([]);
+  const [compText, setCompText]           = useState("");
+  const [additionalExp, setAdditional]    = useState("");
+  const [files, setFiles]                 = useState<FileDraft[]>([]);
+
+  const [errorMsg, setErrorMsg]           = useState<string | null>(null);
+  const [showRemoveConfirm, setShowRemove]= useState(false);
+
+  const [fileMenuIdx, setFileMenuIdx]     = useState<number | null>(null);
+  const [pendingRemove, setPendingRemove] = useState<number | null>(null);
+  const fileInputRef                      = useRef<HTMLInputElement>(null);
+
+  const [solveHover, setSolveHover]       = useState(false);
+  const [cancelHover, setCancelHover]     = useState(false);
+  const editorRef                         = useRef<HTMLDivElement>(null);
+
+  const toggleError = (v: string) =>
+    setSelErrors((p) => p.includes(v) ? p.filter((x) => x !== v) : [...p, v]);
+  const toggleComp  = (v: string) =>
+    setSelComps((p)  => p.includes(v) ? p.filter((x) => x !== v) : [...p, v]);
+
+  const effectiveFeedback    = feedbackApplied.trim();
+  const effectiveError       = existingErrors.length       > 0 ? selectedErrors.join(", ") : errorText.trim();
+  const effectiveCompensator = existingCompensators.length > 0 ? selectedComps.join(", ")  : compText.trim();
 
   const handleSolve = useCallback(() => {
-    if (!effectiveFeedback)    { setValidationMsg(VALIDATION_MSGS.feedbackApplied); return; }
-    if (!effectiveError)       { setValidationMsg(VALIDATION_MSGS.errorCorrected);  return; }
-    if (!effectiveCompensator) { setValidationMsg(VALIDATION_MSGS.compensatorReplaced); return; }
-    setValidationMsg("");
-    setShowRemoveConfirm(true);
+    if (!effectiveFeedback)    { setErrorMsg(VALIDATION_MSGS.feedbackApplied);    return; }
+    if (!effectiveError)       { setErrorMsg(VALIDATION_MSGS.errorCorrected);     return; }
+    if (!effectiveCompensator) { setErrorMsg(VALIDATION_MSGS.compensatorReplaced); return; }
+    setErrorMsg(null);
+    setShowRemove(true);
   }, [effectiveFeedback, effectiveError, effectiveCompensator]);
 
   const confirmSolve = (removeProblem: boolean) => {
-    onSolve({ feedbackApplied: effectiveFeedback, errorCorrected: effectiveError, compensatorReplaced: effectiveCompensator, additionalExplanation, files, removeProblem });
+    onSolve({
+      feedbackApplied: effectiveFeedback,
+      errorCorrected: effectiveError,
+      compensatorReplaced: effectiveCompensator,
+      additionalExplanation: additionalExp,
+      files,
+      removeProblem,
+    });
     onClose();
   };
 
+  const handleFileSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const fileDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const fileTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const sizeKB = Math.round(f.size / 1024);
+    const fileSize = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
+    setFiles((prev) => [...prev, {
+      fileName: f.name, fileType: f.type || "application/octet-stream",
+      fileSize, fileDate, fileTime, fileDirectory: "", fileDescription: "",
+      storageId: "", fullFileName: f.name,
+    }]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  const fileMenuItems = useMemo(() => [
+    {
+      label: "Add File",
+      disabled: false,
+      onClick: () => { setFileMenuIdx(null); fileInputRef.current?.click(); },
+    },
+    {
+      label: "Remove File",
+      disabled: fileMenuIdx === null || fileMenuIdx < 0,
+      onClick: () => { if (fileMenuIdx !== null && fileMenuIdx >= 0) setPendingRemove(fileMenuIdx); },
+    },
+    {
+      label: "View File Info",
+      disabled: fileMenuIdx === null || fileMenuIdx < 0,
+      onClick: () => setFileMenuIdx(null),
+    },
+  ], [fileMenuIdx]);
+
+  const renderTabContent = () => {
+    if (activeTab === "solution") {
+      return (
+        <div style={{ padding: "20px 20px" }}>
+          <FieldRow label="Actual Problem">
+            <div style={{
+              padding: "8px 10px", background: C.grey96, border: `1px solid ${C.grey88}`,
+              borderRadius: 4, fontSize: "12.2px", color: C.grey38,
+              lineHeight: "18px", minHeight: 32, wordBreak: "break-word",
+            }}>
+              {problem.actualProblem || "—"}
+            </div>
+          </FieldRow>
+
+          <FieldRow label="Feedback Applied">
+            <input
+              type="text"
+              placeholder="Enter applied feedback(s), comma-separated"
+              value={feedbackApplied}
+              onChange={(e) => setFeedback(e.target.value)}
+              style={inputStyle}
+            />
+          </FieldRow>
+
+          <FieldRow label="Error Corrected">
+            {existingErrors.length > 0 ? (
+              <CheckList items={existingErrors} selected={selectedErrors} onToggle={toggleError} />
+            ) : (
+              <input
+                type="text"
+                placeholder="Enter corrected error(s), comma-separated"
+                value={errorText}
+                onChange={(e) => setErrorText(e.target.value)}
+                style={inputStyle}
+              />
+            )}
+          </FieldRow>
+
+          <FieldRow label="Compensator Replaced">
+            {existingCompensators.length > 0 ? (
+              <CheckList items={existingCompensators} selected={selectedComps} onToggle={toggleComp} />
+            ) : (
+              <input
+                type="text"
+                placeholder="Enter replaced compensator(s), comma-separated"
+                value={compText}
+                onChange={(e) => setCompText(e.target.value)}
+                style={inputStyle}
+              />
+            )}
+          </FieldRow>
+
+          <FieldRow label="Additional Explanation">
+            <RichEditor
+              value={additionalExp}
+              onChange={setAdditional}
+              style={{ minHeight: 90, fontSize: "12.2px" }}
+              placeholder="Enter additional explanation..."
+            />
+          </FieldRow>
+        </div>
+      );
+    }
+
+    // Files tab
+    return (
+      <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+        <PanelTable<FileDraft>
+          columns={FILE_COLS}
+          rows={files}
+          emptyText="No attached files."
+          onRowContextMenu={(e, idx) => { e.preventDefault(); e.stopPropagation(); setFileMenuIdx(idx); }}
+        >
+          {fileMenuIdx !== null && (
+            <div style={{
+              position: "fixed", background: C.white, border: `1px solid ${C.grey78}`,
+              borderRadius: 4, boxShadow: "0px 4px 16px rgba(0,0,0,0.12)", zIndex: 220,
+              minWidth: 160, padding: "4px 0",
+            }} onClick={(e) => e.stopPropagation()}>
+              {fileMenuItems.map((item, i) => (
+                <button key={i} disabled={item.disabled} onClick={item.onClick} style={{
+                  display: "block", width: "100%", textAlign: "left", padding: "6px 16px",
+                  background: "transparent", border: "none", fontSize: "12.2px",
+                  fontFamily: "inherit", cursor: item.disabled ? "default" : "pointer",
+                  color: item.disabled ? C.grey78 : C.grey11,
+                }}
+                onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = C.grey96; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {pendingRemove !== null && (
+            <div style={{
+              position: "absolute", inset: 0, background: "rgba(255,255,255,0.88)",
+              display: "flex", alignItems: "center", justifyContent: "center", zIndex: 215,
+            }}>
+              <div style={{
+                background: C.white, borderRadius: 6, boxShadow: "0px 4px 16px rgba(0,0,0,0.14)",
+                padding: "20px 24px", maxWidth: 280, textAlign: "center",
+              }}>
+                <div style={{ fontSize: "12.4px", fontWeight: 600, color: C.grey11, marginBottom: 12, lineHeight: "18px" }}>
+                  Remove this file?
+                </div>
+                <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                  <button onClick={() => setPendingRemove(null)} style={BTN_CANCEL}>No</button>
+                  <button onClick={() => { setFiles((p) => p.filter((_, i) => i !== pendingRemove)); setPendingRemove(null); setFileMenuIdx(null); }} style={BTN_PRIMARY}>Yes</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </PanelTable>
+        <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileSelected} />
+      </div>
+    );
+  };
+
+  const showToolbar = activeTab === "solution";
+
   const dialog = (
-    <div style={{ position: "fixed", inset: 0, zIndex: 199, background: "rgba(0,0,0,0.18)" }}>
+    <>
+      {/* Backdrop */}
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.18)", zIndex: 199 }} onClick={onClose} />
+
+      {/* Dialog */}
       <div
         style={{
-          position:   "absolute",
-          left:       pos.x,
-          top:        pos.y,
-          width:      DIALOG_W,
-          height:     DIALOG_H,
-          background: "#FFFFFF",
-          borderRadius: 6,
-          boxShadow:  "0 8px 32px rgba(0,0,0,0.18)",
-          display:    "flex",
+          position:  "fixed",
+          left:      `calc(50% + ${pos.x}px)`,
+          top:       `calc(50% + ${pos.y}px)`,
+          transform: "translate(-50%, -50%)",
+          width:     760,
+          height:    600,
+          maxWidth:  "96vw",
+          maxHeight: "90vh",
+          zIndex:    200,
+          display:   "flex",
           flexDirection: "column",
-          overflow:   "hidden",
+          background: C.white,
+          boxShadow: "0px 8px 32px rgba(0,0,0,0.14), 0px 2px 8px rgba(0,0,0,0.06)",
+          borderRadius: 8,
+          overflow:  "hidden",
           fontFamily: "'Inter','Segoe UI',sans-serif",
         }}
+        onClick={() => setFileMenuIdx(null)}
       >
-        {/* Header */}
+        {/* ── Header ── */}
         <div
           onMouseDown={onHeaderMouseDown}
           style={{
-            display:      "flex",
-            alignItems:   "center",
-            justifyContent: "space-between",
-            padding:      "0 14px",
-            height:       40,
-            background:   "#F5F5F5",
-            borderBottom: "1px solid #E0E0E0",
-            cursor:       "move",
-            userSelect:   "none",
-            flexShrink:   0,
+            height: 72, flexShrink: 0, display: "flex", alignItems: "center",
+            paddingLeft: 20, paddingRight: 20, gap: 12, cursor: "grab", userSelect: "none",
           }}
         >
-          <span style={{ fontWeight: 700, fontSize: 12.4, color: "#1B1B1B" }}>Solve Identify Problem</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center" }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 6, background: C.iconBg,
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
+            <ProblemIcon color={C.blue} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: "15.6px", fontWeight: 700, color: C.grey11, letterSpacing: "-0.1px", lineHeight: "21px" }}>
+              Solve Identify Problem
+            </div>
+            <div style={{ fontSize: "11.1px", color: C.grey38, lineHeight: "17px", marginTop: 2 }}>
+              Record the solution for the identified problem.
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "transparent", border: "none", borderRadius: 4, cursor: "pointer",
+              flexShrink: 0, padding: 0,
+            }}
+          >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 2l10 10M12 2L2 12" stroke="#616161" strokeWidth="1.6" strokeLinecap="round"/>
+              <path d="M1 1L13 13M13 1L1 13" stroke={C.grey38} strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid #E0E0E0", flexShrink: 0 }}>
-          {(["solution", "files"] as const).map((tab) => {
-            const label = tab === "solution" ? "About Solution" : "Attached Files";
-            const active = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  padding:     "7px 16px",
-                  border:      "none",
-                  background:  active ? "#FFFFFF" : "#F5F5F5",
-                  borderBottom: active ? "2px solid #0078D4" : "2px solid transparent",
-                  cursor:      "pointer",
-                  fontFamily:  "'Inter','Segoe UI',sans-serif",
-                  fontWeight:  active ? 700 : 400,
-                  fontSize:    11.4,
-                  color:       active ? "#0078D4" : "#616161",
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
+        {/* ── Command bar ── */}
+        <div style={{
+          height: 44, flexShrink: 0, background: C.grey96,
+          display: "flex", alignItems: "center", paddingLeft: 12, paddingRight: 12,
+          gap: 8, position: "relative",
+        }}>
+          <button
+            onClick={handleSolve}
+            onMouseEnter={() => setSolveHover(true)}
+            onMouseLeave={() => setSolveHover(false)}
+            style={{
+              height: 28, padding: "0 16px", display: "flex", alignItems: "center", gap: 6,
+              background: solveHover ? C.blueHov : C.blue, color: C.white, border: "none",
+              borderRadius: 4, cursor: "pointer", fontSize: "11.6px", fontWeight: 700,
+              fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0,
+            }}
+          >
+            <ProblemIcon color={C.white} />
+            Solve Problem
+          </button>
+          <div style={{ width: 1, height: 20, background: C.grey88, flexShrink: 0 }} />
+          {showToolbar && <RichTextToolbar editorRef={editorRef} />}
         </div>
 
-        {/* Body */}
-        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-          {activeTab === "solution" && (
-            <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-              {/* Toolbar */}
-              <RichTextToolbar editorRef={editorRef} />
-
-              {/* Actual Problem (readonly) */}
-              <FormRow label="Actual Problem">
-                <div
-                  style={{
-                    padding: "6px 9px", background: "#F5F5F5", border: "1px solid #D0D0D0",
-                    borderRadius: 3, fontSize: 11.1, color: "#616161", lineHeight: "16px", minHeight: 30,
-                  }}
-                >
-                  {problem.actualProblem || "—"}
-                </div>
-              </FormRow>
-
-              {/* Feedback Applied */}
-              <FormRow label="Feedback Applied">
-                <input
-                  type="text"
-                  placeholder="Enter applied feedback(s), comma-separated"
-                  value={feedbackApplied}
-                  onChange={(e) => setFeedbackApplied(e.target.value)}
-                  style={INPUT_STYLE}
-                />
-              </FormRow>
-
-              {/* Error Corrected */}
-              <FormRow label="Error Corrected">
-                {existingErrors.length > 0 ? (
-                  <CheckList items={existingErrors} selected={selectedErrors} onToggle={toggleError} />
-                ) : (
-                  <input
-                    type="text"
-                    placeholder="Enter corrected error(s), comma-separated"
-                    value={errorText}
-                    onChange={(e) => setErrorText(e.target.value)}
-                    style={INPUT_STYLE}
-                  />
-                )}
-              </FormRow>
-
-              {/* Compensator Replaced */}
-              <FormRow label="Compensator Replaced">
-                {existingCompensators.length > 0 ? (
-                  <CheckList items={existingCompensators} selected={selectedComps} onToggle={toggleComp} />
-                ) : (
-                  <input
-                    type="text"
-                    placeholder="Enter replaced compensator(s), comma-separated"
-                    value={compText}
-                    onChange={(e) => setCompText(e.target.value)}
-                    style={INPUT_STYLE}
-                  />
-                )}
-              </FormRow>
-
-              {/* Additional Explanation */}
-              <FormRow label="Additional Explanation">
-                <RichEditor
-                  value={additionalExplanation}
-                  onChange={setAdditional}
-                  style={{ minHeight: 80, fontSize: "11.1px" }}
-                  placeholder="Enter additional explanation..."
-                />
-              </FormRow>
-            </div>
-          )}
-          {activeTab === "files" && (
-            <AttachFilePanel
-              items={files}
-              onAdd={(f) => setFiles((prev) => [...prev, f])}
-              onOpenAdd={() => setShowAddFile(true)}
-              onOpenView={(f) => setViewFile(f)}
-              onRemove={(idx) => setFiles((prev) => prev.filter((_, i) => i !== idx))}
-            />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div
-          style={{
-            display:      "flex",
-            alignItems:   "center",
-            justifyContent: "space-between",
-            padding:      "8px 14px",
-            borderTop:    "1px solid #E0E0E0",
-            flexShrink:   0,
-          }}
-        >
-          {validationMsg ? (
-            <span style={{ flex: 1, fontSize: 10.3, color: "#D13438", lineHeight: "14px", marginRight: 10 }}>
-              {validationMsg}
-            </span>
-          ) : (
-            <span />
-          )}
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={onClose} style={BTN_CANCEL}>Cancel</button>
-            <button
-              onClick={handleSolve}
-              style={{ ...BTN_PRIMARY, background: "#0078D4" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#106EBE"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#0078D4"; }}
-            >
-              Solve Problem
+        {/* ── Tab bar ── */}
+        <div style={{
+          height: 36, flexShrink: 0, display: "flex", alignItems: "flex-end",
+          borderBottom: `1px solid ${C.grey88}`, overflow: "hidden",
+        }}>
+          {TABS.map((tab) => (
+            <button key={tab.id} onClick={() => { setActiveTab(tab.id); setErrorMsg(null); setFileMenuIdx(null); }} style={{
+              height: 36, padding: "0 16px", background: "transparent", border: "none",
+              borderBottom: activeTab === tab.id ? `2px solid ${C.blue}` : "2px solid transparent",
+              fontSize: "12.2px", fontWeight: activeTab === tab.id ? 700 : 400,
+              color: activeTab === tab.id ? C.grey11 : C.grey38,
+              fontFamily: "inherit", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap",
+            }}>
+              {tab.label}
             </button>
+          ))}
+        </div>
+
+        {/* ── Validation message ── */}
+        {errorMsg && (
+          <div style={{
+            background: "#FFF4CE", border: "1px solid #F0D060", borderRadius: 4,
+            margin: "8px 12px 0", padding: "7px 12px", fontSize: "11.5px",
+            color: "#5D4037", lineHeight: "17px", flexShrink: 0,
+          }}>
+            {errorMsg}
           </div>
+        )}
+
+        {/* ── Content ── */}
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
+          {renderTabContent()}
+        </div>
+
+        {/* ── Footer ── */}
+        <div style={{
+          height: 57, flexShrink: 0, display: "flex", alignItems: "center",
+          justifyContent: "flex-end", padding: "0 20px",
+          borderTop: `1px solid ${C.grey88}`, background: C.white, boxSizing: "border-box",
+          gap: 8,
+        }}>
+          <button
+            onClick={onClose}
+            onMouseEnter={() => setCancelHover(true)}
+            onMouseLeave={() => setCancelHover(false)}
+            style={{ ...BTN_CANCEL, background: cancelHover ? C.grey96 : C.white }}
+          >
+            Cancel
+          </button>
         </div>
       </div>
 
-      {/* "Remove problem?" confirmation overlay */}
+      {/* ── Remove problem confirm ── */}
       {showRemoveConfirm && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 201, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: 460, background: "#FFFFFF", borderRadius: 8, boxShadow: "0 8px 32px rgba(0,0,0,0.18)", padding: "22px 24px 18px", fontFamily: "'Inter','Segoe UI',sans-serif" }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: "#1B1B1B", marginBottom: 10 }}>Solve Problem Message</div>
-            <div style={{ fontSize: 12, color: "#444", lineHeight: "18px", marginBottom: 20 }}>
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 210,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            width: 460, background: C.white, borderRadius: 8,
+            boxShadow: "0px 8px 32px rgba(0,0,0,0.18)", padding: "22px 24px 18px",
+            fontFamily: "'Inter','Segoe UI',sans-serif",
+          }}>
+            <div style={{ fontWeight: 700, fontSize: "13px", color: C.grey11, marginBottom: 10 }}>
+              Solve Problem Message
+            </div>
+            <div style={{ fontSize: "12.2px", color: "#444", lineHeight: "18px", marginBottom: 20 }}>
               Now that the problem is solved, do I want to remove it from the list or keep it?
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button onClick={() => confirmSolve(false)} style={BTN_CANCEL}>No</button>
-              <button
-                onClick={() => confirmSolve(true)}
-                style={{ ...BTN_PRIMARY, background: "#0078D4" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#106EBE"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#0078D4"; }}
-              >
-                Yes
-              </button>
+              <button onClick={() => confirmSolve(true)}  style={BTN_PRIMARY}>Yes</button>
             </div>
           </div>
         </div>
       )}
-
-      {showAddFile && (
-        <AttachFileDialog
-          onAdd={(f) => { setFiles((prev) => [...prev, f]); setShowAddFile(false); }}
-          onClose={() => setShowAddFile(false)}
-        />
-      )}
-      {viewFile && (
-        <ViewFileInformationDialog
-          file={viewFile}
-          onClose={() => setViewFile(null)}
-          zIndexBase={200}
-        />
-      )}
-    </div>
+    </>
   );
 
   return ReactDOM.createPortal(dialog, document.body);
 }
 
-// ─── Shared sub-components ───────────────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
+function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <label style={{ fontWeight: 600, fontSize: 10.8, color: "#616161" }}>{label}</label>
-      {children}
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+      <label style={{
+        minWidth: 180, fontSize: "12.2px", color: "#1B1B1B",
+        paddingTop: 8, flexShrink: 0, lineHeight: "16px",
+      }}>
+        {label}
+      </label>
+      <div style={{ flex: 1 }}>{children}</div>
     </div>
   );
 }
 
-function CheckList({ items, selected, onToggle }: { items: string[]; selected: string[]; onToggle: (v: string) => void }) {
+function CheckList({
+  items, selected, onToggle,
+}: { items: string[]; selected: string[]; onToggle: (v: string) => void }) {
   return (
-    <div
-      style={{
-        maxHeight: 90, overflowY: "auto", border: "1px solid #C7C7C7", borderRadius: 3,
-        background: "#FAFAFA", padding: "4px 0",
-      }}
-    >
+    <div style={{
+      maxHeight: 96, overflowY: "auto", border: "1px solid #C7C7C7",
+      borderRadius: 4, background: "#FAFAFA", padding: "4px 0",
+    }}>
       {items.map((item) => (
-        <label
-          key={item}
-          style={{
-            display: "flex", alignItems: "center", gap: 7, padding: "3px 9px",
-            cursor: "pointer", fontSize: 11.1, color: "#1B1B1B",
-          }}
-        >
+        <label key={item} style={{
+          display: "flex", alignItems: "center", gap: 7, padding: "4px 10px",
+          cursor: "pointer", fontSize: "12.2px", color: "#1B1B1B",
+        }}>
           <input
             type="checkbox"
             checked={selected.includes(item)}
             onChange={() => onToggle(item)}
-            style={{ margin: 0 }}
+            style={{ margin: 0, flexShrink: 0 }}
           />
           {item}
         </label>
@@ -349,20 +503,14 @@ function CheckList({ items, selected, onToggle }: { items: string[]; selected: s
   );
 }
 
-const INPUT_STYLE: React.CSSProperties = {
-  boxSizing: "border-box", width: "100%", height: 30, padding: "0 9px",
-  border: "1px solid #C7C7C7", borderRadius: 3, fontSize: 11.1,
-  fontFamily: "'Inter','Segoe UI',sans-serif", color: "#1B1B1B", outline: "none",
-};
-
 const BTN_CANCEL: React.CSSProperties = {
-  height: 28, padding: "0 18px", background: "#FFFFFF", border: "1px solid #C7C7C7",
-  borderRadius: 4, fontSize: 12.3, fontFamily: "'Inter','Segoe UI',sans-serif",
-  color: "#1B1B1B", cursor: "pointer",
+  height: 30, padding: "0 16px", background: "#FFFFFF",
+  border: "1px solid #C7C7C7", borderRadius: 4, fontSize: "12.2px",
+  fontFamily: "'Inter','Segoe UI',sans-serif", color: "#1B1B1B", cursor: "pointer",
 };
 
 const BTN_PRIMARY: React.CSSProperties = {
-  height: 28, padding: "0 18px", border: "none", borderRadius: 4,
-  fontSize: 12.3, fontWeight: 700, fontFamily: "'Inter','Segoe UI',sans-serif",
-  color: "#FFFFFF", cursor: "pointer",
+  height: 30, padding: "0 16px", background: "#0078D4", border: "none",
+  borderRadius: 4, fontSize: "12.2px", fontWeight: 700,
+  fontFamily: "'Inter','Segoe UI',sans-serif", color: "#FFFFFF", cursor: "pointer",
 };
