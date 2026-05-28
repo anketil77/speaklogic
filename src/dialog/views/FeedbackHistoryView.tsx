@@ -8,18 +8,18 @@ import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import { ViewFeedbackDialog } from "@/dialog/components/ViewFeedbackDialog";
 import {
   FeedbackHistoryHeaderIcon,
-  ViewSelectedIcon,
   SmallCaretDownIcon,
   CmdDeleteFeedbackIcon,
   CmdEditFeedbackIcon,
-  ProvideFeedbackAnalysisIcon,
-  FlagAnalysisCommunicationIcon,
+  FbHistoryProvideIcon,
+  FbHistoryFlagIcon,
   FilterFunnelIcon,
-  ViewReportIcon,
-  ApplySelFbMenuIcon,
-  ListFeedbackRequestedHeaderIcon,
-  ListFeedbackAppliedCmdIcon,
-  ListFeedbackProvidedCmdIcon,
+  FbHistoryApplyIcon,
+  FbHistoryListRequestedIcon,
+  FbHistoryListAppliedIcon,
+  FbHistoryListProvidedIcon,
+  FbHistoryViewSelectedIcon,
+  FbHistoryViewReportIcon,
 } from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
 import type { ProjectFeedback } from "@/types/db";
@@ -277,7 +277,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ViewSelectedIcon />
+          <FbHistoryViewSelectedIcon />
           View Selected Feedback
         </button>
 
@@ -351,7 +351,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ApplySelFbMenuIcon />
+          <FbHistoryApplyIcon />
         </button>
 
         {/* Provide Feedback With Feedback (info-only) */}
@@ -374,7 +374,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ProvideFeedbackAnalysisIcon />
+          <FbHistoryProvideIcon />
         </button>
 
         {/* Flag Feedback as Communication (info-only) */}
@@ -397,7 +397,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <FlagAnalysisCommunicationIcon />
+          <FbHistoryFlagIcon />
         </button>
 
         <CmdSepBar />
@@ -484,7 +484,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ListFeedbackAppliedCmdIcon />
+          <FbHistoryListAppliedIcon />
         </button>
 
         <button
@@ -504,7 +504,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ListFeedbackProvidedCmdIcon />
+          <FbHistoryListProvidedIcon />
         </button>
 
         <button
@@ -524,7 +524,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ListFeedbackRequestedHeaderIcon />
+          <FbHistoryListRequestedIcon />
         </button>
 
         <CmdSepBar />
@@ -551,7 +551,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ViewReportIcon />
+          <FbHistoryViewReportIcon />
         </button>
 
         {/* View Provided Feedback Report */}
@@ -576,7 +576,7 @@ export default function FeedbackHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ViewReportIcon />
+          <FbHistoryViewReportIcon />
         </button>
       </div>
 
