@@ -350,7 +350,6 @@ export default function ProvideFeedbackView() {
           {mailtoUrl && (
             <a
               href={mailtoUrl}
-              onClick={(e) => { e.preventDefault(); sendMessage({ action: "OPEN_MAILTO", url: mailtoUrl }); }}
               style={{ fontSize: "13px", color: colors.azure42, textDecoration: "underline", cursor: "pointer" }}
             >
               Open email draft in Outlook

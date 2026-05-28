@@ -342,9 +342,17 @@ function buildEntityName(documentTitle: string, documentName: string): string {
   }
 }
 
-function openMailtoUrl(url: string): void {
+// Returns true if the compose window was opened; false if unavailable (caller should pass the
+// URL to the dialog instead so the user can click the link natively).
+function openMailtoUrl(url: string): boolean {
   dbg("HOST", "openMailtoUrl", { host: Office.context.host, url: url?.slice(0, 80) });
   if (Office.context.host === Office.HostType.Outlook) {
+    // displayNewMessageForm is read-mode only — in compose context it is undefined.
+    // openBrowserWindow does not support mailto: protocol, so there is no fallback.
+    if (typeof Office.context.mailbox.displayNewMessageForm !== "function") {
+      dbg("HOST", "displayNewMessageForm unavailable (compose mode) — passing URL to dialog");
+      return false;
+    }
     try {
       const withoutScheme = url.replace(/^mailto:/, "");
       const [rawTo, rawQuery] = withoutScheme.split("?");
@@ -357,15 +365,18 @@ function openMailtoUrl(url: string): void {
       };
       dbg("HOST", "displayNewMessageForm", { to, subject: form.subject.slice(0, 40) });
       Office.context.mailbox.displayNewMessageForm(form);
+      return true;
     } catch (err) {
-      dbg("HOST", "displayNewMessageForm failed, falling back to openBrowserWindow", String(err));
-      try { Office.context.ui.openBrowserWindow(url); } catch { /* ignore */ }
+      dbg("HOST", "displayNewMessageForm failed", String(err));
+      return false;
     }
   } else {
     try {
       Office.context.ui.openBrowserWindow(url);
+      return true;
     } catch (err) {
       dbg("HOST", "openBrowserWindow failed", String(err));
+      return false;
     }
   }
 }
@@ -588,13 +599,11 @@ async function openAnalyzeDialog(
             // context opens a new browser tab in Office Online instead of the OS handler).
             if (fbPayload.feedback.feedbackType === "Provided") {
               const mailtoUrl = buildMailtoUrl(fbPayload);
-              dbg("HOST", "sending SAVED to dialog", { hasMailto: !!mailtoUrl });
-              if (mailtoUrl) {
-                openMailtoUrl(mailtoUrl);
-                dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "" } as HostMessage));
-              } else {
-                dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
-              }
+              const opened = mailtoUrl ? openMailtoUrl(mailtoUrl) : false;
+              dbg("HOST", "sending SAVED to dialog", { hasMailto: !!mailtoUrl, opened });
+              // If host opened the compose window, send empty URL (hide link in dialog).
+              // If not (compose mode / failed), send the URL so the user can click natively.
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: opened ? "" : mailtoUrl } as HostMessage));
               // Do NOT close here — wait for the dialog to send CLOSE after the user clicks.
             } else {
               dialog.close();
@@ -724,17 +733,12 @@ function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
               upsertPersonWithEmail(p.toPerson, p.toPersonEmail);
             }
             const mailtoUrl = buildRequestMailtoUrl(p);
-            if (mailtoUrl) {
-              openMailtoUrl(mailtoUrl);
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "" } as HostMessage));
-            } else {
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
-            }
+            const opened = mailtoUrl ? openMailtoUrl(mailtoUrl) : false;
+            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: opened ? "" : mailtoUrl } as HostMessage));
             break;
           }
           case "OPEN_MAILTO":
             openMailtoUrl((m as { action: string; url: string }).url);
-            dialog.messageChild(JSON.stringify({ type: "COMPOSE_OPENING" } as HostMessage));
             dialog.close();
             addInEvent.completed();
             break;
@@ -1596,18 +1600,13 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
               personEmail: f.personEmail,
             });
             const mailtoUrl = buildMailtoUrl(fbPayload);
-            if (mailtoUrl) {
-              openMailtoUrl(mailtoUrl);
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "" } as HostMessage));
-            } else {
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
-            }
+            const opened = mailtoUrl ? openMailtoUrl(mailtoUrl) : false;
+            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: opened ? "" : mailtoUrl } as HostMessage));
             // Stay open — wait for CLOSE from the success screen.
             break;
           }
           case "OPEN_MAILTO":
             openMailtoUrl((m as { action: string; url: string }).url);
-            dialog.messageChild(JSON.stringify({ type: "COMPOSE_OPENING" } as HostMessage));
             dialog.close();
             addInEvent.completed();
             break;
@@ -1950,17 +1949,12 @@ async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Even
               break;
             }
             const mailtoUrl = buildRequestSLMailtoUrl(p);
-            if (mailtoUrl) {
-              openMailtoUrl(mailtoUrl);
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "" } as HostMessage));
-            } else {
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
-            }
+            const opened = mailtoUrl ? openMailtoUrl(mailtoUrl) : false;
+            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: opened ? "" : mailtoUrl } as HostMessage));
             break;
           }
           case "OPEN_MAILTO":
             openMailtoUrl((m as { action: string; url: string }).url);
-            dialog.messageChild(JSON.stringify({ type: "COMPOSE_OPENING" } as HostMessage));
             dialog.close();
             addInEvent.completed();
             break;
