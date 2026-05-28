@@ -23,7 +23,10 @@ import {
   saveFeedback,
   saveFeedbackHistory,
   saveCommSignalInfo,
+  getCommSignalRequests,
+  deleteCommSignalRequest,
 } from "@/db/queries/feedback";
+import { saveArticle, saveArticleWizard, getAllArticles, deleteArticle } from "@/db/queries/article";
 import { deleteFlag, getAllFlaggedSelections, saveFlag } from "@/db/queries/flag";
 import {
   addAttachedFile,
@@ -42,6 +45,8 @@ import type {
   HostMessage,
   PrincipleInterpretation,
   SaveAnalysisPayload,
+  SaveArticlePayload,
+  SaveArticleWizardPayload,
   SaveCommunicationConfigPayload,
   SaveFeedbackPayload,
   SavePrincipleInSelectionPayload,
@@ -57,6 +62,10 @@ const FLAG_DIALOG_SIZE = { height: 58, width: 25 };
 const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: 25 };
 const ABOUT_DIALOG_SIZE = { height: 27, width: 32 };
 const COMM_CONFIG_SIZE = { height: 36, width: 28 };
+const CREATE_ARTICLE_PICKER_SIZE = { height: 20, width: 14 };
+const CREATE_ARTICLE_TEMPLATE_SIZE = { height: 56, width: 27 };
+const CREATE_ARTICLE_DIALOG_SIZE = { height: 61, width: 27 };
+const ARTICLE_WIZARD_SIZE = { height: 53, width: 27 };
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -467,13 +476,28 @@ export function OutlookTaskPane() {
   const handleFeedbackHistory = useCallback(() => {
     if (!dbReady) return;
     const { personName, personEmail } = getUserIdentity();
-    const feedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
+
+    const buildFeedbacks = () => getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
+
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=feedback-history`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], feedbacks }),
-      (_dialog, action) => {
-        if (action.action === "DELETE_FEEDBACK") deleteFeedback((action as { action: string; id: number }).id);
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], feedbacks: buildFeedbacks() }),
+      (dialog, action) => {
+        if (action.action === "DELETE_FEEDBACK") {
+          deleteFeedback((action as { action: string; id: number }).id);
+        }
+        if (action.action === "LIST_FEEDBACK_REQUESTED") {
+          const { personName: pn, personEmail: pe } = getUserIdentity();
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "list-feedback-requested", payload: { selection: "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], commSignalRequests: getCommSignalRequests() } } as HostMessage));
+        }
+        if (action.action === "BACK_TO_FEEDBACK_HISTORY") {
+          const { personName: pn, personEmail: pe } = getUserIdentity();
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "feedback-history", payload: { selection: "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], feedbacks: buildFeedbacks() } } as HostMessage));
+        }
+        if (action.action === "DELETE_COMM_SIGNAL_REQUEST") {
+          try { deleteCommSignalRequest((action as { action: string; id: number }).id); } catch { /* ignore */ }
+        }
       }
     );
   }, [dbReady, openManagedDialog]);
@@ -491,6 +515,148 @@ export function OutlookTaskPane() {
       }
     );
   }, [dbReady, openManagedDialog]);
+
+  const handleListArticles = useCallback(() => {
+    if (!dbReady) return;
+    const { personName, personEmail } = getUserIdentity();
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=list-articles`,
+      DIALOG_SIZE,
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], articles: getAllArticles() }),
+      (_dialog, action) => {
+        if (action.action === "DELETE_ARTICLE") {
+          try { deleteArticle((action as { action: string; id: number }).id); } catch { /* ignore */ }
+        }
+      }
+    );
+  }, [dbReady, openManagedDialog]);
+
+  const handleCreateArticle = useCallback(() => {
+    if (!dbReady) return;
+    if (dialogRef.current) { setStatus({ msg: "Please close the open dialog first.", ok: false }); return; }
+    const { personName: rawName, personEmail } = getUserIdentity();
+    const commConfig = getCommunicationConfig();
+    const personName = rawName || commConfig?.personName || "";
+
+    const basePayload = (extra?: Partial<DialogInitPayload>): DialogInitPayload => ({
+      selection: "", mode: "selection" as const, source: getSource(), personName, personEmail,
+      applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [],
+      ...extra,
+    });
+
+    // Opens a dialog with READY→INIT + CLOSE handled; onMsg handles everything else.
+    // Uses identity check on dialogRef to avoid stale-closure races during transitions.
+    function openDlg(
+      url: string,
+      size: { height: number; width: number },
+      payload: DialogInitPayload,
+      onMsg: (dlg: Office.Dialog, action: DialogAction) => void,
+      attempt = 0,
+    ) {
+      Office.context.ui.displayDialogAsync(url, { ...size, displayInIframe: true }, (result) => {
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+            setTimeout(() => openDlg(url, size, payload, onMsg, attempt + 1), 300);
+            return;
+          }
+          dialogRef.current = null;
+          setStatus({ msg: `Could not open dialog (${(result.error as { code: number }).code}).`, ok: false });
+          return;
+        }
+        const dlg = result.value;
+        dialogRef.current = dlg;
+        dlg.addEventHandler(Office.EventType.DialogEventReceived, () => {
+          if (dialogRef.current === dlg) dialogRef.current = null;
+        });
+        dlg.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+          const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+          if (m.action === "READY") { dlg.messageChild(JSON.stringify({ type: "INIT", payload } as HostMessage)); return; }
+          if (m.action === "CLOSE") { dlg.close(); if (dialogRef.current === dlg) dialogRef.current = null; return; }
+          onMsg(dlg, m);
+        });
+      });
+    }
+
+    function openWizard(templateName: string, wizardCategory: string) {
+      openDlg(
+        `${DIALOG_BASE}/dialog.html?view=article-wizard`,
+        ARTICLE_WIZARD_SIZE,
+        basePayload({ templateName, wizardCategory }),
+        (wzDlg, action) => {
+          if (action.action === "SAVE_ARTICLE_WIZARD") {
+            const p = action.payload as SaveArticleWizardPayload;
+            try {
+              saveArticleWizard({ ...p, personName, personEmail, source: getSource() });
+              wzDlg.messageChild(JSON.stringify({ type: "SAVED" } as HostMessage));
+            } catch (err) {
+              wzDlg.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+            }
+          }
+          if (action.action === "BACK_TO_PICKER") {
+            wzDlg.close();
+            if (dialogRef.current === wzDlg) dialogRef.current = null;
+            openTemplatePicker();
+          }
+        },
+      );
+    }
+
+    function openTemplatePicker() {
+      openDlg(
+        `${DIALOG_BASE}/dialog.html?view=template-picker`,
+        CREATE_ARTICLE_TEMPLATE_SIZE,
+        basePayload(),
+        (tplDlg, action) => {
+          if (action.action === "BACK") {
+            tplDlg.close();
+            if (dialogRef.current === tplDlg) dialogRef.current = null;
+            openPicker();
+          }
+          if (action.action === "TEMPLATE_CONFIRMED") {
+            const { templateName, category } = action as { action: string; templateName: string; category: string };
+            tplDlg.close();
+            if (dialogRef.current === tplDlg) dialogRef.current = null;
+            openWizard(templateName, category);
+          }
+        },
+      );
+    }
+
+    function openPicker() {
+      openDlg(
+        `${DIALOG_BASE}/dialog.html?view=create-article-picker`,
+        CREATE_ARTICLE_PICKER_SIZE,
+        basePayload(),
+        (pickerDlg, action) => {
+          if (action.action === "BLANK_SELECTED") {
+            pickerDlg.close();
+            if (dialogRef.current === pickerDlg) dialogRef.current = null;
+            openDlg(
+              `${DIALOG_BASE}/dialog.html?view=create-article`,
+              CREATE_ARTICLE_DIALOG_SIZE,
+              basePayload(),
+              (formDlg, formAction) => {
+                if (formAction.action === "SAVE_ARTICLE") {
+                  const p = formAction.payload as SaveArticlePayload;
+                  try { saveArticle({ ...p, personName, personEmail, source: getSource() }); }
+                  catch (err) { formDlg.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); return; }
+                  formDlg.close();
+                  if (dialogRef.current === formDlg) dialogRef.current = null;
+                }
+              },
+            );
+          }
+          if (action.action === "TEMPLATE_SELECTED") {
+            pickerDlg.close();
+            if (dialogRef.current === pickerDlg) dialogRef.current = null;
+            openTemplatePicker();
+          }
+        },
+      );
+    }
+
+    openPicker();
+  }, [dbReady]);
 
   const handleCommunicationConfig = useCallback(() => {
     if (!dbReady) return;
@@ -556,13 +722,13 @@ export function OutlookTaskPane() {
       case "listRetained":       handleRetainedHistory(); break;
       case "communicationConfig":handleCommunicationConfig(); break;
       case "requestSLFeedback":  handleRequestSLFeedback(); break;
-      case "createArticle":      handleSimple("create-article"); break;
-      case "listArticles":       handleSimple("list-articles"); break;
+      case "createArticle":      handleCreateArticle(); break;
+      case "listArticles":       handleListArticles(); break;
       case "help":               handleSimple("help"); break;
       case "about":              handleSimple("about"); break;
       default: break;
     }
-  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleCommunicationConfig, handleRequestSLFeedback, handleSimple]);
+  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleRequestSLFeedback, handleSimple]);
 
   // ── render ────────────────────────────────────────────────────────────────
 
