@@ -724,6 +724,9 @@ function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
           }
           case "OPEN_MAILTO":
             openMailtoUrl((m as { action: string; url: string }).url);
+            dialog.messageChild(JSON.stringify({ type: "COMPOSE_OPENING" } as HostMessage));
+            dialog.close();
+            addInEvent.completed();
             break;
           case "CLOSE":
             dialog.close();
@@ -1589,6 +1592,9 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
           }
           case "OPEN_MAILTO":
             openMailtoUrl((m as { action: string; url: string }).url);
+            dialog.messageChild(JSON.stringify({ type: "COMPOSE_OPENING" } as HostMessage));
+            dialog.close();
+            addInEvent.completed();
             break;
           case "CLOSE":
             dialog.close();
@@ -1934,6 +1940,9 @@ async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Even
           }
           case "OPEN_MAILTO":
             openMailtoUrl((m as { action: string; url: string }).url);
+            dialog.messageChild(JSON.stringify({ type: "COMPOSE_OPENING" } as HostMessage));
+            dialog.close();
+            addInEvent.completed();
             break;
           case "CLOSE":
             dialog.close();

@@ -77,6 +77,8 @@ function DialogApp() {
           } else if (msg.type === "SAVED") {
             dbg("DIALOG", "SAVED received — showing success state", { hasMailto: !!msg.mailtoUrl });
             setMailtoUrl(msg.mailtoUrl);
+          } else if (msg.type === "COMPOSE_OPENING") {
+            dbg("DIALOG", "COMPOSE_OPENING received — host confirmed OPEN_MAILTO and is closing dialog");
           } else if (msg.type === "RETAIN_SAVED") {
             dbg("DIALOG", "RETAIN_SAVED received — showing retain success state");
             setRetainSaved(true);

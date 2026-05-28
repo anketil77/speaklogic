@@ -761,4 +761,5 @@ export type HostMessage =
   | { type: "NAVIGATE"; view: string; payload: DialogInitPayload }
   | { type: "SAVED"; mailtoUrl: string }
   | { type: "RETAIN_SAVED" }
-  | { type: "FILE_ADDED"; id: number };
+  | { type: "FILE_ADDED"; id: number }
+  | { type: "COMPOSE_OPENING" };
