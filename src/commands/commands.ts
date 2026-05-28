@@ -343,18 +343,30 @@ function buildEntityName(documentTitle: string, documentName: string): string {
 }
 
 function openMailtoUrl(url: string): void {
+  dbg("HOST", "openMailtoUrl", { host: Office.context.host, url: url?.slice(0, 80) });
   if (Office.context.host === Office.HostType.Outlook) {
-    const withoutScheme = url.replace(/^mailto:/, "");
-    const [rawTo, rawQuery] = withoutScheme.split("?");
-    const to = decodeURIComponent(rawTo || "");
-    const params = new URLSearchParams(rawQuery ?? "");
-    Office.context.mailbox.displayNewMessageFormAsync({
-      toRecipients: to ? [to] : [],
-      subject: params.get("subject") ?? "",
-      htmlBody: params.get("body") ?? "",
-    }, () => { /* no-op */ });
+    try {
+      const withoutScheme = url.replace(/^mailto:/, "");
+      const [rawTo, rawQuery] = withoutScheme.split("?");
+      const to = decodeURIComponent(rawTo || "");
+      const params = new URLSearchParams(rawQuery ?? "");
+      const form = {
+        toRecipients: to ? [to] : [],
+        subject: params.get("subject") ?? "",
+        htmlBody: params.get("body") ?? "",
+      };
+      dbg("HOST", "displayNewMessageForm", { to, subject: form.subject.slice(0, 40) });
+      Office.context.mailbox.displayNewMessageForm(form);
+    } catch (err) {
+      dbg("HOST", "displayNewMessageForm failed, falling back to openBrowserWindow", String(err));
+      try { Office.context.ui.openBrowserWindow(url); } catch { /* ignore */ }
+    }
   } else {
-    Office.context.ui.openBrowserWindow(url);
+    try {
+      Office.context.ui.openBrowserWindow(url);
+    } catch (err) {
+      dbg("HOST", "openBrowserWindow failed", String(err));
+    }
   }
 }
 
