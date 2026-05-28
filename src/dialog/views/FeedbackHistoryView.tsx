@@ -17,6 +17,9 @@ import {
   FilterFunnelIcon,
   ViewReportIcon,
   ApplySelFbMenuIcon,
+  ListFeedbackRequestedHeaderIcon,
+  ListFeedbackAppliedCmdIcon,
+  ListFeedbackProvidedCmdIcon,
 } from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
 import type { ProjectFeedback } from "@/types/db";
@@ -462,9 +465,73 @@ export default function FeedbackHistoryView() {
           )}
         </div>
 
-        {/* View Provided Feedback Report */}
+        {/* List of Feedback Applied / Provided / Requested — C# ribbonPageGroup3 */}
+        <CmdSepBar />
         <button
-          title="View Provided Feedback Report"
+          title="List of Feedback Applied"
+          onClick={() => sendMessage({ action: "LIST_FEEDBACK_APPLIED" })}
+          className="sl-icon-btn"
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "none",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <ListFeedbackAppliedCmdIcon />
+        </button>
+
+        <button
+          title="List of Feedback Provided"
+          onClick={() => sendMessage({ action: "LIST_FEEDBACK_PROVIDED" })}
+          className="sl-icon-btn"
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "none",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <ListFeedbackProvidedCmdIcon />
+        </button>
+
+        <button
+          title="List of Feedback Requested"
+          onClick={() => sendMessage({ action: "LIST_FEEDBACK_REQUESTED" })}
+          className="sl-icon-btn"
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "none",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <ListFeedbackRequestedHeaderIcon />
+        </button>
+
+        <CmdSepBar />
+
+        {/* View Applied Feedback Report — C# rpReport group, Applied before Provided */}
+        <button
+          title="View Applied Feedback Report"
           disabled={!hasSelection}
           onClick={() => {
             if (selectedIndex !== null) openFeedbackReport(displayRows[selectedIndex]);
@@ -487,9 +554,9 @@ export default function FeedbackHistoryView() {
           <ViewReportIcon />
         </button>
 
-        {/* View Applied Feedback Report */}
+        {/* View Provided Feedback Report */}
         <button
-          title="View Applied Feedback Report"
+          title="View Provided Feedback Report"
           disabled={!hasSelection}
           onClick={() => {
             if (selectedIndex !== null) openFeedbackReport(displayRows[selectedIndex]);

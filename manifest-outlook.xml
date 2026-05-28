@@ -141,6 +141,12 @@
                   <Icon><bt:Image size="16" resid="requestFeedback.Icon16"/><bt:Image size="32" resid="requestFeedback.Icon32"/><bt:Image size="80" resid="requestFeedback.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>requestFeedback</FunctionName></Action>
                 </Control>
+                <Control xsi:type="Button" id="listFeedbackRequested_OL">
+                  <Label resid="listFeedbackRequested.Label"/>
+                  <Supertip><Title resid="listFeedbackRequested.Label"/><Description resid="listFbReq.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listFeedbackRequested.Icon16"/><bt:Image size="32" resid="listFeedbackRequested.Icon32"/><bt:Image size="80" resid="listFeedbackRequested.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listFeedbackRequested</FunctionName></Action>
+                </Control>
               </Group>
 
               <Group id="grpArticle_OL">
@@ -258,6 +264,9 @@
         <bt:Image id="requestFeedback.Icon16" DefaultValue="https://localhost:3000/assets/btn-req-fb-16.png"/>
         <bt:Image id="requestFeedback.Icon32" DefaultValue="https://localhost:3000/assets/btn-req-fb-32.png"/>
         <bt:Image id="requestFeedback.Icon80" DefaultValue="https://localhost:3000/assets/btn-req-fb-80.png"/>
+        <bt:Image id="listFeedbackRequested.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-feedback-16.png"/>
+        <bt:Image id="listFeedbackRequested.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-feedback-32.png"/>
+        <bt:Image id="listFeedbackRequested.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-feedback-80.png"/>
         <bt:Image id="createArticle.Icon16" DefaultValue="https://localhost:3000/assets/btn-create-article-16.png"/>
         <bt:Image id="createArticle.Icon32" DefaultValue="https://localhost:3000/assets/btn-create-article-32.png"/>
         <bt:Image id="createArticle.Icon80" DefaultValue="https://localhost:3000/assets/btn-create-article-80.png"/>
@@ -309,6 +318,7 @@
         <bt:String id="provideFeedbackSelection.Label" DefaultValue="Provide Feedback"/>
         <bt:String id="provideFeedbackParagraph.Label" DefaultValue="Feedback Paragraph"/>
         <bt:String id="requestFeedback.Label" DefaultValue="Request Feedback"/>
+        <bt:String id="listFeedbackRequested.Label" DefaultValue="List of Feedback Requested"/>
         <bt:String id="createArticle.Label" DefaultValue="Create Article"/>
         <bt:String id="listArticles.Label" DefaultValue="List Articles"/>
         <bt:String id="flaggedSelection.Label" DefaultValue="Flagged Selection"/>
@@ -331,6 +341,7 @@
         <bt:String id="provideFeedbackSelection.Tooltip" DefaultValue="Send analysis as email feedback"/>
         <bt:String id="provideFeedbackParagraph.Tooltip" DefaultValue="Send paragraph analysis as email feedback"/>
         <bt:String id="requestFeedback.Tooltip" DefaultValue="Request feedback from another person"/>
+        <bt:String id="listFbReq.Tooltip" DefaultValue="View list of feedback requests"/>
         <bt:String id="createArticle.Tooltip" DefaultValue="Create a new article"/>
         <bt:String id="listArticles.Tooltip" DefaultValue="View saved articles"/>
         <bt:String id="flaggedSelection.Tooltip" DefaultValue="View flagged selections"/>

@@ -8,6 +8,7 @@ import type {
   ProjectFeedback,
   FlagEntityForAnalysis,
   PrincipleInterpretation,
+  CommSignalInfo,
 } from "@/types/db";
 
 const GREEN = "#42b634";
@@ -352,4 +353,39 @@ function buildInterpretedPrincipleReport(item: PrincipleInterpretation): string 
 
 export function openInterpretedPrincipleReport(item: PrincipleInterpretation): void {
   openBlob(buildInterpretedPrincipleReport(item));
+}
+
+// ── Feedback Request reports ───────────────────────────────────────────────
+
+/** "View Request Feedback Selection Report" — shows selection + request details. */
+export function openRequestFeedbackSelectionReport(req: CommSignalInfo): void {
+  const rows = [
+    fieldRow("From Person",            esc(req.fromPerson)),
+    fieldRow("To Person",              esc(req.toPerson)),
+    fieldRow("Feedback Date",          esc(req.communicationDate)),
+    fieldRow("Feedback Time",          esc(req.communicationTime)),
+    fieldRow("Application Name",       esc(req.applicationName)),
+    fieldRow("Communication Function", esc(req.communicationFunction)),
+    fieldRow("Feedback Subject",       esc(req.communicationSubject)),
+    fieldRow("Feedback Type",          esc(req.communicationSignalType)),
+    blockField("Actual Request For Feedback", esc(stripHtml(req.actualCommunication))),
+    blockField("About Selection",             esc(stripHtml(req.actualSelection))),
+  ].join("");
+  openBlob(wrapPage("Request Feedback Selection Report", sectionBlock("Request For Feedback — Selection", rows)));
+}
+
+/** "View Request Feedback Report" — shows the core feedback request. */
+export function openRequestFeedbackReport(req: CommSignalInfo): void {
+  const rows = [
+    fieldRow("From Person",            esc(req.fromPerson)),
+    fieldRow("To Person",              esc(req.toPerson)),
+    fieldRow("Feedback Date",          esc(req.communicationDate)),
+    fieldRow("Feedback Time",          esc(req.communicationTime)),
+    fieldRow("Application Name",       esc(req.applicationName)),
+    fieldRow("Communication Function", esc(req.communicationFunction)),
+    fieldRow("Communication Signal",   esc(req.communicationSignalType)),
+    fieldRow("Feedback Subject",       esc(req.communicationSubject)),
+    blockField("Actual Request For Feedback", esc(stripHtml(req.actualCommunication))),
+  ].join("");
+  openBlob(wrapPage("Request Feedback Report", sectionBlock("Request For Feedback", rows)));
 }

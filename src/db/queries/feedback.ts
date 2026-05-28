@@ -1,7 +1,7 @@
 // src/db/queries/feedback.ts
 
 import { getDb, persistDb, nowDate, nowTime } from "@/db/db";
-import type { ProjectFeedback, SaveFeedbackPayload, SaveRequestFeedbackPayload } from "@/types/db";
+import type { ProjectFeedback, SaveFeedbackPayload, SaveRequestFeedbackPayload, CommSignalInfo } from "@/types/db";
 
 export function getAllFeedbacks(): ProjectFeedback[] {
   const db = getDb();
@@ -158,4 +158,48 @@ export function saveCommSignalInfo(p: SaveRequestFeedbackPayload & { entitySelec
   const id = result[0]?.values[0]?.[0] as number;
   persistDb();
   return id;
+}
+
+// ── Feedback Requests (CommSignalInfo) ────────────────────────────────────────
+
+/** Returns all CommSignalInfo rows where isCommunicationFeedbackRequested = 1. */
+export function getCommSignalRequests(): CommSignalInfo[] {
+  const db = getDb();
+  const result = db.exec(
+    `SELECT id, fromPerson, toPerson, personAddress, applicationName,
+     communicationFunction, communicationSignalType, communicationSubject,
+     communicationDate, communicationTime, actualCommunication, actualSelection,
+     selectionType, entitySelected, isCommunicationFeedbackRequested,
+     isCommunicationForReview, commSignalInfoIdentification
+     FROM CommSignalInfo
+     WHERE isCommunicationFeedbackRequested = 1
+     ORDER BY id DESC`
+  );
+  if (!result[0]) return [];
+  return result[0].values.map((row) => ({
+    id:                              row[0]  as number,
+    fromPerson:                      (row[1]  as string)  ?? "",
+    toPerson:                        (row[2]  as string)  ?? "",
+    personAddress:                   (row[3]  as string)  ?? "",
+    applicationName:                 (row[4]  as string)  ?? "",
+    communicationFunction:           (row[5]  as string)  ?? "",
+    communicationSignalType:         (row[6]  as string)  ?? "",
+    communicationSubject:            (row[7]  as string)  ?? "",
+    communicationDate:               (row[8]  as string)  ?? "",
+    communicationTime:               (row[9]  as string)  ?? "",
+    actualCommunication:             (row[10] as string)  ?? "",
+    actualSelection:                 (row[11] as string)  ?? "",
+    selectionType:                   (row[12] as string)  ?? "",
+    entitySelected:                  (row[13] as string)  ?? "",
+    isCommunicationFeedbackRequested: 1 as 0 | 1,
+    isCommunicationForReview:        (row[15] as 0 | 1)  ?? 0,
+    commSignalInfoIdentification:    (row[16] as string)  ?? "",
+  }));
+}
+
+/** Deletes a CommSignalInfo row (hides the feedback request from the list). */
+export function deleteCommSignalRequest(id: number): void {
+  const db = getDb();
+  db.run("DELETE FROM CommSignalInfo WHERE id = ?", [id]);
+  persistDb();
 }

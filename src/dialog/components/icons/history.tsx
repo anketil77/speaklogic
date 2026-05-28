@@ -153,3 +153,112 @@ export function PfAnalysisListIcon() {
     </svg>
   );
 }
+
+/** List-doc + green checkmark badge — "List of Feedback Applied" command bar button (16px). */
+export function ListFeedbackAppliedCmdIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1.5" width="9.5" height="11" rx="1" stroke="#4259C3" strokeWidth="1.2" />
+      <line x1="3" y1="5"   x2="8.5" y2="5"   stroke="#4259C3" strokeWidth="1" strokeLinecap="round" />
+      <line x1="3" y1="7"   x2="8.5" y2="7"   stroke="#4259C3" strokeWidth="1" strokeLinecap="round" />
+      <line x1="3" y1="9"   x2="6.5" y2="9"   stroke="#4259C3" strokeWidth="1" strokeLinecap="round" />
+      <circle cx="12.5" cy="12.5" r="3" fill="#0CBA58" />
+      <path d="M11 12.5L12 13.5L14 11.5" stroke="white" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** List-doc + green arrow badge — "List of Feedback Provided" command bar button (16px). */
+export function ListFeedbackProvidedCmdIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1.5" width="9.5" height="11" rx="1" stroke="#4259C3" strokeWidth="1.2" />
+      <line x1="3" y1="5"   x2="8.5" y2="5"   stroke="#4259C3" strokeWidth="1" strokeLinecap="round" />
+      <line x1="3" y1="7"   x2="8.5" y2="7"   stroke="#4259C3" strokeWidth="1" strokeLinecap="round" />
+      <line x1="3" y1="9"   x2="6.5" y2="9"   stroke="#4259C3" strokeWidth="1" strokeLinecap="round" />
+      <circle cx="12.5" cy="12.5" r="3" fill="#0CBA58" />
+      <path d="M11 12.5H14M14 12.5L12.5 11M14 12.5L12.5 14" stroke="white" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ── ListFeedbackRequestedView icons ───────────────────────────────────────────
+
+/** 18×18 inbox/request icon for the ListFeedbackRequestedView header badge. */
+export function ListFeedbackRequestedHeaderIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="14" height="2" rx="1" fill="#0078D4" />
+      <rect x="2" y="6" width="9"  height="2" rx="1" fill="#0078D4" />
+      <rect x="2" y="10" width="11" height="2" rx="1" fill="#0078D4" />
+      <path d="M2 14.5H9M11 14.5H16" stroke="#0078D4" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="10" cy="14.5" r="1.5" fill="#0078D4" />
+    </svg>
+  );
+}
+
+/** Eye icon (white) — "View Feedback Request" primary button. */
+export function ViewFeedbackRequestIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 6.5C1 6.5 3 2.5 6.5 2.5C10 2.5 12 6.5 12 6.5C12 6.5 10 10.5 6.5 10.5C3 10.5 1 6.5 1 6.5Z" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="6.5" cy="6.5" r="1.8" stroke="white" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+/** Pencil icon (blue) — "Edit Feedback" command bar button (disabled action). */
+export function EditFeedbackRequestIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9.5 3.5L12.5 6.5L5.5 13.5H2.5V10.5L9.5 3.5Z" stroke="#616161" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 5L11 8" stroke="#616161" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Check+doc icon (blue/green) — "Apply Feedback" command bar button (disabled action). */
+export function ApplyFeedbackRequestIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="9" height="12" rx="1" stroke="#4259C3" strokeWidth="1.3" />
+      <path d="M4 6H9M4 8.5H7" stroke="#4259C3" strokeWidth="1.1" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="3" fill="#0CBA58" />
+      <path d="M10.5 12L11.5 13L13.5 11" stroke="white" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Two speech bubbles — "Provide Feedback With Feedback" cmd bar (disabled action). */
+export function ProvideFeedbackWithRequestIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 2C2 1.45 2.45 1 3 1H10C10.55 1 11 1.45 11 2V7C11 7.55 10.55 8 10 8H5L3 10V8H3C2.45 8 2 7.55 2 7V2Z" stroke="#616161" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M11 4H13C13.55 4 14 4.45 14 5V9.5C14 10.05 13.55 10.5 13 10.5H12V12L10.5 10.5H8.5" stroke="#616161" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Document with lines — "Selection Report" command bar button. */
+export function SelectionReportIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="1" width="10" height="14" rx="1" stroke="#1B1B1B" strokeWidth="1.2" />
+      <line x1="5" y1="5"  x2="11" y2="5"  stroke="#1B1B1B" strokeWidth="1.1" strokeLinecap="round" />
+      <line x1="5" y1="7.5" x2="11" y2="7.5" stroke="#1B1B1B" strokeWidth="1.1" strokeLinecap="round" />
+      <line x1="5" y1="10" x2="9"  y2="10" stroke="#1B1B1B" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Document with arrow — "Request Provided Report" command bar button. */
+export function RequestProvidedReportIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="1" width="7" height="10" rx="1" stroke="#1B1B1B" strokeWidth="1.2" />
+      <line x1="5" y1="4"  x2="8"  y2="4"  stroke="#1B1B1B" strokeWidth="1.1" strokeLinecap="round" />
+      <line x1="5" y1="6.5" x2="8" y2="6.5" stroke="#1B1B1B" strokeWidth="1.1" strokeLinecap="round" />
+      <path d="M10 9H14M14 9L12 7M14 9L12 11" stroke="#1B1B1B" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

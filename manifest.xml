@@ -486,7 +486,6 @@
         <bt:Image id="requestFeedback.Icon16" DefaultValue="https://localhost:3000/assets/btn-req-fb-16.png"/>
         <bt:Image id="requestFeedback.Icon32" DefaultValue="https://localhost:3000/assets/btn-req-fb-32.png"/>
         <bt:Image id="requestFeedback.Icon80" DefaultValue="https://localhost:3000/assets/btn-req-fb-80.png"/>
-
         <!-- Article group -->
         <bt:Image id="createArticle.Icon16" DefaultValue="https://localhost:3000/assets/btn-create-article-16.png"/>
         <bt:Image id="createArticle.Icon32" DefaultValue="https://localhost:3000/assets/btn-create-article-32.png"/>

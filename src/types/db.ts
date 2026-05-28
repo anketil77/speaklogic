@@ -593,6 +593,7 @@ export interface DialogInitPayload {
   principleInterpretations?: PrincipleInterpretation[];
   filesByInterpretationId?: Record<number, AttachFileToProject[]>;
   articles?: Article[];
+  commSignalRequests?: CommSignalInfo[];
   /** Passed when opening the article wizard after template selection. */
   templateName?: string;
   wizardCategory?: string;
@@ -662,7 +663,12 @@ export type DialogAction =
   | { action: "TEMPLATE_CONFIRMED"; templateName: string; category: string }
   | { action: "BACK" }
   | { action: "BACK_TO_PICKER" }
-  | { action: "DELETE_ARTICLE"; id: number };
+  | { action: "DELETE_ARTICLE"; id: number }
+  | { action: "DELETE_COMM_SIGNAL_REQUEST"; id: number }
+  | { action: "LIST_FEEDBACK_REQUESTED" }
+  | { action: "LIST_FEEDBACK_APPLIED" }
+  | { action: "LIST_FEEDBACK_PROVIDED" }
+  | { action: "BACK_TO_FEEDBACK_HISTORY" };
 
 export interface SaveRelatedSelectionPayload {
   record: Omit<SelectionWithPrinciple, "id">;

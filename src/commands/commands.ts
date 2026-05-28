@@ -6,7 +6,7 @@ const DIALOG_BASE = window.location.origin;
 
 import { initDb, nowDate } from "@/db/db";
 import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis } from "@/db/queries/analysis";
-import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback } from "@/db/queries/feedback";
+import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { saveFlag, getAllFlaggedSelections, deleteFlag } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
@@ -51,7 +51,7 @@ const ABOUT_DIALOG_SIZE = { height: 27, width: 32 } as const;
 const CREATE_ARTICLE_PICKER_SIZE        = { height: 20, width: 14 } as const;
 const CREATE_ARTICLE_TEMPLATE_SIZE      = { height: 56, width: 27 } as const; // ~605×520px — fits 460×516 card
 const CREATE_ARTICLE_DIALOG_SIZE        = { height: 61, width: 27 } as const;
-const ARTICLE_WIZARD_SIZE               = { height: 75, width: 27 } as const; // ~810px — tallest step (step 7) needs ~647px
+const ARTICLE_WIZARD_SIZE               = { height: 53, width: 27 } as const; // ~572px @ 1080p — all steps fit cleanly
 
 let dbInitialized = false;
 
@@ -223,21 +223,42 @@ async function getPowerPointTextAndMeta(mode: SelectionMode): Promise<{ text: st
   return { text, documentTitle: "", documentName };
 }
 
-async function getOutlookText(_mode: SelectionMode): Promise<string> {
+async function getOutlookText(mode: SelectionMode): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const item = (Office.context.mailbox.item) as any;
     if (!item) { resolve(""); return; }
-    item.body.getAsync(
-      Office.CoercionType.Text,
-      (result: Office.AsyncResult<string>) => {
-        if (result.status === Office.AsyncResultStatus.Failed) {
-          reject(new Error(result.error?.message ?? "Failed to get email body"));
-          return;
+
+    const getFullBody = () => {
+      item.body.getAsync(
+        Office.CoercionType.Text,
+        (result: Office.AsyncResult<string>) => {
+          if (result.status === Office.AsyncResultStatus.Failed) {
+            reject(new Error(result.error?.message ?? "Failed to get email body"));
+            return;
+          }
+          resolve(result.value?.trim() ?? "");
         }
-        resolve(result.value?.trim() ?? "");
-      }
-    );
+      );
+    };
+
+    // getSelectedDataAsync only exists in compose mode (Mailbox 1.2+)
+    if (typeof item.getSelectedDataAsync === "function") {
+      item.getSelectedDataAsync(
+        Office.CoercionType.Text,
+        (result: Office.AsyncResult<{ data: string; sourceProperty: string }>) => {
+          const selected = (result.value?.data ?? "").trim();
+          if (selected) { resolve(selected); return; }
+          // "Selection" buttons require actual highlighted text — return "" so the
+          // caller shows the "Text Selection Message" dialog, matching Word behaviour.
+          // "Paragraph" buttons fall back to the full body.
+          if (mode === "selection") { resolve(""); return; }
+          getFullBody();
+        }
+      );
+    } else {
+      getFullBody();
+    }
   });
 }
 
@@ -919,6 +940,59 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         }
         if (m.action === "DELETE_FEEDBACK") {
           deleteFeedback((m as { action: string; id: number }).id);
+        }
+        if (m.action === "LIST_FEEDBACK_APPLIED" || m.action === "LIST_FEEDBACK_PROVIDED") {
+          // Views not yet implemented — no-op until ListFeedbackAppliedView / ListFeedbackProvidedView are built
+        }
+        if (m.action === "LIST_FEEDBACK_REQUESTED") {
+          const navPayload: DialogInitPayload = {
+            selection: "",
+            mode: "selection",
+            source: getSource(),
+            personName: getUserIdentity().personName,
+            personEmail: getUserIdentity().personEmail,
+            applicationName: "",
+            communicationFunction: "",
+            communicationSignal: "",
+            projectName: "",
+            peopleList: [],
+            commSignalRequests: getCommSignalRequests(),
+          };
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "list-feedback-requested", payload: navPayload } as HostMessage));
+        }
+        if (m.action === "BACK_TO_FEEDBACK_HISTORY") {
+          const { personName, personEmail } = getUserIdentity();
+          const feedbacks = getAllFeedbacks().map((f) => {
+            if (!f.analysisId) return f;
+            return {
+              ...f,
+              questions: getQuestionsByAnalysis(f.analysisId),
+              compensators: getCompensatorsByAnalysis(f.analysisId),
+              answers: getAnswersByAnalysis(f.analysisId),
+              files: getFilesByAnalysis(f.analysisId),
+            };
+          });
+          const backPayload: DialogInitPayload = {
+            selection: "",
+            mode: "selection",
+            source: getSource(),
+            personName,
+            personEmail,
+            applicationName: "",
+            communicationFunction: "",
+            communicationSignal: "",
+            projectName: "",
+            peopleList: [],
+            feedbacks,
+          };
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "feedback-history", payload: backPayload } as HostMessage));
+        }
+        if (m.action === "DELETE_COMM_SIGNAL_REQUEST") {
+          try {
+            deleteCommSignalRequest((m as { action: string; id: number }).id);
+          } catch (err) {
+            dbg("commands", "DELETE_COMM_SIGNAL_REQUEST failed", String(err));
+          }
         }
         if (m.action === "CLOSE") {
           dialog.close();
