@@ -279,9 +279,9 @@ async function getHostText(mode: SelectionMode): Promise<string> {
   return getWordText(mode);
 }
 
-async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string }> {
-  if (Office.context.host === Office.HostType.Outlook) return getOutlookTextAndMeta(mode);
-  if (Office.context.host === Office.HostType.PowerPoint) return getPowerPointTextAndMeta(mode);
+async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string; pageNumber: string }> {
+  if (Office.context.host === Office.HostType.Outlook) return { ...await getOutlookTextAndMeta(mode), pageNumber: "" };
+  if (Office.context.host === Office.HostType.PowerPoint) return { ...await getPowerPointTextAndMeta(mode), pageNumber: "" };
   return getWordTextAndMeta(mode);
 }
 
@@ -301,41 +301,59 @@ async function getWordText(mode: SelectionMode): Promise<string> {
   });
 }
 
-async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string }> {
+async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string; pageNumber: string }> {
   return Word.run(async (context) => {
     let text = "";
+    let textRange: Word.Range;
     if (mode === "selection") {
       const sel = context.document.getSelection();
       sel.load("text");
       await context.sync();
       text = sel.text.trim();
+      textRange = sel;
     } else {
       const sel = context.document.getSelection();
       const para = sel.paragraphs.getFirst();
       para.load("text");
       await context.sync();
       text = para.text.trim();
+      textRange = para.getRange();
     }
     const props = context.document.properties;
     props.load("title");
     await context.sync();
     const url = (Office.context.document as { url?: string }).url ?? "";
     const documentName = url ? (url.split("/").pop()?.split("\\").pop() ?? "") : "";
-    return { text, documentTitle: props.title ?? "", documentName };
+
+    let pageNumber = "";
+    if (Office.context.requirements.isSetSupported("WordApiDesktop", "1.2")) {
+      try {
+        const pages = textRange.pages;
+        pages.load("items");
+        await context.sync();
+        if (pages.items.length > 0) {
+          pages.items[0].load("index");
+          await context.sync();
+          pageNumber = String(pages.items[0].index);
+        }
+      } catch { /* non-critical */ }
+    }
+
+    return { text, documentTitle: props.title ?? "", documentName, pageNumber };
   });
 }
 
-function buildEntityName(documentTitle: string, documentName: string): string {
+function buildEntityName(documentTitle: string, documentName: string, pageNumber = ""): string {
   try {
     const raw = localStorage.getItem("sl-selection-config");
     const cfg = raw ? JSON.parse(raw) : {};
-    const useName  = cfg.titleAsApplicationName    !== false;
-    const useFile  = cfg.showFileNameInApplication !== false;
-    const usePage  = cfg.showPageNumberInFileName  !== false;
+    const useName = cfg.titleAsApplicationName    !== false;
+    const useFile = cfg.showFileNameInApplication !== false;
+    const usePage = cfg.showPageNumberInFileName  !== false;
     let result = "";
-    if (useName  && documentTitle)  result = documentTitle;
-    if (useFile  && documentName)   result = result ? result + "  File: " + documentName : "File: " + documentName;
-    if (usePage)                    result = result; // page number not available in Word.js API
+    if (useName && documentTitle) result = documentTitle;
+    if (useFile && documentName)  result = result ? result + "  File: " + documentName : "File: " + documentName;
+    if (usePage && pageNumber)    result = result ? result + "  Page: " + pageNumber : "Page: " + pageNumber;
     return result;
   } catch {
     return "";
@@ -397,8 +415,11 @@ async function openAnalyzeDialog(
   dbg("HOST", "openAnalyzeDialog start", { mode });
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   let selection = "";
+  let documentTitle = "";
+  let documentName = "";
+  let pageNumber = "";
   try {
-    selection = await getHostText(mode);
+    ({ text: selection, documentTitle, documentName, pageNumber } = await getHostTextAndMeta(mode));
   } catch (err) {
     dbg("HOST", "getWordText threw — completing event", String(err));
     event.completed();
@@ -428,7 +449,7 @@ async function openAnalyzeDialog(
     source: getSource(),
     personName,
     personEmail,
-    applicationName: "",
+    applicationName: buildEntityName(documentTitle, documentName, pageNumber),
     communicationFunction: "",
     communicationSignal: "",
     projectName: "",
@@ -1832,11 +1853,13 @@ async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.Addin
   let selection = "";
   let documentTitle = "";
   let documentName = "";
+  let pageNumber = "";
   try {
     const meta = await getHostTextAndMeta(mode);
     selection = meta.text;
     documentTitle = meta.documentTitle;
     documentName = meta.documentName;
+    pageNumber = meta.pageNumber;
   } catch {
     event.completed();
     return;
@@ -1852,7 +1875,7 @@ async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.Addin
     showNoSelectionMessage(title, text, event);
     return;
   }
-  const entityName = buildEntityName(documentTitle, documentName);
+  const entityName = buildEntityName(documentTitle, documentName, pageNumber);
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
   openFlagDialog({
