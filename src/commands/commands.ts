@@ -591,9 +591,9 @@ async function openAnalyzeDialog(
               dbg("HOST", "sending SAVED to dialog", { hasMailto: !!mailtoUrl });
               if (Office.context.host === Office.HostType.Outlook && mailtoUrl) {
                 openMailtoUrl(mailtoUrl);
-                dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "" } as HostMessage));
+                dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "", _hostDebug: String(Office.context.host) } as unknown as HostMessage));
               } else {
-                dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+                dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl, _hostDebug: String(Office.context.host) } as unknown as HostMessage));
               }
               // Do NOT close here — wait for the dialog to send CLOSE after the user clicks.
             } else {
@@ -726,9 +726,9 @@ function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
             const mailtoUrl = buildRequestMailtoUrl(p);
             if (Office.context.host === Office.HostType.Outlook && mailtoUrl) {
               openMailtoUrl(mailtoUrl);
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "" } as HostMessage));
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "", _hostDebug: String(Office.context.host) } as unknown as HostMessage));
             } else {
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl, _hostDebug: String(Office.context.host) } as unknown as HostMessage));
             }
             break;
           }
@@ -1598,9 +1598,9 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
             const mailtoUrl = buildMailtoUrl(fbPayload);
             if (Office.context.host === Office.HostType.Outlook && mailtoUrl) {
               openMailtoUrl(mailtoUrl);
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "" } as HostMessage));
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "", _hostDebug: String(Office.context.host) } as unknown as HostMessage));
             } else {
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl, _hostDebug: String(Office.context.host) } as unknown as HostMessage));
             }
             // Stay open — wait for CLOSE from the success screen.
             break;
@@ -1952,9 +1952,9 @@ async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Even
             const mailtoUrl = buildRequestSLMailtoUrl(p);
             if (Office.context.host === Office.HostType.Outlook && mailtoUrl) {
               openMailtoUrl(mailtoUrl);
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "" } as HostMessage));
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "", _hostDebug: String(Office.context.host) } as unknown as HostMessage));
             } else {
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl, _hostDebug: String(Office.context.host) } as unknown as HostMessage));
             }
             break;
           }

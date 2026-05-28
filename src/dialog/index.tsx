@@ -75,7 +75,7 @@ function DialogApp() {
             setInitData(msg.payload);   // swap payload before switching view
             setCurrentView(msg.view);
           } else if (msg.type === "SAVED") {
-            dbg("DIALOG", "SAVED received — showing success state", { hasMailto: !!msg.mailtoUrl });
+            dbg("DIALOG", "SAVED received — showing success state", { hasMailto: !!msg.mailtoUrl, hostDebug: (msg as Record<string, unknown>)._hostDebug });
             setMailtoUrl(msg.mailtoUrl);
           } else if (msg.type === "COMPOSE_OPENING") {
             dbg("DIALOG", "COMPOSE_OPENING received — host confirmed OPEN_MAILTO and is closing dialog");
