@@ -15,10 +15,10 @@
   xsi:type="MailApp">
 
   <Id>ae331f1d-c4dc-4950-9c3b-b17661340d9c</Id>
-  <Version>1.0.0.4</Version>
+  <Version>1.0.0.5</Version>
   <ProviderName>Speak Logic</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Speak Logic Sidebar (Test)"/>
+  <DisplayName DefaultValue="Speak Logic"/>
   <Description DefaultValue="Test manifest — opens Speak Logic taskpane in Outlook"/>
   <IconUrl DefaultValue="https://speaklogic-testing.vercel.app/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://speaklogic-testing.vercel.app/assets/icon-64.png"/>

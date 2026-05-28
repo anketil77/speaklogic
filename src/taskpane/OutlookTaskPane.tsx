@@ -547,12 +547,11 @@ export function OutlookTaskPane() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#FAFAFA" }}>
-      {/* Header */}
-      <div style={{ background: "#0078D4", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-        <img src={`${DIALOG_BASE}/assets/icon-32.png`} width={24} height={24} alt="" style={{ borderRadius: 4 }} />
-        <span style={{ color: "#FFFFFF", fontWeight: 700, fontSize: 15 }}>Speak Logic</span>
-        {!dbReady && <span style={{ marginLeft: "auto", color: "rgba(255,255,255,0.7)", fontSize: 11 }}>Loading…</span>}
-      </div>
+      {!dbReady && (
+        <div style={{ padding: "6px 16px", background: "#EBF3FC", color: "#0078D4", fontSize: 11, flexShrink: 0 }}>
+          Loading…
+        </div>
+      )}
 
       {/* Status bar */}
       {status && (
