@@ -710,7 +710,8 @@ export type DialogAction =
   | { action: "LIST_FEEDBACK_REQUESTED" }
   | { action: "LIST_FEEDBACK_APPLIED" }
   | { action: "LIST_FEEDBACK_PROVIDED" }
-  | { action: "BACK_TO_FEEDBACK_HISTORY" };
+  | { action: "BACK_TO_FEEDBACK_HISTORY" }
+  | { action: "OPEN_MAILTO"; url: string };
 
 export interface SaveRelatedSelectionPayload {
   record: Omit<SelectionWithPrinciple, "id">;

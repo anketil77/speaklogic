@@ -342,6 +342,22 @@ function buildEntityName(documentTitle: string, documentName: string): string {
   }
 }
 
+function openMailtoUrl(url: string): void {
+  if (Office.context.host === Office.HostType.Outlook) {
+    const withoutScheme = url.replace(/^mailto:/, "");
+    const [rawTo, rawQuery] = withoutScheme.split("?");
+    const to = decodeURIComponent(rawTo || "");
+    const params = new URLSearchParams(rawQuery ?? "");
+    Office.context.mailbox.displayNewMessageFormAsync({
+      toRecipients: to ? [to] : [],
+      subject: params.get("subject") ?? "",
+      htmlBody: params.get("body") ?? "",
+    }, () => { /* no-op */ });
+  } else {
+    Office.context.ui.openBrowserWindow(url);
+  }
+}
+
 function buildMailtoUrl(payload: SaveFeedbackPayload): string {
   const email = payload.toPersonEmail ?? "";
   if (!email) return "";
@@ -694,6 +710,9 @@ function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
             dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
             break;
           }
+          case "OPEN_MAILTO":
+            openMailtoUrl((m as { action: string; url: string }).url);
+            break;
           case "CLOSE":
             dialog.close();
             addInEvent.completed();
@@ -1556,6 +1575,9 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
             // Stay open — wait for CLOSE from the success screen.
             break;
           }
+          case "OPEN_MAILTO":
+            openMailtoUrl((m as { action: string; url: string }).url);
+            break;
           case "CLOSE":
             dialog.close();
             addInEvent.completed();
@@ -1898,6 +1920,9 @@ async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Even
             dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
             break;
           }
+          case "OPEN_MAILTO":
+            openMailtoUrl((m as { action: string; url: string }).url);
+            break;
           case "CLOSE":
             dialog.close();
             addInEvent.completed();
