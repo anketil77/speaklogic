@@ -69,18 +69,39 @@ function getUserIdentity(): { personName: string; personEmail: string } {
   } catch { return { personName: "", personEmail: "" }; }
 }
 
-async function readOutlookText(): Promise<string> {
+async function readOutlookText(mode: SelectionMode): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const item = Office.context.mailbox.item as any;
     if (!item) { resolve(""); return; }
-    item.body.getAsync(Office.CoercionType.Text, (result: Office.AsyncResult<string>) => {
-      if (result.status === Office.AsyncResultStatus.Failed) {
-        reject(new Error(result.error?.message ?? "Failed to get email body"));
-        return;
-      }
-      resolve(result.value?.trim() ?? "");
-    });
+
+    const getFullBody = () => {
+      item.body.getAsync(Office.CoercionType.Text, (result: Office.AsyncResult<string>) => {
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          reject(new Error(result.error?.message ?? "Failed to get email body"));
+          return;
+        }
+        resolve(result.value?.trim() ?? "");
+      });
+    };
+
+    // getSelectedDataAsync only exists in compose mode (Mailbox 1.2+)
+    if (typeof item.getSelectedDataAsync === "function") {
+      item.getSelectedDataAsync(
+        Office.CoercionType.Text,
+        (result: Office.AsyncResult<{ data: string; sourceProperty: string }>) => {
+          const selected = (result.value?.data ?? "").trim();
+          if (selected) { resolve(selected); return; }
+          // "Selection" buttons require actual highlighted text — return "" so the
+          // caller shows the "no text" status, matching Word behaviour.
+          // "Paragraph" buttons fall back to the full body.
+          if (mode === "selection") { resolve(""); return; }
+          getFullBody();
+        }
+      );
+    } else {
+      getFullBody();
+    }
   });
 }
 
@@ -229,8 +250,8 @@ export function OutlookTaskPane() {
   const handleAnalyze = useCallback(async (mode: SelectionMode) => {
     if (!dbReady) return;
     let text = "";
-    try { text = await readOutlookText(); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
-    if (!text) { setStatus({ msg: "No text found in the email body.", ok: false }); return; }
+    try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
+    if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
@@ -280,8 +301,8 @@ export function OutlookTaskPane() {
   const handleFlag = useCallback(async (mode: SelectionMode) => {
     if (!dbReady) return;
     let text = "";
-    try { text = await readOutlookText(); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
-    if (!text) { setStatus({ msg: "No text found in the email body.", ok: false }); return; }
+    try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
+    if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
     const { personName, personEmail } = getUserIdentity();
     const subject = await readSubject();
     const initPayload: DialogInitPayload = {
@@ -313,8 +334,8 @@ export function OutlookTaskPane() {
   const handleApply = useCallback(async (mode: SelectionMode) => {
     if (!dbReady) return;
     let text = "";
-    try { text = await readOutlookText(); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
-    if (!text) { setStatus({ msg: "No text found in the email body.", ok: false }); return; }
+    try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
+    if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
     const { personName, personEmail } = getUserIdentity();
     const analyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
     const feedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
@@ -335,8 +356,8 @@ export function OutlookTaskPane() {
   const handleProvideFeedback = useCallback(async (mode: SelectionMode) => {
     if (!dbReady) return;
     let text = "";
-    try { text = await readOutlookText(); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
-    if (!text) { setStatus({ msg: "No text found in the email body.", ok: false }); return; }
+    try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
+    if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
@@ -357,7 +378,7 @@ export function OutlookTaskPane() {
   const handleRequestFeedback = useCallback(async () => {
     if (!dbReady) return;
     let text = "";
-    try { text = await readOutlookText(); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
+    try { text = await readOutlookText("paragraph"); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
     if (!text) { setStatus({ msg: "No text found in the email body.", ok: false }); return; }
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
