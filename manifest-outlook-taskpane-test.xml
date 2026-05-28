@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  TASKPANE TEST MANIFEST — Outlook only.
+  Root type: MailApp + mailappversionoverrides.
+  Sideload: Outlook on the web → Settings → Add-ins → My add-ins → Add from file
+  URL: https://localhost:3000/taskpane.html
+
+  Button appears when reading OR composing a message.
+  It does NOT appear in the main Outlook navigation bar — open or compose an email first.
+-->
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xsi:type="MailApp">
+
+  <Id>ae331f1d-c4dc-4950-9c3b-b17661340d9c</Id>
+  <Version>1.0.0.4</Version>
+  <ProviderName>Speak Logic</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Speak Logic Sidebar (Test)"/>
+  <Description DefaultValue="Test manifest — opens Speak Logic taskpane in Outlook"/>
+  <IconUrl DefaultValue="https://speaklogic-testing.vercel.app/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://speaklogic-testing.vercel.app/assets/icon-64.png"/>
+  <SupportUrl DefaultValue="https://localhost:3000"/>
+
+  <AppDomains>
+    <AppDomain>https://localhost:3000</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Mailbox"/>
+  </Hosts>
+
+  <Requirements>
+    <Sets>
+      <Set Name="Mailbox" MinVersion="1.1"/>
+    </Sets>
+  </Requirements>
+
+  <FormSettings>
+    <Form xsi:type="ItemRead">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://localhost:3000/taskpane.html"/>
+        <RequestedHeight>250</RequestedHeight>
+      </DesktopSettings>
+    </Form>
+    <Form xsi:type="ItemEdit">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://localhost:3000/taskpane.html"/>
+      </DesktopSettings>
+    </Form>
+  </FormSettings>
+
+  <Permissions>ReadWriteItem</Permissions>
+
+  <Rule xsi:type="RuleCollection" Mode="Or">
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Edit"/>
+  </Rule>
+
+  <DisableEntityHighlighting>false</DisableEntityHighlighting>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Requirements>
+      <bt:Sets>
+        <bt:Set Name="Mailbox" MinVersion="1.1"/>
+      </bt:Sets>
+    </Requirements>
+
+    <Hosts>
+      <Host xsi:type="MailHost">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="MessageReadCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="grpSpeakLogicRead">
+                <Label resid="grp.Label"/>
+                <Control xsi:type="Button" id="openSidebarBtnRead">
+                  <Label resid="btn.Label"/>
+                  <Supertip>
+                    <Title resid="btn.Label"/>
+                    <Description resid="btn.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="icon16"/>
+                    <bt:Image size="32" resid="icon32"/>
+                    <bt:Image size="80" resid="icon80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+          <ExtensionPoint xsi:type="MessageComposeCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="grpSpeakLogicCompose">
+                <Label resid="grp.Label"/>
+                <Control xsi:type="Button" id="openSidebarBtnCompose">
+                  <Label resid="btn.Label"/>
+                  <Supertip>
+                    <Title resid="btn.Label"/>
+                    <Description resid="btn.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="icon16"/>
+                    <bt:Image size="32" resid="icon32"/>
+                    <bt:Image size="80" resid="icon80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="icon16" DefaultValue="https://speaklogic-testing.vercel.app/assets/icon-16.png"/>
+        <bt:Image id="icon32" DefaultValue="https://speaklogic-testing.vercel.app/assets/icon-32.png"/>
+        <bt:Image id="icon80" DefaultValue="https://speaklogic-testing.vercel.app/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="grp.Label" DefaultValue="Speak Logic"/>
+        <bt:String id="btn.Label" DefaultValue="Open Sidebar"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="btn.Tooltip" DefaultValue="Open the Speak Logic sidebar panel"/>
+      </bt:LongStrings>
+    </Resources>
+
+  </VersionOverrides>
+
+</OfficeApp>
