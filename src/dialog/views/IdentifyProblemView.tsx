@@ -6,6 +6,8 @@ import React, { useRef, useState, useCallback } from "react";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { ProblemIcon } from "@/dialog/components/Icons";
+import { FormRow, CmdSep } from "@/dialog/components/FormRow";
+import { inputStyle } from "@/dialog/styles/formStyles";
 import { nowDate, nowTime } from "@/db/db";
 import type { ProjectProblem } from "@/types/db";
 
@@ -22,16 +24,6 @@ const C = {
   white: "#FFFFFF",
 } as const;
 
-const LABEL_W = 178;
-
-// ─── Small pieces ─────────────────────────────────────────────────────────────
-
-function CmdSep() {
-  return (
-    <div style={{ width: 1, height: 20, background: C.grey88, flexShrink: 0, margin: "0 8px" }} />
-  );
-}
-
 function SelectArrow() {
   return (
     <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ pointerEvents: "none" }}>
@@ -45,50 +37,6 @@ function SelectArrow() {
     </svg>
   );
 }
-
-function FormRow({
-  label,
-  children,
-  alignTop = false,
-}: {
-  label: string;
-  children: React.ReactNode;
-  alignTop?: boolean;
-}) {
-  return (
-    <div style={{ display: "flex", alignItems: alignTop ? "flex-start" : "center" }}>
-      <div
-        style={{
-          width: LABEL_W,
-          minWidth: LABEL_W,
-          fontSize: "11.8px",
-          fontWeight: 700,
-          color: C.grey11,
-          lineHeight: "14px",
-          paddingTop: alignTop ? 9 : 0,
-          flexShrink: 0,
-        }}
-      >
-        {label}
-      </div>
-      <div style={{ flex: 1 }}>{children}</div>
-    </div>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  height: 32,
-  border: `1px solid ${C.grey78}`,
-  borderRadius: 4,
-  padding: "0 11px",
-  fontSize: "12.2px",
-  fontFamily: "inherit",
-  color: C.grey11,
-  background: C.white,
-  boxSizing: "border-box",
-  outline: "none",
-};
 
 // ─── Main component ───────────────────────────────────────────────────────────
 

@@ -6,6 +6,8 @@ import React, { useRef, useState, useCallback } from "react";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { AnswerIcon } from "@/dialog/components/Icons";
+import { FormRow, CmdSep } from "@/dialog/components/FormRow";
+import { inputStyle, readonlyInputStyle } from "@/dialog/styles/formStyles";
 import { nowDate, nowTime } from "@/db/db";
 import type { ProjectAnswer } from "@/types/db";
 
@@ -22,66 +24,6 @@ const C = {
 } as const;
 
 const LABEL_W = 192;
-
-// ─── Small pieces ─────────────────────────────────────────────────────────────
-
-function CmdSep() {
-  return (
-    <div
-      style={{ width: 1, height: 20, background: C.grey88, flexShrink: 0, margin: "0 8px" }}
-    />
-  );
-}
-
-function FormRow({
-  label,
-  children,
-  alignTop = false,
-}: {
-  label: string;
-  children: React.ReactNode;
-  alignTop?: boolean;
-}) {
-  return (
-    <div style={{ display: "flex", alignItems: alignTop ? "flex-start" : "center", gap: 0 }}>
-      <div
-        style={{
-          width: LABEL_W,
-          minWidth: LABEL_W,
-          fontSize: "11.6px",
-          fontWeight: 700,
-          color: C.grey11,
-          lineHeight: "14px",
-          paddingTop: alignTop ? 9 : 0,
-          flexShrink: 0,
-        }}
-      >
-        {label}
-      </div>
-      <div style={{ flex: 1 }}>{children}</div>
-    </div>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  height: 32,
-  border: `1px solid ${C.grey78}`,
-  borderRadius: 4,
-  padding: "0 11px",
-  fontSize: "12.1px",
-  fontFamily: "inherit",
-  color: C.grey11,
-  background: C.white,
-  boxSizing: "border-box",
-  outline: "none",
-};
-
-const readonlyInputStyle: React.CSSProperties = {
-  ...inputStyle,
-  background: "#FAFAFA",
-  cursor: "default",
-};
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -300,7 +242,7 @@ export default function AnswerAnalysisQuestionView() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <FormRow label="Actual Question">
+          <FormRow label="Actual Question" labelWidth={LABEL_W}>
             <input
               style={readonlyInputStyle}
               value={actualQuestion}
@@ -309,7 +251,7 @@ export default function AnswerAnalysisQuestionView() {
             />
           </FormRow>
 
-          <FormRow label="Entity Question Points To">
+          <FormRow label="Entity Question Points To" labelWidth={LABEL_W}>
             <input
               style={readonlyInputStyle}
               value={entityQuestionPointTo}
@@ -318,7 +260,7 @@ export default function AnswerAnalysisQuestionView() {
             />
           </FormRow>
 
-          <FormRow label="Information Answer Points To">
+          <FormRow label="Information Answer Points To" labelWidth={LABEL_W}>
             <input
               style={inputStyle}
               placeholder="Enter the information this answer points to"
@@ -368,7 +310,7 @@ export default function AnswerAnalysisQuestionView() {
 
         <div style={{ height: 1, background: C.grey88, margin: "16px 0" }} />
 
-        <FormRow label="Actual Answer" alignTop>
+        <FormRow label="Actual Answer" alignTop labelWidth={LABEL_W}>
           <RichEditor
             ref={editorRef}
             value={actualAnswer}

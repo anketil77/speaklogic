@@ -6,6 +6,8 @@ import React, { useRef, useState, useCallback } from "react";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { ErrorIcon } from "@/dialog/components/Icons";
+import { FormRow, CmdSep } from "@/dialog/components/FormRow";
+import { inputStyle, readonlyInputStyle } from "@/dialog/styles/formStyles";
 import { nowDate, nowTime } from "@/db/db";
 import type { ProjectError } from "@/types/db";
 
@@ -23,69 +25,6 @@ const C = {
 } as const;
 
 const LABEL_W = 168;
-
-// ─── Small reusable pieces ────────────────────────────────────────────────────
-
-function CmdSep() {
-  return (
-    <div
-      style={{ width: 1, height: 20, background: C.grey88, flexShrink: 0, margin: "0 8px" }}
-    />
-  );
-}
-
-// ─── Form row ─────────────────────────────────────────────────────────────────
-
-function FormRow({
-  label,
-  children,
-  alignTop = false,
-}: {
-  label: string;
-  children: React.ReactNode;
-  alignTop?: boolean;
-}) {
-  return (
-    <div style={{ display: "flex", alignItems: alignTop ? "flex-start" : "center", gap: 0 }}>
-      <div
-        style={{
-          width: LABEL_W,
-          minWidth: LABEL_W,
-          fontSize: "11.8px",
-          fontWeight: 700,
-          color: C.grey11,
-          lineHeight: "14px",
-          paddingTop: alignTop ? 9 : 0,
-          flexShrink: 0,
-        }}
-      >
-        {label}
-      </div>
-      <div style={{ flex: 1 }}>{children}</div>
-    </div>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  height: 32,
-  border: `1px solid ${C.grey78}`,
-  borderRadius: 4,
-  padding: "0 11px",
-  fontSize: "12.2px",
-  fontFamily: "inherit",
-  color: C.grey11,
-  background: C.white,
-  boxSizing: "border-box",
-  outline: "none",
-};
-
-const readonlyInputStyle: React.CSSProperties = {
-  ...inputStyle,
-  background: "#FAFAFA",
-  color: C.grey11,
-  cursor: "default",
-};
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -308,7 +247,7 @@ export default function ErrorIdentificationView() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <FormRow label="Actual Error">
+          <FormRow label="Actual Error" labelWidth={LABEL_W}>
             <input
               style={inputStyle}
               placeholder="Enter actual error"
@@ -317,7 +256,7 @@ export default function ErrorIdentificationView() {
             />
           </FormRow>
 
-          <FormRow label="From Actual Comm / App">
+          <FormRow label="From Actual Comm / App" labelWidth={LABEL_W}>
             <input
               style={inputStyle}
               placeholder="Enter communication or application source"
@@ -326,7 +265,7 @@ export default function ErrorIdentificationView() {
             />
           </FormRow>
 
-          <FormRow label="Entity Error Point To">
+          <FormRow label="Entity Error Point To" labelWidth={LABEL_W}>
             <input
               style={inputStyle}
               placeholder="Enter entity this error points to"
@@ -383,7 +322,7 @@ export default function ErrorIdentificationView() {
         <div style={{ height: 1, background: C.grey88, margin: "16px 0" }} />
 
         {/* Error Description */}
-        <FormRow label="Error Description" alignTop>
+        <FormRow label="Error Description" alignTop labelWidth={LABEL_W}>
           <RichEditor
             ref={editorRef}
             value={errorDescription}
