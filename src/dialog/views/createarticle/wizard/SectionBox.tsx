@@ -21,7 +21,7 @@ export function SectionBox({
   title,
   showHelp = false,
   children,
-  bodyPadding = "11px",
+  bodyPadding = "9px",
   style,
 }: Props) {
   return (
@@ -44,9 +44,9 @@ export function SectionBox({
           flexDirection:  "row",
           justifyContent: "space-between",
           alignItems:     "center",
-          padding:        "7px 11px",
+          padding:        "5px 11px",
           width:          "100%",
-          minHeight:      28,
+          minHeight:      25,
           background:     "#F5F5F5",
           boxSizing:      "border-box",
           flexShrink:     0,

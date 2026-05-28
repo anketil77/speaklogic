@@ -32,10 +32,10 @@ export function Step7Content({ data, onChange, onNext, onBack, onCancel }: StepP
           flex:          1,
           overflowY:     "auto",
           minHeight:     0,
-          padding:       "14px 16px 8px",
+          padding:       "10px 14px 6px",
           display:       "flex",
           flexDirection: "column",
-          gap:           12,
+          gap:           9,
         }}
       >
         {/* ── 1. Mother nature into consideration ── */}
