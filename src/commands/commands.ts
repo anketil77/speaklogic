@@ -273,32 +273,10 @@ async function getOutlookTextAndMeta(mode: SelectionMode): Promise<{ text: strin
   return { text, documentTitle: subject, documentName: subject };
 }
 
-async function getHostText(mode: SelectionMode): Promise<string> {
-  if (Office.context.host === Office.HostType.Outlook) return getOutlookText(mode);
-  if (Office.context.host === Office.HostType.PowerPoint) return getPowerPointText(mode);
-  return getWordText(mode);
-}
-
 async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string; pageNumber: string }> {
   if (Office.context.host === Office.HostType.Outlook) return { ...await getOutlookTextAndMeta(mode), pageNumber: "" };
   if (Office.context.host === Office.HostType.PowerPoint) return { ...await getPowerPointTextAndMeta(mode), pageNumber: "" };
   return getWordTextAndMeta(mode);
-}
-
-async function getWordText(mode: SelectionMode): Promise<string> {
-  return Word.run(async (context) => {
-    if (mode === "selection") {
-      const sel = context.document.getSelection();
-      sel.load("text");
-      await context.sync();
-      return sel.text.trim();
-    }
-    const sel = context.document.getSelection();
-    const para = sel.paragraphs.getFirst();
-    para.load("text");
-    await context.sync();
-    return para.text.trim();
-  });
 }
 
 async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string; pageNumber: string }> {
@@ -671,8 +649,11 @@ async function openAnalyzeDialog(
 async function openRequestFeedbackFromRibbon(event: Office.AddinCommands.Event): Promise<void> {
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   let selection = "";
+  let documentTitle = "";
+  let documentName = "";
+  let pageNumber = "";
   try {
-    selection = await getHostText("paragraph");
+    ({ text: selection, documentTitle, documentName, pageNumber } = await getHostTextAndMeta("paragraph"));
   } catch {
     event.completed();
     return;
@@ -693,10 +674,10 @@ async function openRequestFeedbackFromRibbon(event: Office.AddinCommands.Event):
     source: getSource(),
     personName,
     personEmail,
-    applicationName: "",
+    applicationName: buildEntityName(documentTitle, documentName, pageNumber),
     communicationFunction: "",
     communicationSignal: "",
-    projectName: "",
+    projectName: documentTitle,
     peopleList: buildPeopleList(commConfig?.personName),
     peopleEmailMap: getPeopleEmailMap(),
     communicationPersonName: commConfig?.personName ?? "",
@@ -922,10 +903,10 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             source: getSource(),
             personName,
             personEmail,
-            applicationName: "",
-            communicationFunction: "",
-            communicationSignal: "",
-            projectName: "",
+            applicationName: analysis.applicationName ?? "",
+            communicationFunction: analysis.communicationFunction ?? "",
+            communicationSignal: analysis.communicationSignal ?? "",
+            projectName: analysis.projectName ?? "",
             peopleList: getPeopleNames(),
             analyses: allAnalyses,
             feedbacks: allFeedbacks,
@@ -958,10 +939,10 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             source: getSource(),
             personName,
             personEmail,
-            applicationName: "",
-            communicationFunction: "",
-            communicationSignal: "",
-            projectName: "",
+            applicationName: analysis.applicationName ?? "",
+            communicationFunction: analysis.communicationFunction ?? "",
+            communicationSignal: analysis.communicationSignal ?? "",
+            projectName: analysis.projectName ?? "",
             peopleList: buildPeopleList(commConfig?.personName),
             peopleEmailMap: getPeopleEmailMap(),
             communicationPersonName: commConfig?.personName ?? "",
@@ -1646,8 +1627,11 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
 async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   let selection = "";
+  let documentTitle = "";
+  let documentName = "";
+  let pageNumber = "";
   try {
-    selection = await getHostText(mode);
+    ({ text: selection, documentTitle, documentName, pageNumber } = await getHostTextAndMeta(mode));
   } catch {
     event.completed();
     return;
@@ -1668,10 +1652,10 @@ async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.
     source: getSource(),
     personName,
     personEmail,
-    applicationName: "",
+    applicationName: buildEntityName(documentTitle, documentName, pageNumber),
     communicationFunction: "",
     communicationSignal: "",
-    projectName: "",
+    projectName: documentTitle,
     peopleList: buildPeopleList(commConfig?.personName),
     peopleEmailMap: getPeopleEmailMap(),
     communicationPersonName: commConfig?.personName ?? "",
@@ -1728,8 +1712,11 @@ function openApplyDialog(initPayload: DialogInitPayload, addInEvent: Office.Addi
 async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   let selection = "";
+  let documentTitle = "";
+  let documentName = "";
+  let pageNumber = "";
   try {
-    selection = await getHostText(mode);
+    ({ text: selection, documentTitle, documentName, pageNumber } = await getHostTextAndMeta(mode));
   } catch {
     event.completed();
     return;
@@ -1760,10 +1747,10 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
     source: getSource(),
     personName,
     personEmail,
-    applicationName: "",
+    applicationName: buildEntityName(documentTitle, documentName, pageNumber),
     communicationFunction: "",
     communicationSignal: "",
-    projectName: "",
+    projectName: documentTitle,
     peopleList: getPeopleNames(),
     analyses,
     feedbacks,
