@@ -10,8 +10,8 @@ import {
   AnalysisHistoryHeaderIcon,
 
   SmallCaretDownIcon,
-  DeleteSelectedIcon,
-  EditSelectedAnalysisIcon,
+  AnalysisDeleteIcon,
+  AnalysisEditIcon,
   ProvideFeedbackAnalysisIcon,
   FlagAnalysisCommunicationIcon,
   ViewReportIcon,
@@ -293,7 +293,7 @@ export default function AnalysisHistoryView() {
             flexShrink: 0,
           }}
         >
-          <DeleteSelectedIcon />
+          <AnalysisDeleteIcon />
         </button>
 
         {/* Edit */}
@@ -316,7 +316,7 @@ export default function AnalysisHistoryView() {
             flexShrink: 0,
           }}
         >
-          <EditSelectedAnalysisIcon />
+          <AnalysisEditIcon />
         </button>
 
         <CmdSepBar />
