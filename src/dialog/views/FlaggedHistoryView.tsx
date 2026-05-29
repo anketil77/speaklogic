@@ -362,8 +362,6 @@ export default function FlaggedHistoryView() {
           <FlagDeleteIcon />
         </button>
 
-        <CmdSepBar />
-
         {/* Apply Selection as Feedback */}
         <button
           title="Apply Selection as Feedback"
@@ -386,6 +384,8 @@ export default function FlaggedHistoryView() {
         >
           <FlagApplyIcon />
         </button>
+
+        <CmdSepBar />
 
         {/* Provide Feedback with Selection */}
         <button
