@@ -68,6 +68,12 @@
                   <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
                 </Control>
+                <Control xsi:type="Button" id="listSelection">
+                  <Label resid="listSelection.Label"/>
+                  <Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
+                </Control>
               </Group>
 
               <Group id="grpFeedback">
@@ -270,6 +276,12 @@
                   <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                   <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="listSelection_PPT">
+                  <Label resid="listSelection.Label"/>
+                  <Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
                 </Control>
               </Group>
 
@@ -495,6 +507,11 @@
         <bt:Image id="listArticles.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-articles-32.png"/>
         <bt:Image id="listArticles.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-articles-80.png"/>
 
+        <!-- Selection History -->
+        <bt:Image id="listSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
+        <bt:Image id="listSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
+        <bt:Image id="listSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
+
         <!-- History group -->
         <bt:Image id="flaggedSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
         <bt:Image id="flaggedSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
@@ -560,6 +577,7 @@
         <bt:String id="listAnalysis.Label" DefaultValue="List of Analysis"/>
         <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
         <bt:String id="listRetained.Label" DefaultValue="List of Retained"/>
+        <bt:String id="listSelection.Label" DefaultValue="List of Selection"/>
         <bt:String id="communicationConfig.Label" DefaultValue="Communication Config"/>
         <bt:String id="requestSLFeedback.Label" DefaultValue="Request SL Feedback"/>
         <bt:String id="help.Label" DefaultValue="Help"/>
@@ -583,6 +601,7 @@
         <bt:String id="listAnalysis.Tooltip" DefaultValue="View all saved analyses"/>
         <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>
         <bt:String id="listRetained.Tooltip" DefaultValue="View retained analyses"/>
+        <bt:String id="listSelection.Tooltip" DefaultValue="View selection history audit trail"/>
         <bt:String id="communicationConfig.Tooltip" DefaultValue="Configure your name and email for analysis and feedback"/>
         <bt:String id="requestSLFeedback.Tooltip" DefaultValue="Send feedback to the Speak Logic team"/>
         <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
@@ -639,6 +658,12 @@
                     <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listSelection_OL">
+                    <Label resid="listSelection.Label"/>
+                    <Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
                   </Control>
                 </Group>
 
@@ -791,6 +816,12 @@
                     <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listSelection_OLC">
+                    <Label resid="listSelection.Label"/>
+                    <Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
                   </Control>
                 </Group>
 

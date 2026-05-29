@@ -86,3 +86,28 @@ export function deleteFlag(id: number): void {
   db.run(`DELETE FROM FlagEntityForAnalysis WHERE id = ?`, [id]);
   persistDb();
 }
+
+export function getAllSelectionHistories(): import("@/types/db").FlaggedEntityHistory[] {
+  const db = getDb();
+  const result = db.exec(
+    `SELECT id, entityName, flaggedDate, flaggedTime, selectionAction,
+            selectionType, source, applicationName, communicationFunction,
+            communicationSignal, projectName, personName, personEmail,
+            actualSelection, flagEntityForAnalysisId
+     FROM FlaggedEntityHistory
+     ORDER BY id DESC`
+  );
+  if (!result.length || !result[0].values.length) return [];
+  const cols = result[0].columns;
+  return result[0].values.map((row) => {
+    const obj: Record<string, unknown> = {};
+    cols.forEach((c, i) => { obj[c] = row[i]; });
+    return obj as unknown as import("@/types/db").FlaggedEntityHistory;
+  });
+}
+
+export function deleteSelectionHistory(id: number): void {
+  const db = getDb();
+  db.run(`DELETE FROM FlaggedEntityHistory WHERE id = ?`, [id]);
+  persistDb();
+}

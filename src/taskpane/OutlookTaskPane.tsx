@@ -27,7 +27,7 @@ import {
   deleteCommSignalRequest,
 } from "@/db/queries/feedback";
 import { saveArticle, saveArticleWizard, getAllArticles, deleteArticle } from "@/db/queries/article";
-import { deleteFlag, getAllFlaggedSelections, saveFlag } from "@/db/queries/flag";
+import { deleteFlag, getAllFlaggedSelections, saveFlag, getAllSelectionHistories, deleteSelectionHistory } from "@/db/queries/flag";
 import {
   addAttachedFile,
   deleteInterpretation,
@@ -164,6 +164,7 @@ const GROUPS: GroupDef[] = [
       { id: "flagSelection",     label: "Flag Selection",     icon: "btn-flag-sel-32.png" },
       { id: "flagParagraph",     label: "Flag Paragraph",     icon: "btn-flag-para-32.png" },
       { id: "selectionConfig",   label: "Selection Config",   icon: "btn-sel-config-32.png" },
+      { id: "listSelection",     label: "List of Selection",  icon: "btn-flagged-sel-32.png" },
     ],
   },
   {
@@ -516,6 +517,21 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
+  const handleListSelection = useCallback(() => {
+    if (!dbReady) return;
+    const { personName, personEmail } = getUserIdentity();
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=selection-history`,
+      DIALOG_SIZE,
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], selectionHistories: getAllSelectionHistories() }),
+      (_dialog, action) => {
+        if (action.action === "DELETE_SELECTION_HISTORY") {
+          try { deleteSelectionHistory((action as { action: string; id: number }).id); } catch { /* ignore */ }
+        }
+      }
+    );
+  }, [dbReady, openManagedDialog]);
+
   const handleListArticles = useCallback(() => {
     if (!dbReady) return;
     const { personName, personEmail } = getUserIdentity();
@@ -720,6 +736,7 @@ export function OutlookTaskPane() {
       case "listAnalysis":       handleAnalysisHistory(); break;
       case "listFeedback":       handleFeedbackHistory(); break;
       case "listRetained":       handleRetainedHistory(); break;
+      case "listSelection":      handleListSelection(); break;
       case "communicationConfig":handleCommunicationConfig(); break;
       case "requestSLFeedback":  handleRequestSLFeedback(); break;
       case "createArticle":      handleCreateArticle(); break;
@@ -728,7 +745,7 @@ export function OutlookTaskPane() {
       case "about":              handleSimple("about"); break;
       default: break;
     }
-  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleRequestSLFeedback, handleSimple]);
+  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListSelection, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleRequestSLFeedback, handleSimple]);
 
   // ── render ────────────────────────────────────────────────────────────────
 

@@ -107,6 +107,12 @@
                   <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
                 </Control>
+                <Control xsi:type="Button" id="listSelection_OL_v10">
+                  <Label resid="listSelection.Label"/>
+                  <Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
+                </Control>
               </Group>
 
               <Group id="grpFeedback_OL">
@@ -285,6 +291,9 @@
         <bt:Image id="listRetained.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-retained-16.png"/>
         <bt:Image id="listRetained.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-retained-32.png"/>
         <bt:Image id="listRetained.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-retained-80.png"/>
+        <bt:Image id="listSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
+        <bt:Image id="listSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
+        <bt:Image id="listSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
         <bt:Image id="communicationConfig.Icon16" DefaultValue="https://localhost:3000/assets/btn-comm-config-16.png"/>
         <bt:Image id="communicationConfig.Icon32" DefaultValue="https://localhost:3000/assets/btn-comm-config-32.png"/>
         <bt:Image id="communicationConfig.Icon80" DefaultValue="https://localhost:3000/assets/btn-comm-config-80.png"/>
@@ -325,6 +334,7 @@
         <bt:String id="listAnalysis.Label" DefaultValue="List of Analysis"/>
         <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
         <bt:String id="listRetained.Label" DefaultValue="List of Retained"/>
+        <bt:String id="listSelection.Label" DefaultValue="List of Selection"/>
         <bt:String id="communicationConfig.Label" DefaultValue="Communication Config"/>
         <bt:String id="requestSLFeedback.Label" DefaultValue="Request SL Feedback"/>
         <bt:String id="help.Label" DefaultValue="Help"/>
@@ -348,6 +358,7 @@
         <bt:String id="listAnalysis.Tooltip" DefaultValue="View all saved analyses"/>
         <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>
         <bt:String id="listRetained.Tooltip" DefaultValue="View retained analyses"/>
+        <bt:String id="listSelection.Tooltip" DefaultValue="View selection history audit trail"/>
         <bt:String id="communicationConfig.Tooltip" DefaultValue="Configure your name and email for analysis and feedback"/>
         <bt:String id="requestSLFeedback.Tooltip" DefaultValue="Send feedback to the Speak Logic team"/>
         <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
@@ -407,6 +418,12 @@
                     <Supertip><Title resid="selectionConfig.Label.v11"/><Description resid="selectionConfig.Tooltip.v11"/></Supertip>
                     <Icon><bt:Image size="16" resid="selectionConfig.Icon16.v11"/><bt:Image size="32" resid="selectionConfig.Icon32.v11"/><bt:Image size="80" resid="selectionConfig.Icon80.v11"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listSelection_OL_v11">
+                    <Label resid="listSelection.Label.v11"/>
+                    <Supertip><Title resid="listSelection.Label.v11"/><Description resid="listSelection.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listSelection.Icon16.v11"/><bt:Image size="32" resid="listSelection.Icon32.v11"/><bt:Image size="80" resid="listSelection.Icon80.v11"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
                   </Control>
                 </Group>
 
@@ -555,6 +572,12 @@
                     <Supertip><Title resid="selectionConfig.Label.v11"/><Description resid="selectionConfig.Tooltip.v11"/></Supertip>
                     <Icon><bt:Image size="16" resid="selectionConfig.Icon16.v11"/><bt:Image size="32" resid="selectionConfig.Icon32.v11"/><bt:Image size="80" resid="selectionConfig.Icon80.v11"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listSelection_OLC_v11">
+                    <Label resid="listSelection.Label.v11"/>
+                    <Supertip><Title resid="listSelection.Label.v11"/><Description resid="listSelection.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listSelection.Icon16.v11"/><bt:Image size="32" resid="listSelection.Icon32.v11"/><bt:Image size="80" resid="listSelection.Icon80.v11"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
                   </Control>
                 </Group>
 
@@ -722,6 +745,9 @@
           <bt:Image id="listRetained.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-16.png"/>
           <bt:Image id="listRetained.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-32.png"/>
           <bt:Image id="listRetained.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-80.png"/>
+          <bt:Image id="listSelection.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
+          <bt:Image id="listSelection.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
+          <bt:Image id="listSelection.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
           <bt:Image id="communicationConfig.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-16.png"/>
           <bt:Image id="communicationConfig.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-32.png"/>
           <bt:Image id="communicationConfig.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-80.png"/>
@@ -761,6 +787,7 @@
           <bt:String id="listAnalysis.Label.v11" DefaultValue="List of Analysis"/>
           <bt:String id="listFeedback.Label.v11" DefaultValue="List of Feedback"/>
           <bt:String id="listRetained.Label.v11" DefaultValue="List of Retained"/>
+          <bt:String id="listSelection.Label.v11" DefaultValue="List of Selection"/>
           <bt:String id="communicationConfig.Label.v11" DefaultValue="Communication Config"/>
           <bt:String id="requestSLFeedback.Label.v11" DefaultValue="Request SL Feedback"/>
           <bt:String id="help.Label.v11" DefaultValue="Help"/>
@@ -783,6 +810,7 @@
           <bt:String id="listAnalysis.Tooltip.v11" DefaultValue="View all saved analyses"/>
           <bt:String id="listFeedback.Tooltip.v11" DefaultValue="View all feedback records"/>
           <bt:String id="listRetained.Tooltip.v11" DefaultValue="View retained analyses"/>
+          <bt:String id="listSelection.Tooltip.v11" DefaultValue="View selection history audit trail"/>
           <bt:String id="communicationConfig.Tooltip.v11" DefaultValue="Configure your name and email for analysis and feedback"/>
           <bt:String id="requestSLFeedback.Tooltip.v11" DefaultValue="Send feedback to the Speak Logic team"/>
           <bt:String id="help.Tooltip.v11" DefaultValue="View help documentation"/>

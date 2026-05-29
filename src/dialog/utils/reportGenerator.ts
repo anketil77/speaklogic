@@ -7,6 +7,7 @@ import type {
   ProjectProblem,
   ProjectFeedback,
   FlagEntityForAnalysis,
+  FlaggedEntityHistory,
   PrincipleInterpretation,
   PrincipleInSelection,
   SelectionWithPrinciple,
@@ -242,6 +243,17 @@ export function openAnalysisReport(a: ProjectAnalysis): void {
 }
 
 // ── Flagged selection report ───────────────────────────────────────────────
+
+export function openSelectionHistoryReport(h: FlaggedEntityHistory): void {
+  const rows = [
+    fieldRow("Entity Name", esc(h.entityName)),
+    fieldRow("Selection Type", esc(h.source)),
+    blockField("Actual Selection", esc(stripHtml(h.actualSelection))),
+  ].join("");
+
+  const body = sectionBlock("About Selection", rows);
+  openBlob(wrapPage("Selection History Report", body));
+}
 
 export function openFlaggedReport(flag: FlagEntityForAnalysis): void {
   const rows = [

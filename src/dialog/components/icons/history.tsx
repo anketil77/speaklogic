@@ -13,6 +13,18 @@ export function AnalysisHistoryHeaderIcon() {
   );
 }
 
+/** 18×18 flag + list icon for the SelectionHistoryView header badge. */
+export function SelectionHistoryHeaderIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 2V16" stroke="#0078D4" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M3 2H13L10.5 6L13 10H3" stroke="#0078D4" strokeWidth="1.4" strokeLinejoin="round" />
+      <rect x="6" y="12.5" width="8" height="1.3" rx="0.65" fill="#0078D4" />
+      <rect x="6" y="14.5" width="5" height="1.3" rx="0.65" fill="#0078D4" />
+    </svg>
+  );
+}
+
 /** 18×18 speech-bubble list icon for the FeedbackHistoryView header badge. */
 export function FeedbackHistoryHeaderIcon() {
   return (

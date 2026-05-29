@@ -7,7 +7,7 @@ const DIALOG_BASE = window.location.origin;
 import { initDb, nowDate } from "@/db/db";
 import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
-import { saveFlag, getAllFlaggedSelections, deleteFlag } from "@/db/queries/flag";
+import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
@@ -113,6 +113,9 @@ function registerHandlers(): void {
   );
   Office.actions.associate("listRetained", (event) =>
     openRetainedHistoryDialog(event)
+  );
+  Office.actions.associate("listSelection", (event) =>
+    void openListSelectionDialog(event)
   );
   Office.actions.associate("requestSLFeedback", (event) =>
     void openRequestSLFeedbackDialog(event)
@@ -1590,6 +1593,63 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
               deleteArticle((m as { action: string; id: number }).id);
             } catch (err) {
               dbg("commands", "DELETE_ARTICLE failed", String(err));
+            }
+            break;
+          }
+          case "CLOSE":
+            dialog.close();
+            event.completed();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+/** Opens the List of Selection (selection history) dialog. */
+async function openListSelectionDialog(event: Office.AddinCommands.Event): Promise<void> {
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
+  const { personName, personEmail } = getUserIdentity();
+
+  const initPayload: DialogInitPayload = {
+    selection: "",
+    mode: "selection",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: [],
+    selectionHistories: getAllSelectionHistories(),
+  };
+
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=selection-history`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        event.completed();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "DELETE_SELECTION_HISTORY": {
+            try {
+              deleteSelectionHistory((m as { action: string; id: number }).id);
+            } catch (err) {
+              dbg("commands", "DELETE_SELECTION_HISTORY failed", String(err));
             }
             break;
           }

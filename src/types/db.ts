@@ -639,6 +639,7 @@ export interface DialogInitPayload {
   filesBySelectionWithPrincipleId?: Record<number, AttachFileToProject[]>;
   articles?: Article[];
   commSignalRequests?: CommSignalInfo[];
+  selectionHistories?: FlaggedEntityHistory[];
   /** Passed when opening the article wizard after template selection. */
   templateName?: string;
   wizardCategory?: string;
@@ -722,6 +723,7 @@ export type DialogAction =
   | { action: "BACK_TO_PICKER" }
   | { action: "DELETE_ARTICLE"; id: number }
   | { action: "DELETE_COMM_SIGNAL_REQUEST"; id: number }
+  | { action: "DELETE_SELECTION_HISTORY"; id: number }
   | { action: "LIST_FEEDBACK_REQUESTED" }
   | { action: "LIST_FEEDBACK_APPLIED" }
   | { action: "LIST_FEEDBACK_PROVIDED" }
