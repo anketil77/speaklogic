@@ -10,6 +10,9 @@ import { ListIdentifiedPrinciplePortal } from "@/dialog/components/ListIdentifie
 import { ListInterpretedPrinciplePortal } from "@/dialog/components/ListInterpretedPrinciplePortal";
 import { RelateSelectionWithPrincipleDialog } from "@/dialog/components/RelateSelectionWithPrincipleDialog";
 import { IdentifyPrincipleInSelectionDialog } from "@/dialog/components/IdentifyPrincipleInSelectionDialog";
+import { InterpretePrincipleDialog } from "@/dialog/components/InterpretePrincipleDialog";
+import { ViewPrincipleDetailDialog } from "@/dialog/components/ViewPrincipleDetailDialog";
+import { ListSelectionRelatedPrinciplePortal } from "@/dialog/components/ListSelectionRelatedPrinciplePortal";
 import {
   FlaggedHistoryHeaderIcon,
 
@@ -106,6 +109,26 @@ export default function FlaggedHistoryView() {
     [initData]
   );
 
+  const principlesInSelection = useMemo(
+    () => (initData?.principlesInSelection ?? []) as import("@/types/db").PrincipleInSelection[],
+    [initData]
+  );
+
+  const filesByPrincipleInSelectionId = useMemo(
+    () => (initData?.filesByPrincipleInSelectionId ?? {}) as Record<number, import("@/types/db").AttachFileToProject[]>,
+    [initData]
+  );
+
+  const selectionsWithPrinciple = useMemo(
+    () => (initData?.selectionsWithPrinciple ?? []) as import("@/types/db").SelectionWithPrinciple[],
+    [initData]
+  );
+
+  const filesBySelectionWithPrincipleId = useMemo(
+    () => (initData?.filesBySelectionWithPrincipleId ?? {}) as Record<number, import("@/types/db").AttachFileToProject[]>,
+    [initData]
+  );
+
   const [rows, setRows] = useState<FlagEntityForAnalysis[]>([]);
   useEffect(() => { setRows(allRows); }, [allRows]);
 
@@ -118,6 +141,10 @@ export default function FlaggedHistoryView() {
   const [showInterpretedList, setShowInterpretedList] = useState(false);
   const [relateFlag, setRelateFlag] = useState<FlagEntityForAnalysis | null>(null);
   const [identifyFlag, setIdentifyFlag] = useState<FlagEntityForAnalysis | null>(null);
+  const [interpretPrinciple, setInterpretPrinciple] = useState<import("@/types/db").PrincipleInSelection | null>(null);
+  const [viewIdentified, setViewIdentified] = useState<import("@/types/db").PrincipleInSelection | null>(null);
+  const [showRelatedList, setShowRelatedList] = useState(false);
+  const [viewRelated, setViewRelated] = useState<import("@/types/db").SelectionWithPrinciple | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; rowIdx: number | null } | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [cancelHover, setCancelHover] = useState(false);
@@ -690,14 +717,71 @@ export default function FlaggedHistoryView() {
           onRelateWithPrinciple={() => { setRelateFlag(viewSelection); setViewSelection(null); }}
           onListIdentified={() => { setViewSelection(null); setShowIdentifiedList(true); }}
           onListInterpreted={() => { setViewSelection(null); setShowInterpretedList(true); }}
+          onListRelated={() => { setViewSelection(null); setShowRelatedList(true); }}
         />
       )}
 
       {showIdentifiedList && (
         <ListIdentifiedPrinciplePortal
-          principles={[]}
+          principles={principlesInSelection}
           sendMessage={sendMessage}
           onClose={() => setShowIdentifiedList(false)}
+          onInterpret={(p) => setInterpretPrinciple(p)}
+          onView={(p) => setViewIdentified(p)}
+        />
+      )}
+
+      {viewIdentified && (
+        <ViewPrincipleDetailDialog
+          title="View Identified Principle"
+          subtitle="View details of the identified principle."
+          aboutSelection={viewIdentified.actualSelection}
+          actualPrinciple={viewIdentified.actualPrinciple}
+          principleName={viewIdentified.principleName}
+          setDerivedFrom={viewIdentified.setDerivedFrom}
+          principleDescription={viewIdentified.principleDescription}
+          communicationPrinciple={viewIdentified.communicationPrinciple}
+          commPrincipleDescription={viewIdentified.commPrincipleDescription}
+          files={viewIdentified.id !== undefined ? filesByPrincipleInSelectionId[viewIdentified.id] : []}
+          onClose={() => setViewIdentified(null)}
+        />
+      )}
+
+      {showRelatedList && (
+        <ListSelectionRelatedPrinciplePortal
+          relations={selectionsWithPrinciple}
+          sendMessage={sendMessage}
+          onClose={() => setShowRelatedList(false)}
+          onView={(r) => setViewRelated(r)}
+        />
+      )}
+
+      {viewRelated && (
+        <ViewPrincipleDetailDialog
+          title="View Related Principle"
+          subtitle="View details of the selection related to a principle."
+          aboutSelection={viewRelated.actualSelection}
+          actualPrinciple={viewRelated.actualPrinciple}
+          principleName={viewRelated.principleName}
+          setDerivedFrom={viewRelated.setDerivedFrom}
+          principleDescription={viewRelated.principleDescription}
+          communicationPrinciple={viewRelated.communicationPrinciple}
+          commPrincipleDescription={viewRelated.commPrincipleDescription}
+          actualRelationship={viewRelated.actualRelationship}
+          relationshipDescription={viewRelated.relationshipDescription}
+          files={viewRelated.id !== undefined ? filesBySelectionWithPrincipleId[viewRelated.id] : []}
+          onClose={() => setViewRelated(null)}
+        />
+      )}
+
+      {interpretPrinciple && (
+        <InterpretePrincipleDialog
+          principle={interpretPrinciple}
+          defaultPerson={initData?.personName}
+          sendMessage={sendMessage}
+          onClose={() => setInterpretPrinciple(null)}
+          onListIdentified={() => { setInterpretPrinciple(null); setShowIdentifiedList(true); }}
+          onListInterpreted={() => { setInterpretPrinciple(null); setShowInterpretedList(true); }}
         />
       )}
 

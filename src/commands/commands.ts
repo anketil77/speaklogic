@@ -8,13 +8,13 @@ import { initDb, nowDate } from "@/db/db";
 import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { saveFlag, getAllFlaggedSelections, deleteFlag } from "@/db/queries/flag";
-import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection } from "@/db/queries/principle";
+import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { saveArticle, saveArticleWizard, getAllArticles, deleteArticle } from "@/db/queries/article";
 import { saveProblemSolution } from "@/db/queries/problem";
 import { dbg, clearLog } from "@/debug/log";
-import { openInterpretedPrincipleReport } from "@/dialog/utils/reportGenerator";
+import { openInterpretedPrincipleReport, openIdentifiedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
 
 function buildPeopleList(commPersonName?: string): string[] {
   const names = getPeopleNames();
@@ -35,6 +35,7 @@ import type {
   SaveFeedbackPayload,
   SaveRelatedSelectionPayload,
   SavePrincipleInSelectionPayload,
+  SaveInterpretationPayload,
   SaveRequestFeedbackPayload,
   SaveRequestSLFeedbackPayload,
   SelectionMode,
@@ -1152,47 +1153,87 @@ function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
         event.completed();
       });
+      // Builds a fresh INIT payload from the DB. Re-sent after every principle
+      // save/delete so the inline list portals stay in sync (mirrors C#, where
+      // each List* dialog re-queries the DB on open).
+      const sendInit = () => {
+        const { personName, personEmail } = getUserIdentity();
+        const flaggedEntities = getAllFlaggedSelections();
+
+        const principleInterpretations = getAllInterpretations();
+        const filesByInterpretationId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+        for (const pi of principleInterpretations) {
+          if (pi.id !== undefined) filesByInterpretationId[pi.id] = getFilesByPrincipleInterpretation(pi.id);
+        }
+
+        const principlesInSelection = getPrinciplesInSelection();
+        const filesByPrincipleInSelectionId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+        for (const p of principlesInSelection) {
+          if (p.id !== undefined) filesByPrincipleInSelectionId[p.id] = getFilesByPrincipleInSelection(p.id);
+        }
+
+        const selectionsWithPrinciple = getSelectionsWithPrinciple();
+        const filesBySelectionWithPrincipleId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+        for (const s of selectionsWithPrinciple) {
+          if (s.id !== undefined) filesBySelectionWithPrincipleId[s.id] = getFilesBySelectionWithPrinciple(s.id);
+        }
+
+        const hostMsg: HostMessage = {
+          type: "INIT",
+          payload: {
+            selection: "",
+            mode: "selection",
+            source: getSource(),
+            personName,
+            personEmail,
+            applicationName: "",
+            communicationFunction: "",
+            communicationSignal: "",
+            projectName: "",
+            peopleList: [],
+            flaggedEntities,
+            principleInterpretations,
+            filesByInterpretationId,
+            principlesInSelection,
+            filesByPrincipleInSelectionId,
+            selectionsWithPrinciple,
+            filesBySelectionWithPrincipleId,
+          },
+        };
+        dialog.messageChild(JSON.stringify(hostMsg));
+      };
+
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
         if (m.action === "READY") {
-          const { personName, personEmail } = getUserIdentity();
-          const flaggedEntities = getAllFlaggedSelections();
-          const principleInterpretations = getAllInterpretations();
-          const filesByInterpretationId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
-          for (const pi of principleInterpretations) {
-            if (pi.id !== undefined) {
-              filesByInterpretationId[pi.id] = getFilesByPrincipleInterpretation(pi.id);
-            }
-          }
-          const hostMsg: HostMessage = {
-            type: "INIT",
-            payload: {
-              selection: "",
-              mode: "selection",
-              source: getSource(),
-              personName,
-              personEmail,
-              applicationName: "",
-              communicationFunction: "",
-              communicationSignal: "",
-              projectName: "",
-              peopleList: [],
-              flaggedEntities,
-              principleInterpretations,
-              filesByInterpretationId,
-            },
-          };
-          dialog.messageChild(JSON.stringify(hostMsg));
+          sendInit();
         }
         if (m.action === "DELETE_FLAG") {
           deleteFlag((m as { action: string; id: number }).id);
         }
         if (m.action === "DELETE_INTERPRETED_PRINCIPLE") {
           deleteInterpretation((m as { action: string; id: number }).id);
+          sendInit();
+        }
+        if (m.action === "DELETE_PRINCIPLE") {
+          deletePrincipleInSelection((m as { action: string; id: number }).id);
+          sendInit();
+        }
+        if (m.action === "DELETE_RELATED_SELECTION") {
+          deleteSelectionWithPrinciple((m as { action: string; id: number }).id);
+          sendInit();
         }
         if (m.action === "REPORT_INTERPRETED_PRINCIPLE") {
           const { interpretation } = m as { action: string; interpretation: import("@/types/db").PrincipleInterpretation };
           openInterpretedPrincipleReport(interpretation);
+        }
+        if (m.action === "REPORT_IDENTIFIED_PRINCIPLE") {
+          const { principle } = m as { action: string; principle: import("@/types/db").PrincipleInSelection };
+          openIdentifiedPrincipleReport(principle);
+        }
+        if (m.action === "REPORT_RELATED_SELECTION") {
+          const { relation } = m as { action: string; relation: import("@/types/db").SelectionWithPrinciple };
+          openRelatedPrincipleReport(relation);
         }
         if (m.action === "ADD_ATTACHED_FILE") {
           const { file } = m as { action: string; file: import("@/types/db").AttachFileToProject };
@@ -1208,6 +1249,7 @@ function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
           for (const file of payload.files) {
             addAttachedFile({ ...file, selectionWithPrincipleId: newId });
           }
+          sendInit();
         }
         if (m.action === "SAVE_PRINCIPLE_IN_SELECTION") {
           const { payload } = m as { action: string; payload: SavePrincipleInSelectionPayload };
@@ -1215,6 +1257,15 @@ function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
           for (const file of payload.files) {
             addAttachedFile({ ...file, principleInSelectionId: newId });
           }
+          sendInit();
+        }
+        if (m.action === "SAVE_INTERPRETATION") {
+          const { payload } = m as { action: string; payload: SaveInterpretationPayload };
+          const newId = saveInterpretation(payload.record);
+          for (const file of payload.files) {
+            addAttachedFile({ ...file, principleInterpretationId: newId });
+          }
+          sendInit();
         }
         if (m.action === "CLOSE") {
           dialog.close();

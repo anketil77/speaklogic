@@ -1,9 +1,8 @@
-// C# ListIdentifiedPrinciple (742×544) — Count, Principle Name, Actual Principle, From Actual Set
+// C# ListSelectionRelatedPrinciple — Count, Selection Type, Principle Related To, From Actual Set
 
 import React, { useState, useCallback } from "react";
 import ReactDOM from "react-dom";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
-import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import {
   ViewSelectedIcon,
@@ -12,23 +11,24 @@ import {
   PrincipleDropdownTriggerIcon,
 } from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
-import type { PrincipleInSelection } from "@/types/db";
+import type { SelectionWithPrinciple } from "@/types/db";
 
-const COLUMNS: PanelTableCol<PrincipleInSelection>[] = [
+const SOURCE_LABEL: Record<string, string> = {
+  "Word Document": "Word Document",
+  "Outlook Mail": "Outlook Mail",
+  "PowerPoint Document": "PowerPoint Presentation",
+};
+
+const COLUMNS: PanelTableCol<SelectionWithPrinciple>[] = [
   {
     header: "Count",
-    width: "15%",
+    width: "12%",
     render: (_p, idx) => <span style={{ textAlign: "center", display: "block" }}>{idx + 1}</span>,
   },
-  { header: "Principle Name", width: "28%", render: (p) => p.principleName || "—", truncate: true },
-  { header: "Actual Principle", width: "28%", render: (p) => p.actualPrinciple || "—", truncate: true },
-  { header: "From Actual Set", width: "29%", render: (p) => p.setDerivedFrom || "—", truncate: true },
+  { header: "Selection Type", width: "24%", render: (p) => SOURCE_LABEL[p.selectionType] ?? p.selectionType ?? "—", truncate: true },
+  { header: "Principle Related To", width: "32%", render: (p) => p.principleName || "—", truncate: true },
+  { header: "From Actual Set", width: "32%", render: (p) => p.setDerivedFrom || "—", truncate: true },
 ];
-
-const MSG_INTERPRET = {
-  title: "Interpret Principle",
-  text: "To interpret a principle, simply view the identified principle and then determine if the principle can be interpreted. By viewing the selected principle, I can determine if I can interpret it.",
-};
 
 function CmdSepBar() {
   return <div style={{ width: 1, height: 20, background: colors.grey88, flexShrink: 0 }} />;
@@ -40,36 +40,27 @@ function EmptyState() {
       <div style={{ width: 44, height: 44, borderRadius: 22, background: colors.grey92, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <PrincipleDropdownTriggerIcon />
       </div>
-      <span style={{ fontWeight: 700, fontSize: 12.8, color: colors.grey38, lineHeight: "15px" }}>No identified principles found</span>
+      <span style={{ fontWeight: 700, fontSize: 12.8, color: colors.grey38, lineHeight: "15px" }}>No related selections found</span>
       <span style={{ fontWeight: 400, fontSize: 11.1, color: colors.grey74, lineHeight: "18px", textAlign: "center", maxWidth: 230 }}>
-        No principles have been identified yet.
+        No selections have been related to a principle yet.
       </span>
     </div>
   );
 }
 
-interface ListIdentifiedPrinciplePortalProps {
-  principles: PrincipleInSelection[];
+interface Props {
+  relations: SelectionWithPrinciple[];
   sendMessage: (msg: unknown) => void;
   onClose: () => void;
-  /** Open the read-only view for a principle (C# ViewIdentifyPrinciple). */
-  onView?: (principle: PrincipleInSelection) => void;
-  /** Open the Interpret dialog for a principle (C# InterpretePrinciple). */
-  onInterpret?: (principle: PrincipleInSelection) => void;
+  /** Open the read-only view for a relation (C# ViewRelatedPrinciple). */
+  onView?: (relation: SelectionWithPrinciple) => void;
 }
 
-export function ListIdentifiedPrinciplePortal({
-  principles,
-  sendMessage,
-  onClose,
-  onView,
-  onInterpret,
-}: ListIdentifiedPrinciplePortalProps) {
+export function ListSelectionRelatedPrinciplePortal({ relations, sendMessage, onClose, onView }: Props) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [cancelHover, setCancelHover] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
-  const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
 
   const handleRowClick = useCallback((idx: number) => {
     setSelectedIndex((prev) => (prev === idx ? null : idx));
@@ -77,38 +68,28 @@ export function ListIdentifiedPrinciplePortal({
 
   const handleDelete = useCallback(() => {
     if (selectedIndex === null) return;
-    const row = principles[selectedIndex];
+    const row = relations[selectedIndex];
     if (row?.id !== undefined) setPendingDelete(row.id as number);
-  }, [selectedIndex, principles]);
+  }, [selectedIndex, relations]);
 
   const confirmDelete = useCallback(() => {
     if (pendingDelete === null) return;
-    sendMessage({ action: "DELETE_PRINCIPLE", id: pendingDelete });
+    sendMessage({ action: "DELETE_RELATED_SELECTION", id: pendingDelete });
     setPendingDelete(null);
     setSelectedIndex(null);
   }, [pendingDelete, sendMessage]);
 
-  const handleViewReport = useCallback(() => {
-    if (selectedIndex === null) return;
-    const row = principles[selectedIndex];
-    if (row) sendMessage({ action: "REPORT_IDENTIFIED_PRINCIPLE", principle: row });
-  }, [selectedIndex, principles, sendMessage]);
-
   const handleView = useCallback(() => {
     if (selectedIndex === null) return;
-    const row = principles[selectedIndex];
-    if (!row) return;
-    if (onView) onView(row);
-    else setInfoMsg({ title: "View Principle", text: "Principle detail view is not yet implemented." });
-  }, [selectedIndex, principles, onView]);
+    const row = relations[selectedIndex];
+    if (row && onView) onView(row);
+  }, [selectedIndex, relations, onView]);
 
-  const handleInterpret = useCallback(() => {
+  const handleViewReport = useCallback(() => {
     if (selectedIndex === null) return;
-    const row = principles[selectedIndex];
-    if (!row) return;
-    if (onInterpret) onInterpret(row);
-    else setInfoMsg(MSG_INTERPRET);
-  }, [selectedIndex, principles, onInterpret]);
+    const row = relations[selectedIndex];
+    if (row) sendMessage({ action: "REPORT_RELATED_SELECTION", relation: row });
+  }, [selectedIndex, relations, sendMessage]);
 
   const hasSelection = selectedIndex !== null;
 
@@ -144,10 +125,10 @@ export function ListIdentifiedPrinciplePortal({
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 15.6, lineHeight: "21px", color: colors.grey11, letterSpacing: -0.1 }}>
-              List of Identified Principle
+              List of Selection Related Principle
             </div>
             <div style={{ fontWeight: 400, fontSize: 11.1, lineHeight: "17px", color: colors.grey38, marginTop: 2 }}>
-              View and manage identified principles.
+              View and manage selections related to a principle.
             </div>
           </div>
           <button
@@ -172,11 +153,11 @@ export function ListIdentifiedPrinciplePortal({
             }}
           >
             <ViewSelectedIcon />
-            View Principle
+            View Related Selection
           </button>
           <CmdSepBar />
           <button
-            title="Delete Principle"
+            title="Delete Related Selection"
             disabled={!hasSelection}
             onClick={handleDelete}
             className="sl-icon-btn"
@@ -184,22 +165,9 @@ export function ListIdentifiedPrinciplePortal({
           >
             <DeleteSelectedIcon />
           </button>
-          <button
-            title="Interpret Principle"
-            disabled={!hasSelection}
-            onClick={handleInterpret}
-            className="sl-icon-btn"
-            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", borderRadius: 4, cursor: hasSelection ? "pointer" : "default", opacity: hasSelection ? 1 : 0.35, flexShrink: 0 }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 1C4.14 1 1 4.14 1 8C1 11.86 4.14 15 8 15C11.86 15 15 11.86 15 8C15 4.14 11.86 1 8 1ZM8 14C4.69 14 2 11.31 2 8C2 4.69 4.69 2 8 2C11.31 2 14 4.69 14 8C14 11.31 11.31 14 8 14Z" fill="#616161"/>
-              <path d="M8 4.5C7.72 4.5 7.5 4.72 7.5 5V8C7.5 8.28 7.72 8.5 8 8.5C8.28 8.5 8.5 8.28 8.5 8V5C8.5 4.72 8.28 4.5 8 4.5Z" fill="#616161"/>
-              <circle cx="8" cy="11" r="0.75" fill="#616161"/>
-            </svg>
-          </button>
           <CmdSepBar />
           <button
-            title="View Principle Report"
+            title="View Selection Report"
             disabled={!hasSelection}
             onClick={handleViewReport}
             className="sl-icon-btn"
@@ -210,12 +178,12 @@ export function ListIdentifiedPrinciplePortal({
         </div>
 
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          {principles.length === 0 ? (
+          {relations.length === 0 ? (
             <EmptyState />
           ) : (
-            <PanelTable<PrincipleInSelection>
+            <PanelTable<SelectionWithPrinciple>
               columns={COLUMNS}
-              rows={principles}
+              rows={relations}
               selectedIndex={selectedIndex}
               onRowClick={handleRowClick}
               selectionColor={colors.grey95}
@@ -241,7 +209,7 @@ export function ListIdentifiedPrinciplePortal({
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <div style={{ background: colors.white, border: `1px solid ${colors.grey88}`, borderRadius: 6, padding: "20px 24px", maxWidth: 420, boxShadow: "0px 4px 16px rgba(0,0,0,0.12)" }}>
               <div style={{ fontSize: 12.5, color: colors.grey11, lineHeight: "20px", marginBottom: 18 }}>
-                A principle is identified in a given set of principle; that principle belongs to that set of principle. A principle is identified in a given set of principle; that principle is a part of a given set of principle. While we can identify principles from a set, however we cannot remove them. Here the removal of the selected principle is simply hiding it from the list. Do I still want to continue to do that?
+                If an entity exists and that entity is related to a principle, then that relationship is also an entity. It is not possible for us to delete or discard that relationship. Here the deletion of the relationship is being viewed as hiding it from the list. Do I still want to continue to do that?
               </div>
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                 <button onClick={() => setPendingDelete(null)} style={{ height: 30, padding: "0 16px", background: colors.white, border: `1px solid ${colors.grey78}`, borderRadius: 4, fontSize: 12.4, fontFamily: "inherit", cursor: "pointer", color: colors.grey11 }}>No</button>
@@ -249,10 +217,6 @@ export function ListIdentifiedPrinciplePortal({
               </div>
             </div>
           </div>
-        )}
-
-        {infoMsg && (
-          <InfoMessageCard title={infoMsg.title} text={infoMsg.text} onClose={() => setInfoMsg(null)} />
         )}
       </div>
     </>,

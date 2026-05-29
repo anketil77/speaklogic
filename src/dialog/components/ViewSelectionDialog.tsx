@@ -28,6 +28,7 @@ interface Props {
   onRelateWithPrinciple?: () => void;
   onListIdentified?: () => void;
   onListInterpreted?: () => void;
+  onListRelated?: () => void;
 }
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -125,6 +126,7 @@ export function ViewSelectionDialog({
   onRelateWithPrinciple,
   onListIdentified,
   onListInterpreted,
+  onListRelated,
 }: Props) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [openDropdown, setOpenDropdown] = useState<"feedback" | "principle" | null>(null);
@@ -167,6 +169,7 @@ export function ViewSelectionDialog({
     { label: "Relate Selection with Principle", cb: onRelateWithPrinciple },
     { label: "List Identified Principle", cb: onListIdentified, separator: true },
     { label: "List Interpreted Principle", cb: onListInterpreted },
+    { label: "List Selection Related Principle", cb: onListRelated },
   ];
 
   return createPortal(

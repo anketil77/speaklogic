@@ -11,7 +11,8 @@ import { ProblemPanel } from "@/dialog/views/analyze/panels/ProblemPanel";
 import { AttachFilePanel } from "@/dialog/views/analyze/panels/AttachFilePanel";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { CommandDropdown } from "@/dialog/components/CommandDropdown";
-import { HamburgerIcon } from "@/dialog/components/Icons";
+import { HamburgerIcon, GuidelineReferenceIcon } from "@/dialog/components/Icons";
+import { GuidelineReferenceDialog } from "@/dialog/components/GuidelineReferenceDialog";
 import type { CmdDropdownDef } from "@/dialog/components/CommandDropdown";
 import type { SaveAnalysisPayload } from "@/types/db";
 import { nowDate, nowTime } from "@/db/db";
@@ -262,6 +263,9 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const lastAnalysisSelectionRef = useRef<string>("");
   const cmdBarRef = useRef<HTMLDivElement>(null);
+  // Guideline reference dialog: preserve the editor caret while the dialog is open.
+  const guidelineRangeRef = useRef<Range | null>(null);
+  const [showGuidelineRef, setShowGuidelineRef] = useState(false);
 
   const [activeTab, setActiveTab] = useState<TabValue>("analysis");
   const [openDropdown, setOpenDropdown] = useState<DropdownId | null>(null);
@@ -323,6 +327,40 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setValidationError(null);
   }
+
+  // Capture the Actual Analysis caret before the dialog steals focus, then open it.
+  const openGuidelineRef = useCallback((e: React.MouseEvent) => {
+    e.preventDefault(); // keep the editor's current selection
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editorRef.current?.contains(sel.anchorNode)) {
+      guidelineRangeRef.current = sel.getRangeAt(0).cloneRange();
+    } else {
+      guidelineRangeRef.current = null;
+    }
+    setShowGuidelineRef(true);
+  }, []);
+
+  // Insert the guideline reference HTML at the saved caret (or at the end).
+  const insertGuidelineReference = useCallback((html: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    const sel = window.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      if (guidelineRangeRef.current) {
+        sel.addRange(guidelineRangeRef.current);
+      } else {
+        const end = document.createRange();
+        end.selectNodeContents(editor);
+        end.collapse(false);
+        sel.addRange(end);
+      }
+    }
+    document.execCommand("insertHTML", false, html);
+    updateForm("actualAnalysis", editor.innerHTML);
+    guidelineRangeRef.current = null;
+  }, []);
 
   const cmdDropdowns: CmdDropdownDef[] = [
     {
@@ -536,6 +574,16 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
 
         <CmdSep styles={styles} />
 
+        <button
+          className={styles.cmdIconBtn}
+          title="Insert Guideline Reference"
+          onMouseDown={openGuidelineRef}
+        >
+          <GuidelineReferenceIcon />
+        </button>
+
+        <CmdSep styles={styles} />
+
         <RichTextToolbar
           editorRef={editorRef}
           closeSignal={toolbarCloseSignal}
@@ -665,6 +713,13 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         applicationName={initData?.applicationName}
         sendMessage={sendMessage}
       />
+
+      {showGuidelineRef && (
+        <GuidelineReferenceDialog
+          onInsert={insertGuidelineReference}
+          onClose={() => setShowGuidelineRef(false)}
+        />
+      )}
 
       {retainSaved && (
         <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.18)", zIndex: 300 }}>

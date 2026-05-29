@@ -8,6 +8,8 @@ import type {
   ProjectFeedback,
   FlagEntityForAnalysis,
   PrincipleInterpretation,
+  PrincipleInSelection,
+  SelectionWithPrinciple,
   CommSignalInfo,
 } from "@/types/db";
 
@@ -353,6 +355,44 @@ function buildInterpretedPrincipleReport(item: PrincipleInterpretation): string 
 
 export function openInterpretedPrincipleReport(item: PrincipleInterpretation): void {
   openBlob(buildInterpretedPrincipleReport(item));
+}
+
+// C# ref: ListIdentifiedPrinciple.cs barBtnReport_ItemClick (principle-report.html)
+function buildIdentifiedPrincipleReport(item: PrincipleInSelection): string {
+  const rows = [
+    blockField("About Selection", esc(stripHtml(item.actualSelection))),
+    fieldRow("Actual Principle", esc(item.actualPrinciple)),
+    fieldRow("Principle Name", esc(item.principleName)),
+    fieldRow("Set Derived From", esc(item.setDerivedFrom)),
+    blockField("Principle Description", esc(stripHtml(item.principleDescription))),
+    fieldRow("Communication Principle", esc(item.communicationPrinciple)),
+    blockField("Comm Principle Description", esc(stripHtml(item.commPrincipleDescription))),
+  ].join("");
+  return wrapPage("Identified Principle Report", sectionBlock("Identified Principle", rows));
+}
+
+export function openIdentifiedPrincipleReport(item: PrincipleInSelection): void {
+  openBlob(buildIdentifiedPrincipleReport(item));
+}
+
+// C# ref: ListSelectionRelatedPrinciple.cs barBtnReport_ItemClick (selection-related-principle.html)
+function buildRelatedPrincipleReport(item: SelectionWithPrinciple): string {
+  const rows = [
+    blockField("About Selection", esc(stripHtml(item.actualSelection))),
+    fieldRow("Actual Principle", esc(item.actualPrinciple)),
+    fieldRow("Principle Name", esc(item.principleName)),
+    fieldRow("Set Derived From", esc(item.setDerivedFrom)),
+    blockField("Principle Description", esc(stripHtml(item.principleDescription))),
+    fieldRow("Communication Principle", esc(item.communicationPrinciple)),
+    blockField("Comm Principle Description", esc(stripHtml(item.commPrincipleDescription))),
+    fieldRow("Actual Relationship", esc(item.actualRelationship)),
+    blockField("Relationship Description", esc(stripHtml(item.relationshipDescription))),
+  ].join("");
+  return wrapPage("Selection Related Principle Report", sectionBlock("Selection Related Principle", rows));
+}
+
+export function openRelatedPrincipleReport(item: SelectionWithPrinciple): void {
+  openBlob(buildRelatedPrincipleReport(item));
 }
 
 // ── Feedback Request reports ───────────────────────────────────────────────

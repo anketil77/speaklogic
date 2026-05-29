@@ -84,3 +84,13 @@ export function FilterShowAllIcon() {
     </svg>
   );
 }
+
+/** "Insert Guideline Reference" command-bar button — a bookmark/reference tag. */
+export function GuidelineReferenceIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M4 2h8a1 1 0 0 1 1 1v11l-5-3-5 3V3a1 1 0 0 1 1-1Z" stroke="#616161" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M6 6h4M6 8.5h4" stroke="#616161" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}

@@ -633,6 +633,10 @@ export interface DialogInitPayload {
   flaggedEntities?: FlagEntityForAnalysis[];
   principleInterpretations?: PrincipleInterpretation[];
   filesByInterpretationId?: Record<number, AttachFileToProject[]>;
+  principlesInSelection?: PrincipleInSelection[];
+  filesByPrincipleInSelectionId?: Record<number, AttachFileToProject[]>;
+  selectionsWithPrinciple?: SelectionWithPrinciple[];
+  filesBySelectionWithPrincipleId?: Record<number, AttachFileToProject[]>;
   articles?: Article[];
   commSignalRequests?: CommSignalInfo[];
   /** Passed when opening the article wizard after template selection. */
@@ -689,9 +693,20 @@ export type DialogAction =
   | { action: "NAVIGATE_TO_APPLY"; analysisId: number }
   | { action: "NAVIGATE_TO_PROVIDE"; analysisId: number }
   | { action: "DELETE_INTERPRETED_PRINCIPLE"; id: number }
+  | { action: "DELETE_PRINCIPLE"; id: number }
+  | { action: "DELETE_RELATED_SELECTION"; id: number }
+  | { action: "SAVE_INTERPRETATION"; payload: SaveInterpretationPayload }
   | {
       action: "REPORT_INTERPRETED_PRINCIPLE";
       interpretation: import("./db").PrincipleInterpretation;
+    }
+  | {
+      action: "REPORT_IDENTIFIED_PRINCIPLE";
+      principle: import("./db").PrincipleInSelection;
+    }
+  | {
+      action: "REPORT_RELATED_SELECTION";
+      relation: import("./db").SelectionWithPrinciple;
     }
   | { action: "ADD_ATTACHED_FILE"; file: Omit<AttachFileToProject, "id"> }
   | { action: "REMOVE_ATTACHED_FILE"; id: number }
@@ -730,6 +745,21 @@ export interface SaveRelatedSelectionPayload {
 
 export interface SavePrincipleInSelectionPayload {
   record: Omit<PrincipleInSelection, "id">;
+  files: Omit<
+    AttachFileToProject,
+    | "id"
+    | "analysisId"
+    | "feedbackId"
+    | "flagId"
+    | "articleId"
+    | "principleInterpretationId"
+    | "selectionWithPrincipleId"
+    | "principleInSelectionId"
+  >[];
+}
+
+export interface SaveInterpretationPayload {
+  record: Omit<PrincipleInterpretation, "id">;
   files: Omit<
     AttachFileToProject,
     | "id"
