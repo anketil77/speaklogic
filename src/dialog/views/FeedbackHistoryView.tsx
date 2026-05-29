@@ -399,71 +399,6 @@ export default function FeedbackHistoryView() {
           <FbHistoryFlagIcon />
         </button>
 
-        <CmdSepBar />
-
-        {/* Filter by feedback type */}
-        <div ref={filterRef} style={{ position: "relative" }}>
-          <button
-            onClick={() => setFilterOpen((o) => !o)}
-            aria-expanded={filterOpen}
-            aria-haspopup="menu"
-            style={{
-              height: 28,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 3,
-              background: filterType ? colors.grey92 : "none",
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer",
-              padding: "0 8px",
-            }}
-            title={activeFilterLabel ? `Filter: ${activeFilterLabel}` : "Filter by type"}
-          >
-            <FilterFunnelIcon />
-            <SmallCaretDownIcon color={colors.grey38} />
-          </button>
-          {filterOpen && (
-            <div
-              role="menu"
-              style={{
-                position: "absolute",
-                top: "calc(100% + 2px)",
-                left: 0,
-                zIndex: 200,
-                background: colors.white,
-                border: `1px solid ${colors.grey88}`,
-                boxShadow: "0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06)",
-                borderRadius: 4,
-                minWidth: 160,
-              }}
-            >
-              {FEEDBACK_TYPE_FILTERS.map((opt) => (
-                <button
-                  key={opt.label}
-                  role="menuitem"
-                  onClick={() => handleFilterSelect(opt.value)}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "9px 12px",
-                    background: filterType === opt.value ? colors.grey95 : "none",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: 12.3,
-                    color: colors.grey11,
-                    fontFamily: "inherit",
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* List of Feedback Applied / Provided / Requested — C# ribbonPageGroup3 */}
         <CmdSepBar />
         <button
@@ -577,6 +512,71 @@ export default function FeedbackHistoryView() {
         >
           <FbHistoryViewReportIcon />
         </button>
+
+        <CmdSepBar />
+
+        {/* Filter by feedback type */}
+        <div ref={filterRef} style={{ position: "relative" }}>
+          <button
+            onClick={() => setFilterOpen((o) => !o)}
+            aria-expanded={filterOpen}
+            aria-haspopup="menu"
+            style={{
+              height: 28,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 3,
+              background: filterType ? colors.grey92 : "none",
+              border: "none",
+              borderRadius: 4,
+              cursor: "pointer",
+              padding: "0 8px",
+            }}
+            title={activeFilterLabel ? `Filter: ${activeFilterLabel}` : "Filter by type"}
+          >
+            <FilterFunnelIcon />
+            <SmallCaretDownIcon color={colors.grey38} />
+          </button>
+          {filterOpen && (
+            <div
+              role="menu"
+              style={{
+                position: "absolute",
+                top: "calc(100% + 2px)",
+                left: 0,
+                zIndex: 200,
+                background: colors.white,
+                border: `1px solid ${colors.grey88}`,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06)",
+                borderRadius: 4,
+                minWidth: 160,
+              }}
+            >
+              {FEEDBACK_TYPE_FILTERS.map((opt) => (
+                <button
+                  key={opt.label}
+                  role="menuitem"
+                  onClick={() => handleFilterSelect(opt.value)}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "9px 12px",
+                    background: filterType === opt.value ? colors.grey95 : "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 12.3,
+                    color: colors.grey11,
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Table body ── */}
