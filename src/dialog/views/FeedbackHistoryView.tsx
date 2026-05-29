@@ -463,58 +463,6 @@ export default function FeedbackHistoryView() {
 
         <CmdSepBar />
 
-        {/* View Applied Feedback Report — C# rpReport group, Applied before Provided */}
-        <button
-          title="View Applied Feedback Report"
-          disabled={!hasSelection}
-          onClick={() => {
-            if (selectedIndex !== null) openFeedbackReport(displayRows[selectedIndex]);
-          }}
-          className="sl-icon-btn"
-          style={{
-            width: 28,
-            height: 28,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "none",
-            border: "none",
-            borderRadius: 4,
-            cursor: hasSelection ? "pointer" : "default",
-            opacity: hasSelection ? 1 : 0.35,
-            flexShrink: 0,
-          }}
-        >
-          <FbHistoryViewReportIcon />
-        </button>
-
-        {/* View Provided Feedback Report */}
-        <button
-          title="View Provided Feedback Report"
-          disabled={!hasSelection}
-          onClick={() => {
-            if (selectedIndex !== null) openFeedbackReport(displayRows[selectedIndex]);
-          }}
-          className="sl-icon-btn"
-          style={{
-            width: 28,
-            height: 28,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "none",
-            border: "none",
-            borderRadius: 4,
-            cursor: hasSelection ? "pointer" : "default",
-            opacity: hasSelection ? 1 : 0.35,
-            flexShrink: 0,
-          }}
-        >
-          <FbHistoryViewReportIcon />
-        </button>
-
-        <CmdSepBar />
-
         {/* Filter by feedback type */}
         <div ref={filterRef} style={{ position: "relative" }}>
           <button
@@ -577,6 +525,58 @@ export default function FeedbackHistoryView() {
             </div>
           )}
         </div>
+
+        <CmdSepBar />
+
+        {/* View Applied Feedback Report — C# rpReport group, Applied before Provided */}
+        <button
+          title="View Applied Feedback Report"
+          disabled={!hasSelection}
+          onClick={() => {
+            if (selectedIndex !== null) openFeedbackReport(displayRows[selectedIndex]);
+          }}
+          className="sl-icon-btn"
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "none",
+            border: "none",
+            borderRadius: 4,
+            cursor: hasSelection ? "pointer" : "default",
+            opacity: hasSelection ? 1 : 0.35,
+            flexShrink: 0,
+          }}
+        >
+          <FbHistoryViewReportIcon />
+        </button>
+
+        {/* View Provided Feedback Report */}
+        <button
+          title="View Provided Feedback Report"
+          disabled={!hasSelection}
+          onClick={() => {
+            if (selectedIndex !== null) openFeedbackReport(displayRows[selectedIndex]);
+          }}
+          className="sl-icon-btn"
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "none",
+            border: "none",
+            borderRadius: 4,
+            cursor: hasSelection ? "pointer" : "default",
+            opacity: hasSelection ? 1 : 0.35,
+            flexShrink: 0,
+          }}
+        >
+          <FbHistoryViewReportIcon />
+        </button>
       </div>
 
       {/* ── Table body ── */}
