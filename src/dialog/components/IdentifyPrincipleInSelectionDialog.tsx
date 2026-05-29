@@ -9,7 +9,6 @@ import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import {
   IdentifyPrincipleHeaderIcon,
-  IdentifyPrincipleCmdIcon,
   ListIdentifiedCmdIcon,
   ListInterpretedCmdIcon,
 } from "@/dialog/components/Icons";
@@ -746,8 +745,16 @@ export function IdentifyPrincipleInSelectionDialog({
               flexShrink: 0,
             }}
           >
-            <IdentifyPrincipleCmdIcon />
             Identify Principle in Selection
+          </button>
+
+          <button
+            className="sl-icon-btn"
+            onClick={handleSubmit}
+            title="Identify Principle in Selection"
+            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 3, cursor: "pointer", flexShrink: 0, padding: 0 }}
+          >
+            <IdentifyPrincipleHeaderIcon />
           </button>
 
           <CmdSep />

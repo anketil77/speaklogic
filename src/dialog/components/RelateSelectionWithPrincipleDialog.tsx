@@ -9,7 +9,6 @@ import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import {
   RelatePrincipleHeaderIcon,
-  RelatePrincipleCmdIcon,
   ListIdentifiedCmdIcon,
   ListInterpretedCmdIcon,
 } from "@/dialog/components/Icons";
@@ -631,8 +630,16 @@ export function RelateSelectionWithPrincipleDialog({
               flexShrink: 0,
             }}
           >
-            <RelatePrincipleCmdIcon />
             Relate Selection with Principle
+          </button>
+
+          <button
+            className="sl-icon-btn"
+            onClick={handleSubmit}
+            title="Relate Selection with Principle"
+            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 3, cursor: "pointer", flexShrink: 0, padding: 0 }}
+          >
+            <RelatePrincipleHeaderIcon />
           </button>
 
           <CmdSep />
