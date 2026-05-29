@@ -107,9 +107,9 @@
                   <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
                   <Items>
                     <Item id="listSelection_OL_v10_item"><Label resid="listSelection.Label"/><Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
-                    <Item id="listIdentifiedPrinciple_OL_v10_item"><Label resid="listIdentifiedPrinciple.Label"/><Supertip><Title resid="listIdentifiedPrinciple.Label"/><Description resid="listIdentifiedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listIdentifiedPrinciple.Icon16"/><bt:Image size="32" resid="listIdentifiedPrinciple.Icon32"/><bt:Image size="80" resid="listIdentifiedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listIdentifiedPrinciple</FunctionName></Action></Item>
-                    <Item id="listInterpretedPrinciple_OL_v10_item"><Label resid="listInterpretedPrinciple.Label"/><Supertip><Title resid="listInterpretedPrinciple.Label"/><Description resid="listInterpretedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listInterpretedPrinciple.Icon16"/><bt:Image size="32" resid="listInterpretedPrinciple.Icon32"/><bt:Image size="80" resid="listInterpretedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listInterpretedPrinciple</FunctionName></Action></Item>
-                    <Item id="listSelectionRelatedPrinciple_OL_v10_item"><Label resid="listSelectionRelatedPrinciple.Label"/><Supertip><Title resid="listSelectionRelatedPrinciple.Label"/><Description resid="listSelectionRelatedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelectionRelatedPrinciple.Icon16"/><bt:Image size="32" resid="listSelectionRelatedPrinciple.Icon32"/><bt:Image size="80" resid="listSelectionRelatedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelectionRelatedPrinciple</FunctionName></Action></Item>
+                    <Item id="listIdentifiedPrinciple_OL_v10_item"><Label resid="listIdPrinciple.Label"/><Supertip><Title resid="listIdPrinciple.Label"/><Description resid="listIdPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listIdPrinciple.Icon16"/><bt:Image size="32" resid="listIdPrinciple.Icon32"/><bt:Image size="80" resid="listIdPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listIdentifiedPrinciple</FunctionName></Action></Item>
+                    <Item id="listInterpretedPrinciple_OL_v10_item"><Label resid="listIntPrinciple.Label"/><Supertip><Title resid="listIntPrinciple.Label"/><Description resid="listIntPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listIntPrinciple.Icon16"/><bt:Image size="32" resid="listIntPrinciple.Icon32"/><bt:Image size="80" resid="listIntPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listInterpretedPrinciple</FunctionName></Action></Item>
+                    <Item id="listSelectionRelatedPrinciple_OL_v10_item"><Label resid="listRelPrinciple.Label"/><Supertip><Title resid="listRelPrinciple.Label"/><Description resid="listRelPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listRelPrinciple.Icon16"/><bt:Image size="32" resid="listRelPrinciple.Icon32"/><bt:Image size="80" resid="listRelPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelectionRelatedPrinciple</FunctionName></Action></Item>
                     <Item id="selectionConfig_OL_v10_item"><Label resid="selectionConfig.Label"/><Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action></Item>
                   </Items>
                 </Control>
@@ -282,15 +282,15 @@
         <bt:Image id="listSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
         <bt:Image id="listSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
         <bt:Image id="listSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
-        <bt:Image id="listIdentifiedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-analysis-16.png"/>
-        <bt:Image id="listIdentifiedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-analysis-32.png"/>
-        <bt:Image id="listIdentifiedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-analysis-80.png"/>
-        <bt:Image id="listInterpretedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-feedback-16.png"/>
-        <bt:Image id="listInterpretedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-feedback-32.png"/>
-        <bt:Image id="listInterpretedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-feedback-80.png"/>
-        <bt:Image id="listSelectionRelatedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-retained-16.png"/>
-        <bt:Image id="listSelectionRelatedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-retained-32.png"/>
-        <bt:Image id="listSelectionRelatedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-retained-80.png"/>
+        <bt:Image id="listIdPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-analysis-16.png"/>
+        <bt:Image id="listIdPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-analysis-32.png"/>
+        <bt:Image id="listIdPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-analysis-80.png"/>
+        <bt:Image id="listIntPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-feedback-16.png"/>
+        <bt:Image id="listIntPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-feedback-32.png"/>
+        <bt:Image id="listIntPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-feedback-80.png"/>
+        <bt:Image id="listRelPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-retained-16.png"/>
+        <bt:Image id="listRelPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-retained-32.png"/>
+        <bt:Image id="listRelPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-retained-80.png"/>
         <bt:Image id="communicationConfig.Icon16" DefaultValue="https://localhost:3000/assets/btn-comm-config-16.png"/>
         <bt:Image id="communicationConfig.Icon32" DefaultValue="https://localhost:3000/assets/btn-comm-config-32.png"/>
         <bt:Image id="communicationConfig.Icon80" DefaultValue="https://localhost:3000/assets/btn-comm-config-80.png"/>
@@ -338,9 +338,9 @@
         <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
         <bt:String id="listRetained.Label" DefaultValue="List of Retained"/>
         <bt:String id="listSelection.Label" DefaultValue="List of Selection"/>
-        <bt:String id="listIdentifiedPrinciple.Label" DefaultValue="List Identified Principle"/>
-        <bt:String id="listInterpretedPrinciple.Label" DefaultValue="List Interpreted Principle"/>
-        <bt:String id="listSelectionRelatedPrinciple.Label" DefaultValue="List Selection Related with Principle"/>
+        <bt:String id="listIdPrinciple.Label" DefaultValue="List Identified Principle"/>
+        <bt:String id="listIntPrinciple.Label" DefaultValue="List Interpreted Principle"/>
+        <bt:String id="listRelPrinciple.Label" DefaultValue="List Selection Related with Principle"/>
         <bt:String id="communicationConfig.Label" DefaultValue="Communication Config"/>
         <bt:String id="requestSLFeedback.Label" DefaultValue="Request SL Feedback"/>
         <bt:String id="help.Label" DefaultValue="Help"/>
@@ -367,9 +367,9 @@
         <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>
         <bt:String id="listRetained.Tooltip" DefaultValue="View retained analyses"/>
         <bt:String id="listSelection.Tooltip" DefaultValue="View selection history audit trail"/>
-        <bt:String id="listIdentifiedPrinciple.Tooltip" DefaultValue="View all identified principles"/>
-        <bt:String id="listInterpretedPrinciple.Tooltip" DefaultValue="View all interpreted principles"/>
-        <bt:String id="listSelectionRelatedPrinciple.Tooltip" DefaultValue="View all selections related to a principle"/>
+        <bt:String id="listIdPrinciple.Tooltip" DefaultValue="View all identified principles"/>
+        <bt:String id="listIntPrinciple.Tooltip" DefaultValue="View all interpreted principles"/>
+        <bt:String id="listRelPrinciple.Tooltip" DefaultValue="View all selections related to a principle"/>
         <bt:String id="communicationConfig.Tooltip" DefaultValue="Configure your name and email for analysis and feedback"/>
         <bt:String id="requestSLFeedback.Tooltip" DefaultValue="Send feedback to the Speak Logic team"/>
         <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
@@ -432,9 +432,9 @@
                     <Icon><bt:Image size="16" resid="selectionConfig.Icon16.v11"/><bt:Image size="32" resid="selectionConfig.Icon32.v11"/><bt:Image size="80" resid="selectionConfig.Icon80.v11"/></Icon>
                     <Items>
                       <Item id="listSelection_OL_v11_item"><Label resid="listSelection.Label.v11"/><Supertip><Title resid="listSelection.Label.v11"/><Description resid="listSelection.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16.v11"/><bt:Image size="32" resid="listSelection.Icon32.v11"/><bt:Image size="80" resid="listSelection.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
-                      <Item id="listIdentifiedPrinciple_OL_v11_item"><Label resid="listIdentifiedPrinciple.Label.v11"/><Supertip><Title resid="listIdentifiedPrinciple.Label.v11"/><Description resid="listIdentifiedPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listIdentifiedPrinciple.Icon16.v11"/><bt:Image size="32" resid="listIdentifiedPrinciple.Icon32.v11"/><bt:Image size="80" resid="listIdentifiedPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listIdentifiedPrinciple</FunctionName></Action></Item>
-                      <Item id="listInterpretedPrinciple_OL_v11_item"><Label resid="listInterpretedPrinciple.Label.v11"/><Supertip><Title resid="listInterpretedPrinciple.Label.v11"/><Description resid="listInterpretedPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listInterpretedPrinciple.Icon16.v11"/><bt:Image size="32" resid="listInterpretedPrinciple.Icon32.v11"/><bt:Image size="80" resid="listInterpretedPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listInterpretedPrinciple</FunctionName></Action></Item>
-                      <Item id="listSelectionRelatedPrinciple_OL_v11_item"><Label resid="listSelectionRelatedPrinciple.Label.v11"/><Supertip><Title resid="listSelectionRelatedPrinciple.Label.v11"/><Description resid="listSelectionRelatedPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listSelectionRelatedPrinciple.Icon16.v11"/><bt:Image size="32" resid="listSelectionRelatedPrinciple.Icon32.v11"/><bt:Image size="80" resid="listSelectionRelatedPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelectionRelatedPrinciple</FunctionName></Action></Item>
+                      <Item id="listIdentifiedPrinciple_OL_v11_item"><Label resid="listIdPrinciple.Label.v11"/><Supertip><Title resid="listIdPrinciple.Label.v11"/><Description resid="listIdPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listIdPrinciple.Icon16.v11"/><bt:Image size="32" resid="listIdPrinciple.Icon32.v11"/><bt:Image size="80" resid="listIdPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listIdentifiedPrinciple</FunctionName></Action></Item>
+                      <Item id="listInterpretedPrinciple_OL_v11_item"><Label resid="listIntPrinciple.Label.v11"/><Supertip><Title resid="listIntPrinciple.Label.v11"/><Description resid="listIntPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listIntPrinciple.Icon16.v11"/><bt:Image size="32" resid="listIntPrinciple.Icon32.v11"/><bt:Image size="80" resid="listIntPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listInterpretedPrinciple</FunctionName></Action></Item>
+                      <Item id="listSelectionRelatedPrinciple_OL_v11_item"><Label resid="listRelPrinciple.Label.v11"/><Supertip><Title resid="listRelPrinciple.Label.v11"/><Description resid="listRelPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listRelPrinciple.Icon16.v11"/><bt:Image size="32" resid="listRelPrinciple.Icon32.v11"/><bt:Image size="80" resid="listRelPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelectionRelatedPrinciple</FunctionName></Action></Item>
                       <Item id="selectionConfig_OL_v11_item"><Label resid="selectionConfig.Label.v11"/><Supertip><Title resid="selectionConfig.Label.v11"/><Description resid="selectionConfig.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="selectionConfig.Icon16.v11"/><bt:Image size="32" resid="selectionConfig.Icon32.v11"/><bt:Image size="80" resid="selectionConfig.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action></Item>
                     </Items>
                   </Control>
@@ -574,9 +574,9 @@
                     <Icon><bt:Image size="16" resid="selectionConfig.Icon16.v11"/><bt:Image size="32" resid="selectionConfig.Icon32.v11"/><bt:Image size="80" resid="selectionConfig.Icon80.v11"/></Icon>
                     <Items>
                       <Item id="listSelection_OLC_v11_item"><Label resid="listSelection.Label.v11"/><Supertip><Title resid="listSelection.Label.v11"/><Description resid="listSelection.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16.v11"/><bt:Image size="32" resid="listSelection.Icon32.v11"/><bt:Image size="80" resid="listSelection.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
-                      <Item id="listIdentifiedPrinciple_OLC_v11_item"><Label resid="listIdentifiedPrinciple.Label.v11"/><Supertip><Title resid="listIdentifiedPrinciple.Label.v11"/><Description resid="listIdentifiedPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listIdentifiedPrinciple.Icon16.v11"/><bt:Image size="32" resid="listIdentifiedPrinciple.Icon32.v11"/><bt:Image size="80" resid="listIdentifiedPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listIdentifiedPrinciple</FunctionName></Action></Item>
-                      <Item id="listInterpretedPrinciple_OLC_v11_item"><Label resid="listInterpretedPrinciple.Label.v11"/><Supertip><Title resid="listInterpretedPrinciple.Label.v11"/><Description resid="listInterpretedPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listInterpretedPrinciple.Icon16.v11"/><bt:Image size="32" resid="listInterpretedPrinciple.Icon32.v11"/><bt:Image size="80" resid="listInterpretedPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listInterpretedPrinciple</FunctionName></Action></Item>
-                      <Item id="listSelectionRelatedPrinciple_OLC_v11_item"><Label resid="listSelectionRelatedPrinciple.Label.v11"/><Supertip><Title resid="listSelectionRelatedPrinciple.Label.v11"/><Description resid="listSelectionRelatedPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listSelectionRelatedPrinciple.Icon16.v11"/><bt:Image size="32" resid="listSelectionRelatedPrinciple.Icon32.v11"/><bt:Image size="80" resid="listSelectionRelatedPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelectionRelatedPrinciple</FunctionName></Action></Item>
+                      <Item id="listIdentifiedPrinciple_OLC_v11_item"><Label resid="listIdPrinciple.Label.v11"/><Supertip><Title resid="listIdPrinciple.Label.v11"/><Description resid="listIdPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listIdPrinciple.Icon16.v11"/><bt:Image size="32" resid="listIdPrinciple.Icon32.v11"/><bt:Image size="80" resid="listIdPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listIdentifiedPrinciple</FunctionName></Action></Item>
+                      <Item id="listInterpretedPrinciple_OLC_v11_item"><Label resid="listIntPrinciple.Label.v11"/><Supertip><Title resid="listIntPrinciple.Label.v11"/><Description resid="listIntPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listIntPrinciple.Icon16.v11"/><bt:Image size="32" resid="listIntPrinciple.Icon32.v11"/><bt:Image size="80" resid="listIntPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listInterpretedPrinciple</FunctionName></Action></Item>
+                      <Item id="listSelectionRelatedPrinciple_OLC_v11_item"><Label resid="listRelPrinciple.Label.v11"/><Supertip><Title resid="listRelPrinciple.Label.v11"/><Description resid="listRelPrinciple.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="listRelPrinciple.Icon16.v11"/><bt:Image size="32" resid="listRelPrinciple.Icon32.v11"/><bt:Image size="80" resid="listRelPrinciple.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelectionRelatedPrinciple</FunctionName></Action></Item>
                       <Item id="selectionConfig_OLC_v11_item"><Label resid="selectionConfig.Label.v11"/><Supertip><Title resid="selectionConfig.Label.v11"/><Description resid="selectionConfig.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="selectionConfig.Icon16.v11"/><bt:Image size="32" resid="selectionConfig.Icon32.v11"/><bt:Image size="80" resid="selectionConfig.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action></Item>
                     </Items>
                   </Control>
@@ -737,15 +737,15 @@
           <bt:Image id="listSelection.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
           <bt:Image id="listSelection.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
           <bt:Image id="listSelection.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
-          <bt:Image id="listIdentifiedPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-list-analysis-16.png"/>
-          <bt:Image id="listIdentifiedPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-list-analysis-32.png"/>
-          <bt:Image id="listIdentifiedPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-list-analysis-80.png"/>
-          <bt:Image id="listInterpretedPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-list-feedback-16.png"/>
-          <bt:Image id="listInterpretedPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-list-feedback-32.png"/>
-          <bt:Image id="listInterpretedPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-list-feedback-80.png"/>
-          <bt:Image id="listSelectionRelatedPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-16.png"/>
-          <bt:Image id="listSelectionRelatedPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-32.png"/>
-          <bt:Image id="listSelectionRelatedPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-80.png"/>
+          <bt:Image id="listIdPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-list-analysis-16.png"/>
+          <bt:Image id="listIdPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-list-analysis-32.png"/>
+          <bt:Image id="listIdPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-list-analysis-80.png"/>
+          <bt:Image id="listIntPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-list-feedback-16.png"/>
+          <bt:Image id="listIntPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-list-feedback-32.png"/>
+          <bt:Image id="listIntPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-list-feedback-80.png"/>
+          <bt:Image id="listRelPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-16.png"/>
+          <bt:Image id="listRelPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-32.png"/>
+          <bt:Image id="listRelPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-80.png"/>
           <bt:Image id="communicationConfig.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-16.png"/>
           <bt:Image id="communicationConfig.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-32.png"/>
           <bt:Image id="communicationConfig.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-80.png"/>
@@ -792,9 +792,9 @@
           <bt:String id="listFeedback.Label.v11" DefaultValue="List of Feedback"/>
           <bt:String id="listRetained.Label.v11" DefaultValue="List of Retained"/>
           <bt:String id="listSelection.Label.v11" DefaultValue="List of Selection"/>
-          <bt:String id="listIdentifiedPrinciple.Label.v11" DefaultValue="List Identified Principle"/>
-          <bt:String id="listInterpretedPrinciple.Label.v11" DefaultValue="List Interpreted Principle"/>
-          <bt:String id="listSelectionRelatedPrinciple.Label.v11" DefaultValue="List Selection Related with Principle"/>
+          <bt:String id="listIdPrinciple.Label.v11" DefaultValue="List Identified Principle"/>
+          <bt:String id="listIntPrinciple.Label.v11" DefaultValue="List Interpreted Principle"/>
+          <bt:String id="listRelPrinciple.Label.v11" DefaultValue="List Selection Related with Principle"/>
           <bt:String id="communicationConfig.Label.v11" DefaultValue="Communication Config"/>
           <bt:String id="requestSLFeedback.Label.v11" DefaultValue="Request SL Feedback"/>
           <bt:String id="help.Label.v11" DefaultValue="Help"/>
@@ -820,9 +820,9 @@
           <bt:String id="listFeedback.Tooltip.v11" DefaultValue="View all feedback records"/>
           <bt:String id="listRetained.Tooltip.v11" DefaultValue="View retained analyses"/>
           <bt:String id="listSelection.Tooltip.v11" DefaultValue="View selection history audit trail"/>
-          <bt:String id="listIdentifiedPrinciple.Tooltip.v11" DefaultValue="View all identified principles"/>
-          <bt:String id="listInterpretedPrinciple.Tooltip.v11" DefaultValue="View all interpreted principles"/>
-          <bt:String id="listSelectionRelatedPrinciple.Tooltip.v11" DefaultValue="View all selections related to a principle"/>
+          <bt:String id="listIdPrinciple.Tooltip.v11" DefaultValue="View all identified principles"/>
+          <bt:String id="listIntPrinciple.Tooltip.v11" DefaultValue="View all interpreted principles"/>
+          <bt:String id="listRelPrinciple.Tooltip.v11" DefaultValue="View all selections related to a principle"/>
           <bt:String id="communicationConfig.Tooltip.v11" DefaultValue="Configure your name and email for analysis and feedback"/>
           <bt:String id="requestSLFeedback.Tooltip.v11" DefaultValue="Send feedback to the Speak Logic team"/>
           <bt:String id="help.Tooltip.v11" DefaultValue="View help documentation"/>
