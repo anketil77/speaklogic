@@ -270,7 +270,9 @@ async function getOutlookTextAndMeta(mode: SelectionMode): Promise<{ text: strin
     const rawSubject = (Office.context.mailbox.item as { subject?: string | { getAsync?: unknown } }).subject;
     if (typeof rawSubject === "string") subject = rawSubject;
   } catch { /* ignore */ }
-  return { text, documentTitle: subject, documentName: subject };
+  // An email has no "file name" — use the subject only as the title so buildEntityName
+  // does not emit the subject twice (e.g. "Subject  File: Subject").
+  return { text, documentTitle: subject, documentName: "" };
 }
 
 async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string; pageNumber: string }> {
