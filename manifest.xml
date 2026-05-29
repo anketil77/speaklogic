@@ -62,17 +62,17 @@
                   <Icon><bt:Image size="16" resid="flagParagraph.Icon16"/><bt:Image size="32" resid="flagParagraph.Icon32"/><bt:Image size="80" resid="flagParagraph.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
                 </Control>
-                <Control xsi:type="Button" id="selectionConfig">
+                <Control xsi:type="Menu" id="selectionConfigMenu">
                   <Label resid="selectionConfig.Label"/>
                   <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                   <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
-                  <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
-                </Control>
-                <Control xsi:type="Button" id="listSelection">
-                  <Label resid="listSelection.Label"/>
-                  <Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip>
-                  <Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon>
-                  <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
+                  <Items>
+                    <Item id="listSelection_item"><Label resid="listSelection.Label"/><Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
+                    <Item id="listIdentifiedPrinciple_item"><Label resid="listIdentifiedPrinciple.Label"/><Supertip><Title resid="listIdentifiedPrinciple.Label"/><Description resid="listIdentifiedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listIdentifiedPrinciple.Icon16"/><bt:Image size="32" resid="listIdentifiedPrinciple.Icon32"/><bt:Image size="80" resid="listIdentifiedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listIdentifiedPrinciple</FunctionName></Action></Item>
+                    <Item id="listInterpretedPrinciple_item"><Label resid="listInterpretedPrinciple.Label"/><Supertip><Title resid="listInterpretedPrinciple.Label"/><Description resid="listInterpretedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listInterpretedPrinciple.Icon16"/><bt:Image size="32" resid="listInterpretedPrinciple.Icon32"/><bt:Image size="80" resid="listInterpretedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listInterpretedPrinciple</FunctionName></Action></Item>
+                    <Item id="listSelectionRelatedPrinciple_item"><Label resid="listSelectionRelatedPrinciple.Label"/><Supertip><Title resid="listSelectionRelatedPrinciple.Label"/><Description resid="listSelectionRelatedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelectionRelatedPrinciple.Icon16"/><bt:Image size="32" resid="listSelectionRelatedPrinciple.Icon32"/><bt:Image size="80" resid="listSelectionRelatedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelectionRelatedPrinciple</FunctionName></Action></Item>
+                    <Item id="selectionConfig_item"><Label resid="selectionConfig.Label"/><Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action></Item>
+                  </Items>
                 </Control>
               </Group>
 
@@ -271,17 +271,17 @@
                   <Icon><bt:Image size="16" resid="flagParagraph.Icon16"/><bt:Image size="32" resid="flagParagraph.Icon32"/><bt:Image size="80" resid="flagParagraph.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
                 </Control>
-                <Control xsi:type="Button" id="selectionConfig_PPT">
+                <Control xsi:type="Menu" id="selectionConfigMenu_PPT">
                   <Label resid="selectionConfig.Label"/>
                   <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                   <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
-                  <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
-                </Control>
-                <Control xsi:type="Button" id="listSelection_PPT">
-                  <Label resid="listSelection.Label"/>
-                  <Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip>
-                  <Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon>
-                  <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
+                  <Items>
+                    <Item id="listSelection_PPT_item"><Label resid="listSelection.Label"/><Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
+                    <Item id="listIdentifiedPrinciple_PPT_item"><Label resid="listIdentifiedPrinciple.Label"/><Supertip><Title resid="listIdentifiedPrinciple.Label"/><Description resid="listIdentifiedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listIdentifiedPrinciple.Icon16"/><bt:Image size="32" resid="listIdentifiedPrinciple.Icon32"/><bt:Image size="80" resid="listIdentifiedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listIdentifiedPrinciple</FunctionName></Action></Item>
+                    <Item id="listInterpretedPrinciple_PPT_item"><Label resid="listInterpretedPrinciple.Label"/><Supertip><Title resid="listInterpretedPrinciple.Label"/><Description resid="listInterpretedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listInterpretedPrinciple.Icon16"/><bt:Image size="32" resid="listInterpretedPrinciple.Icon32"/><bt:Image size="80" resid="listInterpretedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listInterpretedPrinciple</FunctionName></Action></Item>
+                    <Item id="listSelectionRelatedPrinciple_PPT_item"><Label resid="listSelectionRelatedPrinciple.Label"/><Supertip><Title resid="listSelectionRelatedPrinciple.Label"/><Description resid="listSelectionRelatedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelectionRelatedPrinciple.Icon16"/><bt:Image size="32" resid="listSelectionRelatedPrinciple.Icon32"/><bt:Image size="80" resid="listSelectionRelatedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelectionRelatedPrinciple</FunctionName></Action></Item>
+                    <Item id="selectionConfig_PPT_item"><Label resid="selectionConfig.Label"/><Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action></Item>
+                  </Items>
                 </Control>
               </Group>
 
@@ -507,10 +507,19 @@
         <bt:Image id="listArticles.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-articles-32.png"/>
         <bt:Image id="listArticles.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-articles-80.png"/>
 
-        <!-- Selection History -->
+        <!-- Selection History + Principle lists -->
         <bt:Image id="listSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
         <bt:Image id="listSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
         <bt:Image id="listSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
+        <bt:Image id="listIdentifiedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
+        <bt:Image id="listIdentifiedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
+        <bt:Image id="listIdentifiedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
+        <bt:Image id="listInterpretedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
+        <bt:Image id="listInterpretedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
+        <bt:Image id="listInterpretedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
+        <bt:Image id="listSelectionRelatedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
+        <bt:Image id="listSelectionRelatedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
+        <bt:Image id="listSelectionRelatedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
 
         <!-- History group -->
         <bt:Image id="flaggedSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
@@ -578,6 +587,9 @@
         <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
         <bt:String id="listRetained.Label" DefaultValue="List of Retained"/>
         <bt:String id="listSelection.Label" DefaultValue="List of Selection"/>
+        <bt:String id="listIdentifiedPrinciple.Label" DefaultValue="List Identified Principle"/>
+        <bt:String id="listInterpretedPrinciple.Label" DefaultValue="List Interpreted Principle"/>
+        <bt:String id="listSelectionRelatedPrinciple.Label" DefaultValue="List Selection Related with Principle"/>
         <bt:String id="communicationConfig.Label" DefaultValue="Communication Config"/>
         <bt:String id="requestSLFeedback.Label" DefaultValue="Request SL Feedback"/>
         <bt:String id="help.Label" DefaultValue="Help"/>
@@ -602,6 +614,9 @@
         <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>
         <bt:String id="listRetained.Tooltip" DefaultValue="View retained analyses"/>
         <bt:String id="listSelection.Tooltip" DefaultValue="View selection history audit trail"/>
+        <bt:String id="listIdentifiedPrinciple.Tooltip" DefaultValue="View all identified principles"/>
+        <bt:String id="listInterpretedPrinciple.Tooltip" DefaultValue="View all interpreted principles"/>
+        <bt:String id="listSelectionRelatedPrinciple.Tooltip" DefaultValue="View all selections related to a principle"/>
         <bt:String id="communicationConfig.Tooltip" DefaultValue="Configure your name and email for analysis and feedback"/>
         <bt:String id="requestSLFeedback.Tooltip" DefaultValue="Send feedback to the Speak Logic team"/>
         <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
@@ -653,17 +668,17 @@
                     <Icon><bt:Image size="16" resid="flagParagraph.Icon16"/><bt:Image size="32" resid="flagParagraph.Icon32"/><bt:Image size="80" resid="flagParagraph.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
                   </Control>
-                  <Control xsi:type="Button" id="selectionConfig_OL">
+                  <Control xsi:type="Menu" id="selectionConfigMenu_OL">
                     <Label resid="selectionConfig.Label"/>
                     <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
-                  </Control>
-                  <Control xsi:type="Button" id="listSelection_OL">
-                    <Label resid="listSelection.Label"/>
-                    <Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip>
-                    <Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
+                    <Items>
+                      <Item id="listSelection_OL_item"><Label resid="listSelection.Label"/><Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
+                      <Item id="listIdentifiedPrinciple_OL_item"><Label resid="listIdentifiedPrinciple.Label"/><Supertip><Title resid="listIdentifiedPrinciple.Label"/><Description resid="listIdentifiedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listIdentifiedPrinciple.Icon16"/><bt:Image size="32" resid="listIdentifiedPrinciple.Icon32"/><bt:Image size="80" resid="listIdentifiedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listIdentifiedPrinciple</FunctionName></Action></Item>
+                      <Item id="listInterpretedPrinciple_OL_item"><Label resid="listInterpretedPrinciple.Label"/><Supertip><Title resid="listInterpretedPrinciple.Label"/><Description resid="listInterpretedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listInterpretedPrinciple.Icon16"/><bt:Image size="32" resid="listInterpretedPrinciple.Icon32"/><bt:Image size="80" resid="listInterpretedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listInterpretedPrinciple</FunctionName></Action></Item>
+                      <Item id="listSelectionRelatedPrinciple_OL_item"><Label resid="listSelectionRelatedPrinciple.Label"/><Supertip><Title resid="listSelectionRelatedPrinciple.Label"/><Description resid="listSelectionRelatedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelectionRelatedPrinciple.Icon16"/><bt:Image size="32" resid="listSelectionRelatedPrinciple.Icon32"/><bt:Image size="80" resid="listSelectionRelatedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelectionRelatedPrinciple</FunctionName></Action></Item>
+                      <Item id="selectionConfig_OL_item"><Label resid="selectionConfig.Label"/><Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action></Item>
+                    </Items>
                   </Control>
                 </Group>
 
@@ -811,17 +826,17 @@
                     <Icon><bt:Image size="16" resid="flagParagraph.Icon16"/><bt:Image size="32" resid="flagParagraph.Icon32"/><bt:Image size="80" resid="flagParagraph.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
                   </Control>
-                  <Control xsi:type="Button" id="selectionConfig_OLC">
+                  <Control xsi:type="Menu" id="selectionConfigMenu_OLC">
                     <Label resid="selectionConfig.Label"/>
                     <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action>
-                  </Control>
-                  <Control xsi:type="Button" id="listSelection_OLC">
-                    <Label resid="listSelection.Label"/>
-                    <Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip>
-                    <Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action>
+                    <Items>
+                      <Item id="listSelection_OLC_item"><Label resid="listSelection.Label"/><Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
+                      <Item id="listIdentifiedPrinciple_OLC_item"><Label resid="listIdentifiedPrinciple.Label"/><Supertip><Title resid="listIdentifiedPrinciple.Label"/><Description resid="listIdentifiedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listIdentifiedPrinciple.Icon16"/><bt:Image size="32" resid="listIdentifiedPrinciple.Icon32"/><bt:Image size="80" resid="listIdentifiedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listIdentifiedPrinciple</FunctionName></Action></Item>
+                      <Item id="listInterpretedPrinciple_OLC_item"><Label resid="listInterpretedPrinciple.Label"/><Supertip><Title resid="listInterpretedPrinciple.Label"/><Description resid="listInterpretedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listInterpretedPrinciple.Icon16"/><bt:Image size="32" resid="listInterpretedPrinciple.Icon32"/><bt:Image size="80" resid="listInterpretedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listInterpretedPrinciple</FunctionName></Action></Item>
+                      <Item id="listSelectionRelatedPrinciple_OLC_item"><Label resid="listSelectionRelatedPrinciple.Label"/><Supertip><Title resid="listSelectionRelatedPrinciple.Label"/><Description resid="listSelectionRelatedPrinciple.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelectionRelatedPrinciple.Icon16"/><bt:Image size="32" resid="listSelectionRelatedPrinciple.Icon32"/><bt:Image size="80" resid="listSelectionRelatedPrinciple.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelectionRelatedPrinciple</FunctionName></Action></Item>
+                      <Item id="selectionConfig_OLC_item"><Label resid="selectionConfig.Label"/><Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>selectionConfig</FunctionName></Action></Item>
+                    </Items>
                   </Control>
                 </Group>
 

@@ -44,6 +44,9 @@ const FeedbackHistoryView = lazy(() => import("@/dialog/views/FeedbackHistoryVie
 const RetainedHistoryView = lazy(() => import("@/dialog/views/RetainedHistoryView"));
 const ListFeedbackRequestedView = lazy(() => import("@/dialog/views/ListFeedbackRequestedView"));
 const SelectionHistoryView = lazy(() => import("@/dialog/views/SelectionHistoryView"));
+const ListIdentifiedPrincipleView = lazy(() => import("@/dialog/views/ListIdentifiedPrincipleView"));
+const ListInterpretedPrincipleView = lazy(() => import("@/dialog/views/ListInterpretedPrincipleView"));
+const ListSelectionRelatedPrincipleView = lazy(() => import("@/dialog/views/ListSelectionRelatedPrincipleView"));
 import type { DialogInitPayload, HostMessage } from "@/types/db";
 import { dbg } from "@/debug/log";
 
@@ -167,6 +170,12 @@ function DialogApp() {
         return <FeedbackHistoryView />;
       case "selection-history":
         return <SelectionHistoryView />;
+      case "list-identified-principle":
+        return <ListIdentifiedPrincipleView />;
+      case "list-interpreted-principle":
+        return <ListInterpretedPrincipleView />;
+      case "list-selection-related-principle":
+        return <ListSelectionRelatedPrincipleView />;
       case "list-feedback-requested":
         return <ListFeedbackRequestedView />;
       case "retained-history":

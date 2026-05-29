@@ -31,13 +31,19 @@ import { deleteFlag, getAllFlaggedSelections, saveFlag, getAllSelectionHistories
 import {
   addAttachedFile,
   deleteInterpretation,
+  deletePrincipleInSelection,
+  deleteSelectionWithPrinciple,
   getAllInterpretations,
   getFilesByPrincipleInterpretation,
+  getFilesByPrincipleInSelection,
+  getFilesBySelectionWithPrinciple,
+  getPrinciplesInSelection,
+  getSelectionsWithPrinciple,
   removeAttachedFile,
   savePrincipleInSelection,
   saveSelectionWithPrinciple,
 } from "@/db/queries/principle";
-import { openInterpretedPrincipleReport } from "@/dialog/utils/reportGenerator";
+import { openIdentifiedPrincipleReport, openInterpretedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
 import type {
   AttachFileToProject,
   DialogAction,
@@ -163,8 +169,11 @@ const GROUPS: GroupDef[] = [
       { id: "analyzeParagraph",  label: "Analyze Paragraph",  icon: "btn-analyze-para-32.png" },
       { id: "flagSelection",     label: "Flag Selection",     icon: "btn-flag-sel-32.png" },
       { id: "flagParagraph",     label: "Flag Paragraph",     icon: "btn-flag-para-32.png" },
-      { id: "selectionConfig",   label: "Selection Config",   icon: "btn-sel-config-32.png" },
-      { id: "listSelection",     label: "List of Selection",  icon: "btn-flagged-sel-32.png" },
+      { id: "listSelection",                  label: "List of Selection",                    icon: "btn-flagged-sel-32.png" },
+      { id: "listIdentifiedPrinciple",         label: "List Identified Principle",            icon: "btn-flagged-sel-32.png" },
+      { id: "listInterpretedPrinciple",        label: "List Interpreted Principle",           icon: "btn-flagged-sel-32.png" },
+      { id: "listSelectionRelatedPrinciple",   label: "List Selection Related with Principle", icon: "btn-flagged-sel-32.png" },
+      { id: "selectionConfig",                 label: "Selection Config",                     icon: "btn-sel-config-32.png" },
     ],
   },
   {
@@ -532,6 +541,102 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
+  const handleListIdentifiedPrinciple = useCallback(() => {
+    if (!dbReady) return;
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=list-identified-principle`,
+      DIALOG_SIZE,
+      () => {
+        const principlesInSelection = getPrinciplesInSelection();
+        const filesByPrincipleInSelectionId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+        for (const p of principlesInSelection) {
+          if (p.id !== undefined) filesByPrincipleInSelectionId[p.id] = getFilesByPrincipleInSelection(p.id);
+        }
+        const { personName, personEmail } = getUserIdentity();
+        return { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], principlesInSelection, filesByPrincipleInSelectionId };
+      },
+      (dialog, action) => {
+        if (action.action === "DELETE_PRINCIPLE") {
+          deletePrincipleInSelection((action as { action: string; id: number }).id);
+          const principlesInSelection = getPrinciplesInSelection();
+          const filesByPrincipleInSelectionId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+          for (const p of principlesInSelection) {
+            if (p.id !== undefined) filesByPrincipleInSelectionId[p.id] = getFilesByPrincipleInSelection(p.id);
+          }
+          const { personName, personEmail } = getUserIdentity();
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: { selection: "", mode: "selection", source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], principlesInSelection, filesByPrincipleInSelectionId } }));
+        } else if (action.action === "REPORT_IDENTIFIED_PRINCIPLE") {
+          const { principle } = action as { action: string; principle: import("@/types/db").PrincipleInSelection };
+          openIdentifiedPrincipleReport(principle);
+        }
+      }
+    );
+  }, [dbReady, openManagedDialog]);
+
+  const handleListInterpretedPrinciple = useCallback(() => {
+    if (!dbReady) return;
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=list-interpreted-principle`,
+      DIALOG_SIZE,
+      () => {
+        const principleInterpretations = getAllInterpretations();
+        const filesByInterpretationId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+        for (const pi of principleInterpretations) {
+          if (pi.id !== undefined) filesByInterpretationId[pi.id] = getFilesByPrincipleInterpretation(pi.id);
+        }
+        const { personName, personEmail } = getUserIdentity();
+        return { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], principleInterpretations, filesByInterpretationId };
+      },
+      (dialog, action) => {
+        if (action.action === "DELETE_INTERPRETED_PRINCIPLE") {
+          deleteInterpretation((action as { action: string; id: number }).id);
+          const principleInterpretations = getAllInterpretations();
+          const filesByInterpretationId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+          for (const pi of principleInterpretations) {
+            if (pi.id !== undefined) filesByInterpretationId[pi.id] = getFilesByPrincipleInterpretation(pi.id);
+          }
+          const { personName, personEmail } = getUserIdentity();
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: { selection: "", mode: "selection", source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], principleInterpretations, filesByInterpretationId } }));
+        } else if (action.action === "REPORT_INTERPRETED_PRINCIPLE") {
+          const { interpretation } = action as { action: string; interpretation: import("@/types/db").PrincipleInterpretation };
+          openInterpretedPrincipleReport(interpretation);
+        }
+      }
+    );
+  }, [dbReady, openManagedDialog]);
+
+  const handleListSelectionRelatedPrinciple = useCallback(() => {
+    if (!dbReady) return;
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=list-selection-related-principle`,
+      DIALOG_SIZE,
+      () => {
+        const selectionsWithPrinciple = getSelectionsWithPrinciple();
+        const filesBySelectionWithPrincipleId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+        for (const s of selectionsWithPrinciple) {
+          if (s.id !== undefined) filesBySelectionWithPrincipleId[s.id] = getFilesBySelectionWithPrinciple(s.id);
+        }
+        const { personName, personEmail } = getUserIdentity();
+        return { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], selectionsWithPrinciple, filesBySelectionWithPrincipleId };
+      },
+      (dialog, action) => {
+        if (action.action === "DELETE_RELATED_SELECTION") {
+          deleteSelectionWithPrinciple((action as { action: string; id: number }).id);
+          const selectionsWithPrinciple = getSelectionsWithPrinciple();
+          const filesBySelectionWithPrincipleId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+          for (const s of selectionsWithPrinciple) {
+            if (s.id !== undefined) filesBySelectionWithPrincipleId[s.id] = getFilesBySelectionWithPrinciple(s.id);
+          }
+          const { personName, personEmail } = getUserIdentity();
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: { selection: "", mode: "selection", source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], selectionsWithPrinciple, filesBySelectionWithPrincipleId } }));
+        } else if (action.action === "REPORT_RELATED_SELECTION") {
+          const { relation } = action as { action: string; relation: import("@/types/db").SelectionWithPrinciple };
+          openRelatedPrincipleReport(relation);
+        }
+      }
+    );
+  }, [dbReady, openManagedDialog]);
+
   const handleListArticles = useCallback(() => {
     if (!dbReady) return;
     const { personName, personEmail } = getUserIdentity();
@@ -736,7 +841,10 @@ export function OutlookTaskPane() {
       case "listAnalysis":       handleAnalysisHistory(); break;
       case "listFeedback":       handleFeedbackHistory(); break;
       case "listRetained":       handleRetainedHistory(); break;
-      case "listSelection":      handleListSelection(); break;
+      case "listSelection":                  handleListSelection(); break;
+      case "listIdentifiedPrinciple":         handleListIdentifiedPrinciple(); break;
+      case "listInterpretedPrinciple":        handleListInterpretedPrinciple(); break;
+      case "listSelectionRelatedPrinciple":   handleListSelectionRelatedPrinciple(); break;
       case "communicationConfig":handleCommunicationConfig(); break;
       case "requestSLFeedback":  handleRequestSLFeedback(); break;
       case "createArticle":      handleCreateArticle(); break;
@@ -745,7 +853,7 @@ export function OutlookTaskPane() {
       case "about":              handleSimple("about"); break;
       default: break;
     }
-  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListSelection, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleRequestSLFeedback, handleSimple]);
+  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListSelection, handleListIdentifiedPrinciple, handleListInterpretedPrinciple, handleListSelectionRelatedPrinciple, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleRequestSLFeedback, handleSimple]);
 
   // ── render ────────────────────────────────────────────────────────────────
 

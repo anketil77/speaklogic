@@ -117,6 +117,15 @@ function registerHandlers(): void {
   Office.actions.associate("listSelection", (event) =>
     void openListSelectionDialog(event)
   );
+  Office.actions.associate("listIdentifiedPrinciple", (event) =>
+    void openListIdentifiedPrincipleDialog(event)
+  );
+  Office.actions.associate("listInterpretedPrinciple", (event) =>
+    void openListInterpretedPrincipleDialog(event)
+  );
+  Office.actions.associate("listSelectionRelatedPrinciple", (event) =>
+    void openListSelectionRelatedPrincipleDialog(event)
+  );
   Office.actions.associate("requestSLFeedback", (event) =>
     void openRequestSLFeedbackDialog(event)
   );
@@ -1659,6 +1668,138 @@ async function openListSelectionDialog(event: Office.AddinCommands.Event): Promi
             break;
           default:
             break;
+        }
+      });
+    }
+  );
+}
+
+async function openListIdentifiedPrincipleDialog(event: Office.AddinCommands.Event): Promise<void> {
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
+  const { personName, personEmail } = getUserIdentity();
+
+  function buildPayload(): DialogInitPayload {
+    const principlesInSelection = getPrinciplesInSelection();
+    const filesByPrincipleInSelectionId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+    for (const p of principlesInSelection) {
+      if (p.id !== undefined) filesByPrincipleInSelectionId[p.id] = getFilesByPrincipleInSelection(p.id);
+    }
+    return {
+      selection: "", mode: "selection", source: getSource(), personName, personEmail,
+      applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [],
+      principlesInSelection, filesByPrincipleInSelectionId,
+    };
+  }
+
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=list-identified-principle`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) { handleDialogOpenError(result.error, event); return; }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { event.completed(); });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        if (m.action === "READY") {
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+        } else if (m.action === "DELETE_PRINCIPLE") {
+          deletePrincipleInSelection((m as { action: string; id: number }).id);
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+        } else if (m.action === "REPORT_IDENTIFIED_PRINCIPLE") {
+          const { principle } = m as { action: string; principle: import("@/types/db").PrincipleInSelection };
+          openIdentifiedPrincipleReport(principle);
+        } else if (m.action === "CLOSE") {
+          dialog.close(); event.completed();
+        }
+      });
+    }
+  );
+}
+
+async function openListInterpretedPrincipleDialog(event: Office.AddinCommands.Event): Promise<void> {
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
+  const { personName, personEmail } = getUserIdentity();
+
+  function buildPayload(): DialogInitPayload {
+    const principleInterpretations = getAllInterpretations();
+    const filesByInterpretationId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+    for (const pi of principleInterpretations) {
+      if (pi.id !== undefined) filesByInterpretationId[pi.id] = getFilesByPrincipleInterpretation(pi.id);
+    }
+    return {
+      selection: "", mode: "selection", source: getSource(), personName, personEmail,
+      applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [],
+      principleInterpretations, filesByInterpretationId,
+    };
+  }
+
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=list-interpreted-principle`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) { handleDialogOpenError(result.error, event); return; }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { event.completed(); });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        if (m.action === "READY") {
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+        } else if (m.action === "DELETE_INTERPRETED_PRINCIPLE") {
+          deleteInterpretation((m as { action: string; id: number }).id);
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+        } else if (m.action === "REPORT_INTERPRETED_PRINCIPLE") {
+          const { interpretation } = m as { action: string; interpretation: import("@/types/db").PrincipleInterpretation };
+          openInterpretedPrincipleReport(interpretation);
+        } else if (m.action === "ADD_ATTACHED_FILE") {
+          const { file } = m as { action: string; file: import("@/types/db").AttachFileToProject };
+          const newId = addAttachedFile(file as Omit<import("@/types/db").AttachFileToProject, "id">);
+          dialog.messageChild(JSON.stringify({ type: "FILE_ADDED", id: newId }));
+        } else if (m.action === "REMOVE_ATTACHED_FILE") {
+          removeAttachedFile((m as { action: string; id: number }).id);
+        } else if (m.action === "CLOSE") {
+          dialog.close(); event.completed();
+        }
+      });
+    }
+  );
+}
+
+async function openListSelectionRelatedPrincipleDialog(event: Office.AddinCommands.Event): Promise<void> {
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
+  const { personName, personEmail } = getUserIdentity();
+
+  function buildPayload(): DialogInitPayload {
+    const selectionsWithPrinciple = getSelectionsWithPrinciple();
+    const filesBySelectionWithPrincipleId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+    for (const s of selectionsWithPrinciple) {
+      if (s.id !== undefined) filesBySelectionWithPrincipleId[s.id] = getFilesBySelectionWithPrinciple(s.id);
+    }
+    return {
+      selection: "", mode: "selection", source: getSource(), personName, personEmail,
+      applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [],
+      selectionsWithPrinciple, filesBySelectionWithPrincipleId,
+    };
+  }
+
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=list-selection-related-principle`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) { handleDialogOpenError(result.error, event); return; }
+      const dialog = result.value;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { event.completed(); });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        if (m.action === "READY") {
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+        } else if (m.action === "DELETE_RELATED_SELECTION") {
+          deleteSelectionWithPrinciple((m as { action: string; id: number }).id);
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+        } else if (m.action === "REPORT_RELATED_SELECTION") {
+          const { relation } = m as { action: string; relation: import("@/types/db").SelectionWithPrinciple };
+          openRelatedPrincipleReport(relation);
+        } else if (m.action === "CLOSE") {
+          dialog.close(); event.completed();
         }
       });
     }
