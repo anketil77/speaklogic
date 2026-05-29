@@ -16,12 +16,12 @@ import { ListSelectionRelatedPrinciplePortal } from "@/dialog/components/ListSel
 import {
   FlaggedHistoryHeaderIcon,
 
-  AnalyzeSelectionCmdIcon,
-  DeleteSelectionIcon,
-  ApplySelectionFeedbackIcon,
-  ProvideFeedbackAnalysisIcon,
-  ViewListFeedbackIcon,
-  ViewListAnalysisIcon,
+  FlagAnalyzeIcon,
+  FlagDeleteIcon,
+  FlagApplyIcon,
+  FlagProvideIcon,
+  FlagListFbIcon,
+  FlagListAnalysisIcon,
   ViewReportIcon,
   FilterFunnelIcon,
   SmallCaretDownIcon,
@@ -336,7 +336,7 @@ export default function FlaggedHistoryView() {
             flexShrink: 0,
           }}
         >
-          <AnalyzeSelectionCmdIcon />
+          <FlagAnalyzeIcon />
         </button>
 
         {/* Delete Selection */}
@@ -359,7 +359,7 @@ export default function FlaggedHistoryView() {
             flexShrink: 0,
           }}
         >
-          <DeleteSelectionIcon />
+          <FlagDeleteIcon />
         </button>
 
         <CmdSepBar />
@@ -384,7 +384,7 @@ export default function FlaggedHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ApplySelectionFeedbackIcon />
+          <FlagApplyIcon />
         </button>
 
         {/* Provide Feedback with Selection */}
@@ -407,7 +407,7 @@ export default function FlaggedHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ProvideFeedbackAnalysisIcon />
+          <FlagProvideIcon />
         </button>
 
         {/* List of Feedback — always disabled (Office.js one-dialog constraint) */}
@@ -429,7 +429,7 @@ export default function FlaggedHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ViewListFeedbackIcon />
+          <FlagListFbIcon />
         </button>
 
         {/* List of Analysis — always disabled (Office.js one-dialog constraint) */}
@@ -451,7 +451,7 @@ export default function FlaggedHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ViewListAnalysisIcon />
+          <FlagListAnalysisIcon />
         </button>
 
         {/* Filter */}
