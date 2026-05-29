@@ -201,29 +201,17 @@
 
               <Group id="grpAbout_OL">
                 <Label resid="grpAbout.Label"/>
-                <Control xsi:type="Button" id="communicationConfig_OL">
-                  <Label resid="communicationConfig.Label"/>
-                  <Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip>
-                  <Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon>
-                  <Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action>
-                </Control>
-                <Control xsi:type="Button" id="requestSLFeedback_OL">
-                  <Label resid="requestSLFeedback.Label"/>
-                  <Supertip><Title resid="requestSLFeedback.Label"/><Description resid="requestSLFeedback.Tooltip"/></Supertip>
-                  <Icon><bt:Image size="16" resid="requestSLFeedback.Icon16"/><bt:Image size="32" resid="requestSLFeedback.Icon32"/><bt:Image size="80" resid="requestSLFeedback.Icon80"/></Icon>
-                  <Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action>
-                </Control>
-                <Control xsi:type="Button" id="help_OL">
-                  <Label resid="help.Label"/>
-                  <Supertip><Title resid="help.Label"/><Description resid="help.Tooltip"/></Supertip>
-                  <Icon><bt:Image size="16" resid="help.Icon16"/><bt:Image size="32" resid="help.Icon32"/><bt:Image size="80" resid="help.Icon80"/></Icon>
-                  <Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action>
-                </Control>
-                <Control xsi:type="Button" id="about_OL">
-                  <Label resid="about.Label"/>
-                  <Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip>
-                  <Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon>
-                  <Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action>
+                <Control xsi:type="Menu" id="speakLogicInfoMenu_OL_v10">
+                  <Label resid="speakLogicInfoMenu.Label"/>
+                  <Supertip><Title resid="speakLogicInfoMenu.Label"/><Description resid="speakLogicInfoMenu.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="speakLogicInfoMenu.Icon16"/><bt:Image size="32" resid="speakLogicInfoMenu.Icon32"/><bt:Image size="80" resid="speakLogicInfoMenu.Icon80"/></Icon>
+                  <Items>
+                    <Item id="si_requestSLFeedback_OL_v10_item"><Label resid="requestSLFeedback.Label"/><Supertip><Title resid="requestSLFeedback.Label"/><Description resid="requestSLFeedback.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="requestSLFeedback.Icon16"/><bt:Image size="32" resid="requestSLFeedback.Icon32"/><bt:Image size="80" resid="requestSLFeedback.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action></Item>
+                    <Item id="si_help_OL_v10_item"><Label resid="help.Label"/><Supertip><Title resid="help.Label"/><Description resid="help.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="help.Icon16"/><bt:Image size="32" resid="help.Icon32"/><bt:Image size="80" resid="help.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action></Item>
+                    <Item id="si_helpArticle_OL_v10_item"><Label resid="helpArticle.Label"/><Supertip><Title resid="helpArticle.Label"/><Description resid="helpArticle.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="helpArticle.Icon16"/><bt:Image size="32" resid="helpArticle.Icon32"/><bt:Image size="80" resid="helpArticle.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>helpArticle</FunctionName></Action></Item>
+                    <Item id="si_about_OL_v10_item"><Label resid="about.Label"/><Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action></Item>
+                    <Item id="si_communicationConfig_OL_v10_item"><Label resid="communicationConfig.Label"/><Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action></Item>
+                  </Items>
                 </Control>
               </Group>
 
@@ -315,6 +303,12 @@
         <bt:Image id="about.Icon16" DefaultValue="https://localhost:3000/assets/btn-about-16.png"/>
         <bt:Image id="about.Icon32" DefaultValue="https://localhost:3000/assets/btn-about-32.png"/>
         <bt:Image id="about.Icon80" DefaultValue="https://localhost:3000/assets/btn-about-80.png"/>
+        <bt:Image id="speakLogicInfoMenu.Icon16" DefaultValue="https://localhost:3000/assets/btn-about-16.png"/>
+        <bt:Image id="speakLogicInfoMenu.Icon32" DefaultValue="https://localhost:3000/assets/btn-about-32.png"/>
+        <bt:Image id="speakLogicInfoMenu.Icon80" DefaultValue="https://localhost:3000/assets/btn-about-80.png"/>
+        <bt:Image id="helpArticle.Icon16" DefaultValue="https://localhost:3000/assets/btn-help-16.png"/>
+        <bt:Image id="helpArticle.Icon32" DefaultValue="https://localhost:3000/assets/btn-help-32.png"/>
+        <bt:Image id="helpArticle.Icon80" DefaultValue="https://localhost:3000/assets/btn-help-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/commands.html"/>
@@ -351,6 +345,8 @@
         <bt:String id="requestSLFeedback.Label" DefaultValue="Request SL Feedback"/>
         <bt:String id="help.Label" DefaultValue="Help"/>
         <bt:String id="about.Label" DefaultValue="About"/>
+        <bt:String id="speakLogicInfoMenu.Label" DefaultValue="Speak Logic Information Analysis"/>
+        <bt:String id="helpArticle.Label" DefaultValue="Open Help Article Document"/>
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="analyzeSelection.Tooltip" DefaultValue="Analyze the selected text"/>
@@ -378,6 +374,8 @@
         <bt:String id="requestSLFeedback.Tooltip" DefaultValue="Send feedback to the Speak Logic team"/>
         <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
         <bt:String id="about.Tooltip" DefaultValue="About Speak Logic"/>
+        <bt:String id="speakLogicInfoMenu.Tooltip" DefaultValue="Access help, about, and configuration options"/>
+        <bt:String id="helpArticle.Tooltip" DefaultValue="Open the help article document"/>
       </bt:LongStrings>
     </Resources>
 
@@ -522,29 +520,17 @@
 
                 <Group id="grpAbout_OL_v11">
                   <Label resid="grpAbout.Label.v11"/>
-                  <Control xsi:type="Button" id="communicationConfig_OL_v11">
-                    <Label resid="communicationConfig.Label.v11"/>
-                    <Supertip><Title resid="communicationConfig.Label.v11"/><Description resid="communicationConfig.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="communicationConfig.Icon16.v11"/><bt:Image size="32" resid="communicationConfig.Icon32.v11"/><bt:Image size="80" resid="communicationConfig.Icon80.v11"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action>
-                  </Control>
-                  <Control xsi:type="Button" id="requestSLFeedback_OL_v11">
-                    <Label resid="requestSLFeedback.Label.v11"/>
-                    <Supertip><Title resid="requestSLFeedback.Label.v11"/><Description resid="requestSLFeedback.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="requestSLFeedback.Icon16.v11"/><bt:Image size="32" resid="requestSLFeedback.Icon32.v11"/><bt:Image size="80" resid="requestSLFeedback.Icon80.v11"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action>
-                  </Control>
-                  <Control xsi:type="Button" id="help_OL_v11">
-                    <Label resid="help.Label.v11"/>
-                    <Supertip><Title resid="help.Label.v11"/><Description resid="help.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="help.Icon16.v11"/><bt:Image size="32" resid="help.Icon32.v11"/><bt:Image size="80" resid="help.Icon80.v11"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action>
-                  </Control>
-                  <Control xsi:type="Button" id="about_OL_v11">
-                    <Label resid="about.Label.v11"/>
-                    <Supertip><Title resid="about.Label.v11"/><Description resid="about.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="about.Icon16.v11"/><bt:Image size="32" resid="about.Icon32.v11"/><bt:Image size="80" resid="about.Icon80.v11"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action>
+                  <Control xsi:type="Menu" id="speakLogicInfoMenu_OL_v11">
+                    <Label resid="speakLogicInfoMenu.Label.v11"/>
+                    <Supertip><Title resid="speakLogicInfoMenu.Label.v11"/><Description resid="speakLogicInfoMenu.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="speakLogicInfoMenu.Icon16.v11"/><bt:Image size="32" resid="speakLogicInfoMenu.Icon32.v11"/><bt:Image size="80" resid="speakLogicInfoMenu.Icon80.v11"/></Icon>
+                    <Items>
+                      <Item id="si_requestSLFeedback_OL_v11_item"><Label resid="requestSLFeedback.Label.v11"/><Supertip><Title resid="requestSLFeedback.Label.v11"/><Description resid="requestSLFeedback.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="requestSLFeedback.Icon16.v11"/><bt:Image size="32" resid="requestSLFeedback.Icon32.v11"/><bt:Image size="80" resid="requestSLFeedback.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action></Item>
+                      <Item id="si_help_OL_v11_item"><Label resid="help.Label.v11"/><Supertip><Title resid="help.Label.v11"/><Description resid="help.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="help.Icon16.v11"/><bt:Image size="32" resid="help.Icon32.v11"/><bt:Image size="80" resid="help.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action></Item>
+                      <Item id="si_helpArticle_OL_v11_item"><Label resid="helpArticle.Label.v11"/><Supertip><Title resid="helpArticle.Label.v11"/><Description resid="helpArticle.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="helpArticle.Icon16.v11"/><bt:Image size="32" resid="helpArticle.Icon32.v11"/><bt:Image size="80" resid="helpArticle.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>helpArticle</FunctionName></Action></Item>
+                      <Item id="si_about_OL_v11_item"><Label resid="about.Label.v11"/><Supertip><Title resid="about.Label.v11"/><Description resid="about.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="about.Icon16.v11"/><bt:Image size="32" resid="about.Icon32.v11"/><bt:Image size="80" resid="about.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action></Item>
+                      <Item id="si_communicationConfig_OL_v11_item"><Label resid="communicationConfig.Label.v11"/><Supertip><Title resid="communicationConfig.Label.v11"/><Description resid="communicationConfig.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16.v11"/><bt:Image size="32" resid="communicationConfig.Icon32.v11"/><bt:Image size="80" resid="communicationConfig.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action></Item>
+                    </Items>
                   </Control>
                 </Group>
 
@@ -676,29 +662,17 @@
 
                 <Group id="grpAbout_OLC">
                   <Label resid="grpAbout.Label.v11"/>
-                  <Control xsi:type="Button" id="communicationConfig_OLC">
-                    <Label resid="communicationConfig.Label.v11"/>
-                    <Supertip><Title resid="communicationConfig.Label.v11"/><Description resid="communicationConfig.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="communicationConfig.Icon16.v11"/><bt:Image size="32" resid="communicationConfig.Icon32.v11"/><bt:Image size="80" resid="communicationConfig.Icon80.v11"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action>
-                  </Control>
-                  <Control xsi:type="Button" id="requestSLFeedback_OLC">
-                    <Label resid="requestSLFeedback.Label.v11"/>
-                    <Supertip><Title resid="requestSLFeedback.Label.v11"/><Description resid="requestSLFeedback.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="requestSLFeedback.Icon16.v11"/><bt:Image size="32" resid="requestSLFeedback.Icon32.v11"/><bt:Image size="80" resid="requestSLFeedback.Icon80.v11"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action>
-                  </Control>
-                  <Control xsi:type="Button" id="help_OLC">
-                    <Label resid="help.Label.v11"/>
-                    <Supertip><Title resid="help.Label.v11"/><Description resid="help.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="help.Icon16.v11"/><bt:Image size="32" resid="help.Icon32.v11"/><bt:Image size="80" resid="help.Icon80.v11"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action>
-                  </Control>
-                  <Control xsi:type="Button" id="about_OLC">
-                    <Label resid="about.Label.v11"/>
-                    <Supertip><Title resid="about.Label.v11"/><Description resid="about.Tooltip.v11"/></Supertip>
-                    <Icon><bt:Image size="16" resid="about.Icon16.v11"/><bt:Image size="32" resid="about.Icon32.v11"/><bt:Image size="80" resid="about.Icon80.v11"/></Icon>
-                    <Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action>
+                  <Control xsi:type="Menu" id="speakLogicInfoMenu_OLC_v11">
+                    <Label resid="speakLogicInfoMenu.Label.v11"/>
+                    <Supertip><Title resid="speakLogicInfoMenu.Label.v11"/><Description resid="speakLogicInfoMenu.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="speakLogicInfoMenu.Icon16.v11"/><bt:Image size="32" resid="speakLogicInfoMenu.Icon32.v11"/><bt:Image size="80" resid="speakLogicInfoMenu.Icon80.v11"/></Icon>
+                    <Items>
+                      <Item id="si_requestSLFeedback_OLC_v11_item"><Label resid="requestSLFeedback.Label.v11"/><Supertip><Title resid="requestSLFeedback.Label.v11"/><Description resid="requestSLFeedback.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="requestSLFeedback.Icon16.v11"/><bt:Image size="32" resid="requestSLFeedback.Icon32.v11"/><bt:Image size="80" resid="requestSLFeedback.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action></Item>
+                      <Item id="si_help_OLC_v11_item"><Label resid="help.Label.v11"/><Supertip><Title resid="help.Label.v11"/><Description resid="help.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="help.Icon16.v11"/><bt:Image size="32" resid="help.Icon32.v11"/><bt:Image size="80" resid="help.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action></Item>
+                      <Item id="si_helpArticle_OLC_v11_item"><Label resid="helpArticle.Label.v11"/><Supertip><Title resid="helpArticle.Label.v11"/><Description resid="helpArticle.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="helpArticle.Icon16.v11"/><bt:Image size="32" resid="helpArticle.Icon32.v11"/><bt:Image size="80" resid="helpArticle.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>helpArticle</FunctionName></Action></Item>
+                      <Item id="si_about_OLC_v11_item"><Label resid="about.Label.v11"/><Supertip><Title resid="about.Label.v11"/><Description resid="about.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="about.Icon16.v11"/><bt:Image size="32" resid="about.Icon32.v11"/><bt:Image size="80" resid="about.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action></Item>
+                      <Item id="si_communicationConfig_OLC_v11_item"><Label resid="communicationConfig.Label.v11"/><Supertip><Title resid="communicationConfig.Label.v11"/><Description resid="communicationConfig.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16.v11"/><bt:Image size="32" resid="communicationConfig.Icon32.v11"/><bt:Image size="80" resid="communicationConfig.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action></Item>
+                    </Items>
                   </Control>
                 </Group>
 
@@ -784,6 +758,12 @@
           <bt:Image id="about.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-about-16.png"/>
           <bt:Image id="about.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-about-32.png"/>
           <bt:Image id="about.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-about-80.png"/>
+          <bt:Image id="speakLogicInfoMenu.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-about-16.png"/>
+          <bt:Image id="speakLogicInfoMenu.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-about-32.png"/>
+          <bt:Image id="speakLogicInfoMenu.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-about-80.png"/>
+          <bt:Image id="helpArticle.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-help-16.png"/>
+          <bt:Image id="helpArticle.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-help-32.png"/>
+          <bt:Image id="helpArticle.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-help-80.png"/>
         </bt:Images>
         <bt:Urls>
           <bt:Url id="Commands.Url.v11" DefaultValue="https://localhost:3000/commands.html"/>
@@ -819,6 +799,8 @@
           <bt:String id="requestSLFeedback.Label.v11" DefaultValue="Request SL Feedback"/>
           <bt:String id="help.Label.v11" DefaultValue="Help"/>
           <bt:String id="about.Label.v11" DefaultValue="About"/>
+          <bt:String id="speakLogicInfoMenu.Label.v11" DefaultValue="Speak Logic Information Analysis"/>
+          <bt:String id="helpArticle.Label.v11" DefaultValue="Open Help Article Document"/>
         </bt:ShortStrings>
         <bt:LongStrings>
           <bt:String id="analyzeSelection.Tooltip.v11" DefaultValue="Analyze the selected text"/>
@@ -845,6 +827,8 @@
           <bt:String id="requestSLFeedback.Tooltip.v11" DefaultValue="Send feedback to the Speak Logic team"/>
           <bt:String id="help.Tooltip.v11" DefaultValue="View help documentation"/>
           <bt:String id="about.Tooltip.v11" DefaultValue="About Speak Logic"/>
+          <bt:String id="speakLogicInfoMenu.Tooltip.v11" DefaultValue="Access help, about, and configuration options"/>
+          <bt:String id="helpArticle.Tooltip.v11" DefaultValue="Open the help article document"/>
         </bt:LongStrings>
       </Resources>
 

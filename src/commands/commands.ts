@@ -130,6 +130,7 @@ function registerHandlers(): void {
     void openRequestSLFeedbackDialog(event)
   );
   Office.actions.associate("help", (event) => openViewDialogSimple("help", event));
+  Office.actions.associate("helpArticle", (event) => { event.completed(); });
   Office.actions.associate("about", (event) => openAboutDialog(event));
   Office.actions.associate("communicationConfig", (event) => openCommunicationConfigDialog(event));
   Office.actions.associate("createArticle", (event) =>
