@@ -403,7 +403,7 @@ export default function FeedbackHistoryView() {
         <CmdSepBar />
         <button
           title="List of Feedback Applied"
-          onClick={() => sendMessage({ action: "LIST_FEEDBACK_APPLIED" })}
+          onClick={() => handleFilterSelect("Applied")}
           className="sl-icon-btn"
           style={{
             width: 28,
@@ -423,7 +423,7 @@ export default function FeedbackHistoryView() {
 
         <button
           title="List of Feedback Provided"
-          onClick={() => sendMessage({ action: "LIST_FEEDBACK_PROVIDED" })}
+          onClick={() => handleFilterSelect("Provided")}
           className="sl-icon-btn"
           style={{
             width: 28,
