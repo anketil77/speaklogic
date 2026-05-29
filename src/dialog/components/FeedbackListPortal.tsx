@@ -251,6 +251,28 @@ export function FeedbackListPortal({ feedbacks, sendMessage, onClose, onViewFeed
 
           <CmdSepBar />
 
+          <button
+            title="View Provided Feedback Report"
+            disabled={!hasSelection}
+            onClick={handleViewReport}
+            className="sl-icon-btn"
+            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", borderRadius: 4, cursor: hasSelection ? "pointer" : "default", opacity: hasSelection ? 1 : 0.35, flexShrink: 0 }}
+          >
+            <ViewReportIcon />
+          </button>
+
+          <button
+            title="View Applied Feedback Report"
+            disabled={!hasSelection}
+            onClick={handleViewReport}
+            className="sl-icon-btn"
+            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", borderRadius: 4, cursor: hasSelection ? "pointer" : "default", opacity: hasSelection ? 1 : 0.35, flexShrink: 0 }}
+          >
+            <ViewReportIcon />
+          </button>
+
+          <CmdSepBar />
+
           {/* Filter by feedback type */}
           <div ref={filterRef} style={{ position: "relative" }}>
             <button
@@ -274,28 +296,6 @@ export function FeedbackListPortal({ feedbacks, sendMessage, onClose, onViewFeed
               </div>
             )}
           </div>
-
-          <CmdSepBar />
-
-          <button
-            title="View Provided Feedback Report"
-            disabled={!hasSelection}
-            onClick={handleViewReport}
-            className="sl-icon-btn"
-            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", borderRadius: 4, cursor: hasSelection ? "pointer" : "default", opacity: hasSelection ? 1 : 0.35, flexShrink: 0 }}
-          >
-            <ViewReportIcon />
-          </button>
-
-          <button
-            title="View Applied Feedback Report"
-            disabled={!hasSelection}
-            onClick={handleViewReport}
-            className="sl-icon-btn"
-            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", borderRadius: 4, cursor: hasSelection ? "pointer" : "default", opacity: hasSelection ? 1 : 0.35, flexShrink: 0 }}
-          >
-            <ViewReportIcon />
-          </button>
         </div>
 
         {/* ── Table body ── */}
