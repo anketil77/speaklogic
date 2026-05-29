@@ -748,15 +748,6 @@ export function IdentifyPrincipleInSelectionDialog({
             Identify Principle in Selection
           </button>
 
-          <button
-            className="sl-icon-btn"
-            onClick={handleSubmit}
-            title="Identify Principle in Selection"
-            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 3, cursor: "pointer", flexShrink: 0, padding: 0 }}
-          >
-            <IdentifyPrincipleHeaderIcon />
-          </button>
-
           <CmdSep />
 
           <button

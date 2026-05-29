@@ -552,15 +552,6 @@ export function InterpretePrincipleDialog({
             Interpret Principle
           </button>
 
-          <button
-            className="sl-icon-btn"
-            onClick={handleSubmit}
-            title="Interpret Principle"
-            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 3, cursor: "pointer", flexShrink: 0, padding: 0 }}
-          >
-            <InterpretePrincipleHeaderIcon />
-          </button>
-
           <CmdSep />
 
           <button

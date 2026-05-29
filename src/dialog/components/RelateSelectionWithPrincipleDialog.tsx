@@ -633,15 +633,6 @@ export function RelateSelectionWithPrincipleDialog({
             Relate Selection with Principle
           </button>
 
-          <button
-            className="sl-icon-btn"
-            onClick={handleSubmit}
-            title="Relate Selection with Principle"
-            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 3, cursor: "pointer", flexShrink: 0, padding: 0 }}
-          >
-            <RelatePrincipleHeaderIcon />
-          </button>
-
           <CmdSep />
 
           {/* List Identified Principle */}
