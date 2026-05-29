@@ -11,12 +11,12 @@ import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import {
   ListFeedbackRequestedHeaderIcon,
   ViewFeedbackRequestIcon,
-  DeleteSelectedIcon,
+  FbRequestDeleteIcon,
   EditFeedbackRequestIcon,
   ApplyFeedbackRequestIcon,
   ProvideFeedbackWithRequestIcon,
-  SelectionReportIcon,
-  RequestProvidedReportIcon,
+  FlagViewReportIcon,
+  FbHistoryViewReportIcon,
 } from "@/dialog/components/Icons";
 import {
   openRequestFeedbackSelectionReport,
@@ -352,7 +352,7 @@ export default function ListFeedbackRequestedView() {
             onClick={handleDelete}
             style={iconBtnStyle(hasSelection)}
           >
-            <DeleteSelectedIcon color={hasSelection ? "#D13438" : "#616161"} />
+            <FbRequestDeleteIcon />
           </button>
 
           {/* Edit — shows info message (cannot edit) */}
@@ -400,7 +400,7 @@ export default function ListFeedbackRequestedView() {
             onClick={handleSelectionReport}
             style={iconBtnStyle(hasSelection)}
           >
-            <SelectionReportIcon />
+            <FlagViewReportIcon />
           </button>
 
           {/* Request Provided Report */}
@@ -411,7 +411,7 @@ export default function ListFeedbackRequestedView() {
             onClick={handleFeedbackReport}
             style={iconBtnStyle(hasSelection)}
           >
-            <RequestProvidedReportIcon />
+            <FbHistoryViewReportIcon />
           </button>
         </div>
 
