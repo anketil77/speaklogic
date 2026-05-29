@@ -294,15 +294,15 @@
         <bt:Image id="listSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
         <bt:Image id="listSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
         <bt:Image id="listSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
-        <bt:Image id="listIdentifiedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
-        <bt:Image id="listIdentifiedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
-        <bt:Image id="listIdentifiedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
-        <bt:Image id="listInterpretedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
-        <bt:Image id="listInterpretedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
-        <bt:Image id="listInterpretedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
-        <bt:Image id="listSelectionRelatedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
-        <bt:Image id="listSelectionRelatedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
-        <bt:Image id="listSelectionRelatedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
+        <bt:Image id="listIdentifiedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-analysis-16.png"/>
+        <bt:Image id="listIdentifiedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-analysis-32.png"/>
+        <bt:Image id="listIdentifiedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-analysis-80.png"/>
+        <bt:Image id="listInterpretedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-feedback-16.png"/>
+        <bt:Image id="listInterpretedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-feedback-32.png"/>
+        <bt:Image id="listInterpretedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-feedback-80.png"/>
+        <bt:Image id="listSelectionRelatedPrinciple.Icon16" DefaultValue="https://localhost:3000/assets/btn-list-retained-16.png"/>
+        <bt:Image id="listSelectionRelatedPrinciple.Icon32" DefaultValue="https://localhost:3000/assets/btn-list-retained-32.png"/>
+        <bt:Image id="listSelectionRelatedPrinciple.Icon80" DefaultValue="https://localhost:3000/assets/btn-list-retained-80.png"/>
         <bt:Image id="communicationConfig.Icon16" DefaultValue="https://localhost:3000/assets/btn-comm-config-16.png"/>
         <bt:Image id="communicationConfig.Icon32" DefaultValue="https://localhost:3000/assets/btn-comm-config-32.png"/>
         <bt:Image id="communicationConfig.Icon80" DefaultValue="https://localhost:3000/assets/btn-comm-config-80.png"/>
@@ -763,15 +763,15 @@
           <bt:Image id="listSelection.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
           <bt:Image id="listSelection.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
           <bt:Image id="listSelection.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
-          <bt:Image id="listIdentifiedPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
-          <bt:Image id="listIdentifiedPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
-          <bt:Image id="listIdentifiedPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
-          <bt:Image id="listInterpretedPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
-          <bt:Image id="listInterpretedPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
-          <bt:Image id="listInterpretedPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
-          <bt:Image id="listSelectionRelatedPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
-          <bt:Image id="listSelectionRelatedPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
-          <bt:Image id="listSelectionRelatedPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
+          <bt:Image id="listIdentifiedPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-list-analysis-16.png"/>
+          <bt:Image id="listIdentifiedPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-list-analysis-32.png"/>
+          <bt:Image id="listIdentifiedPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-list-analysis-80.png"/>
+          <bt:Image id="listInterpretedPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-list-feedback-16.png"/>
+          <bt:Image id="listInterpretedPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-list-feedback-32.png"/>
+          <bt:Image id="listInterpretedPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-list-feedback-80.png"/>
+          <bt:Image id="listSelectionRelatedPrinciple.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-16.png"/>
+          <bt:Image id="listSelectionRelatedPrinciple.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-32.png"/>
+          <bt:Image id="listSelectionRelatedPrinciple.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-list-retained-80.png"/>
           <bt:Image id="communicationConfig.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-16.png"/>
           <bt:Image id="communicationConfig.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-32.png"/>
           <bt:Image id="communicationConfig.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-80.png"/>
