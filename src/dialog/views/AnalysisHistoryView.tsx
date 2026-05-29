@@ -12,8 +12,9 @@ import {
   SmallCaretDownIcon,
   AnalysisDeleteIcon,
   AnalysisEditIcon,
-  ProvideFeedbackAnalysisIcon,
-  FlagAnalysisCommunicationIcon,
+  AnalysisApplyFbIcon,
+  AnalysisProvideFbIcon,
+  AnalysisFlagCommIcon,
   ViewReportIcon,
   FilterFunnelIcon,
   FilterWordDocIcon,
@@ -321,6 +322,29 @@ export default function AnalysisHistoryView() {
 
         <CmdSepBar />
 
+        {/* Apply Analysis as Feedback */}
+        <button
+          title="Apply Analysis as Feedback"
+          disabled={!hasSelection}
+          onClick={() => hasSelection && setInfoMsg(MSG_APPLY)}
+          className="sl-icon-btn"
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "none",
+            border: "none",
+            borderRadius: 4,
+            cursor: hasSelection ? "pointer" : "default",
+            opacity: hasSelection ? 1 : 0.35,
+            flexShrink: 0,
+          }}
+        >
+          <AnalysisApplyFbIcon />
+        </button>
+
         {/* Provide Feedback */}
         <button
           title="Provide Feedback With Analysis"
@@ -341,7 +365,7 @@ export default function AnalysisHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ProvideFeedbackAnalysisIcon />
+          <AnalysisProvideFbIcon />
         </button>
 
         {/* Flag */}
@@ -364,10 +388,8 @@ export default function AnalysisHistoryView() {
             flexShrink: 0,
           }}
         >
-          <FlagAnalysisCommunicationIcon />
+          <AnalysisFlagCommIcon />
         </button>
-
-        <CmdSepBar />
 
         {/* Filter */}
         <div ref={filterRef} style={{ position: "relative" }}>
