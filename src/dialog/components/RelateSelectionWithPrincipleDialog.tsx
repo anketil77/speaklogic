@@ -327,407 +327,157 @@ export function RelateSelectionWithPrincipleDialog({
     sendMessage,
   ]);
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "selection":
-        return (
-          <>
-            {/* Italic label bar */}
-            <div
-              style={{
-                background: C.grey96,
-                height: 37,
-                display: "flex",
-                alignItems: "center",
-                paddingLeft: 20,
-                flexShrink: 0,
-              }}
-            >
-              <span
-                style={{
-                  fontStyle: "italic",
-                  fontSize: 11.3,
-                  color: C.grey38,
-                  lineHeight: "14px",
-                }}
-              >
-                Actual Selection The Principle is Related To
-              </span>
-            </div>
-            {/* Selection text */}
-            <div style={{ padding: "24px 20px 20px" }}>
-              <div
-                ref={selectionRef}
-                contentEditable
-                suppressContentEditableWarning
-                onFocus={() => setActiveEditor(selectionRef)}
-                style={{
-                  fontSize: 26.3,
-                  lineHeight: "39px",
-                  color: C.grey11,
-                  fontFamily: "inherit",
-                  outline: "none",
-                  wordBreak: "break-word",
-                  minHeight: 40,
-                }}
-              />
-            </div>
-          </>
-        );
-
-      case "principle":
-        return (
-          <div style={{ padding: "20px 20px 20px" }}>
-            <FieldRow label="Actual Principle">
-              <input
-                style={inputStyle}
-                value={actualPrinciple}
-                onChange={(e) => setActualPrinciple(e.target.value)}
-                placeholder="Enter actual principle"
-              />
-            </FieldRow>
-            <FieldRow label="Principle Name">
-              <input
-                style={inputStyle}
-                value={principleName}
-                onChange={(e) => setPrincipleName(e.target.value)}
-                placeholder="Enter principle name"
-              />
-            </FieldRow>
-            <FieldRow label="Set Derived From">
-              <input
-                style={inputStyle}
-                value={setDerivedFrom}
-                onChange={(e) => setSetDerivedFrom(e.target.value)}
-                placeholder="Enter the set this principle is derived from"
-              />
-            </FieldRow>
-            <FieldRow label="Principle Description">
-              <div
-                ref={principleDescRef}
-                contentEditable
-                suppressContentEditableWarning
-                onFocus={() => setActiveEditor(principleDescRef)}
-                style={{
-                  border: `1px solid ${C.grey78}`,
-                  borderRadius: 4,
-                  padding: "8px 10px",
-                  minHeight: 90,
-                  fontSize: 12.2,
-                  lineHeight: "20px",
-                  color: C.grey11,
-                  fontFamily: "inherit",
-                  outline: "none",
-                  cursor: "text",
-                  overflow: "auto",
-                }}
-              />
-            </FieldRow>
-          </div>
-        );
-
-      case "comm-principle":
-        return (
-          <div style={{ padding: "20px 20px 20px" }}>
-            <FieldRow label="Communication Principle">
-              <input
-                style={inputStyle}
-                value={communicationPrinciple}
-                onChange={(e) => setCommunicationPrinciple(e.target.value)}
-                placeholder="Enter communication principle"
-              />
-            </FieldRow>
-            <FieldRow label="Comm Principle Description">
-              <div
-                ref={commPrincipleDescRef}
-                contentEditable
-                suppressContentEditableWarning
-                onFocus={() => setActiveEditor(commPrincipleDescRef)}
-                style={{
-                  border: `1px solid ${C.grey78}`,
-                  borderRadius: 4,
-                  padding: "8px 10px",
-                  minHeight: 110,
-                  fontSize: 12.2,
-                  lineHeight: "20px",
-                  color: C.grey11,
-                  fontFamily: "inherit",
-                  outline: "none",
-                  cursor: "text",
-                  overflow: "auto",
-                }}
-              />
-            </FieldRow>
-          </div>
-        );
-
-      case "relationship":
-        return (
-          <div style={{ padding: "20px 20px 20px" }}>
-            <FieldRow label="Actual Relationship">
-              <input
-                style={inputStyle}
-                value={actualRelationship}
-                onChange={(e) => setActualRelationship(e.target.value)}
-                placeholder="Enter the actual relationship"
-              />
-            </FieldRow>
-            <FieldRow label="Relationship Description">
-              <div
-                ref={relationshipDescRef}
-                contentEditable
-                suppressContentEditableWarning
-                onFocus={() => setActiveEditor(relationshipDescRef)}
-                style={{
-                  border: `1px solid ${C.grey78}`,
-                  borderRadius: 4,
-                  padding: "8px 10px",
-                  minHeight: 110,
-                  fontSize: 12.2,
-                  lineHeight: "20px",
-                  color: C.grey11,
-                  fontFamily: "inherit",
-                  outline: "none",
-                  cursor: "text",
-                  overflow: "auto",
-                }}
-              />
-            </FieldRow>
-          </div>
-        );
-
-      case "files":
-        return (
+  const renderTabContent = () => (
+    <>
+      {/* Selection tab — always mounted so contentEditable content is preserved */}
+      <div style={{ display: activeTab === "selection" ? "flex" : "none", flexDirection: "column", flex: 1 }}>
+        <div style={{ background: C.grey96, height: 37, display: "flex", alignItems: "center", paddingLeft: 20, flexShrink: 0 }}>
+          <span style={{ fontStyle: "italic", fontSize: 11.3, color: C.grey38, lineHeight: "14px" }}>
+            Actual Selection The Principle is Related To
+          </span>
+        </div>
+        <div style={{ padding: "24px 20px 20px" }}>
           <div
-            style={{
-              position: "relative",
-              display: "flex",
-              flexDirection: "column",
-              flex: 1,
-              minHeight: 0,
-            }}
-          >
-            <PanelTable<AttachFileToProject>
-              columns={FILE_COLUMNS}
-              rows={files}
-              emptyText="No attached files."
-              onRowContextMenu={(e, idx) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setFileMenuIndex(idx);
-              }}
+            ref={selectionRef}
+            contentEditable
+            suppressContentEditableWarning
+            onFocus={() => setActiveEditor(selectionRef)}
+            style={{ fontSize: 26.3, lineHeight: "39px", color: C.grey11, fontFamily: "inherit", outline: "none", wordBreak: "break-word", minHeight: 40 }}
+          />
+        </div>
+      </div>
+
+      {/* Principle tab — always mounted so contentEditable content is preserved */}
+      <div style={{ display: activeTab === "principle" ? "block" : "none", padding: "20px 20px 20px" }}>
+        <FieldRow label="Actual Principle">
+          <input style={inputStyle} value={actualPrinciple} onChange={(e) => setActualPrinciple(e.target.value)} placeholder="Enter actual principle" />
+        </FieldRow>
+        <FieldRow label="Principle Name">
+          <input style={inputStyle} value={principleName} onChange={(e) => setPrincipleName(e.target.value)} placeholder="Enter principle name" />
+        </FieldRow>
+        <FieldRow label="Set Derived From">
+          <input style={inputStyle} value={setDerivedFrom} onChange={(e) => setSetDerivedFrom(e.target.value)} placeholder="Enter the set this principle is derived from" />
+        </FieldRow>
+        <FieldRow label="Principle Description">
+          <div
+            ref={principleDescRef}
+            contentEditable
+            suppressContentEditableWarning
+            onFocus={() => setActiveEditor(principleDescRef)}
+            style={{ border: `1px solid ${C.grey78}`, borderRadius: 4, padding: "8px 10px", minHeight: 90, fontSize: 12.2, lineHeight: "20px", color: C.grey11, fontFamily: "inherit", outline: "none", cursor: "text", overflow: "auto" }}
+          />
+        </FieldRow>
+      </div>
+
+      {/* Comm-principle tab — always mounted so contentEditable content is preserved */}
+      <div style={{ display: activeTab === "comm-principle" ? "block" : "none", padding: "20px 20px 20px" }}>
+        <FieldRow label="Communication Principle">
+          <input style={inputStyle} value={communicationPrinciple} onChange={(e) => setCommunicationPrinciple(e.target.value)} placeholder="Enter communication principle" />
+        </FieldRow>
+        <FieldRow label="Comm Principle Description">
+          <div
+            ref={commPrincipleDescRef}
+            contentEditable
+            suppressContentEditableWarning
+            onFocus={() => setActiveEditor(commPrincipleDescRef)}
+            style={{ border: `1px solid ${C.grey78}`, borderRadius: 4, padding: "8px 10px", minHeight: 110, fontSize: 12.2, lineHeight: "20px", color: C.grey11, fontFamily: "inherit", outline: "none", cursor: "text", overflow: "auto" }}
+          />
+        </FieldRow>
+      </div>
+
+      {/* Relationship tab — always mounted so contentEditable content is preserved */}
+      <div style={{ display: activeTab === "relationship" ? "block" : "none", padding: "20px 20px 20px" }}>
+        <FieldRow label="Actual Relationship">
+          <input style={inputStyle} value={actualRelationship} onChange={(e) => setActualRelationship(e.target.value)} placeholder="Enter the actual relationship" />
+        </FieldRow>
+        <FieldRow label="Relationship Description">
+          <div
+            ref={relationshipDescRef}
+            contentEditable
+            suppressContentEditableWarning
+            onFocus={() => setActiveEditor(relationshipDescRef)}
+            style={{ border: `1px solid ${C.grey78}`, borderRadius: 4, padding: "8px 10px", minHeight: 110, fontSize: 12.2, lineHeight: "20px", color: C.grey11, fontFamily: "inherit", outline: "none", cursor: "text", overflow: "auto" }}
+          />
+        </FieldRow>
+      </div>
+
+      {/* Files tab */}
+      <div style={{ display: activeTab === "files" ? "flex" : "none", position: "relative", flexDirection: "column", flex: 1, minHeight: 0 }}>
+        <PanelTable<AttachFileToProject>
+          columns={FILE_COLUMNS}
+          rows={files}
+          emptyText="No attached files."
+          onRowContextMenu={(e, idx) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setFileMenuIndex(idx);
+          }}
+        >
+          {fileMenuIndex !== null && (
+            <div
+              style={{ position: "fixed", background: C.white, border: `1px solid ${C.grey78}`, borderRadius: 4, boxShadow: "0px 4px 16px rgba(0,0,0,0.12)", zIndex: 220, minWidth: 160, padding: "4px 0" }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {fileMenuIndex !== null && (
-                <div
-                  style={{
-                    position: "fixed",
-                    background: C.white,
-                    border: `1px solid ${C.grey78}`,
-                    borderRadius: 4,
-                    boxShadow: "0px 4px 16px rgba(0,0,0,0.12)",
-                    zIndex: 220,
-                    minWidth: 160,
-                    padding: "4px 0",
-                  }}
-                  onClick={(e) => e.stopPropagation()}
+              {fileContextMenuItems.map((item, i) => (
+                <button
+                  key={i}
+                  disabled={item.disabled}
+                  onClick={item.onClick}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "6px 16px", background: "transparent", border: "none", fontSize: 12.2, fontFamily: "inherit", cursor: item.disabled ? "default" : "pointer", color: item.disabled ? C.grey78 : C.grey11 }}
+                  onMouseEnter={(e) => { if (!item.disabled) e.currentTarget.style.background = C.grey96; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                 >
-                  {fileContextMenuItems.map((item, i) => (
-                    <button
-                      key={i}
-                      disabled={item.disabled}
-                      onClick={item.onClick}
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        textAlign: "left",
-                        padding: "6px 16px",
-                        background: "transparent",
-                        border: "none",
-                        fontSize: 12.2,
-                        fontFamily: "inherit",
-                        cursor: item.disabled ? "default" : "pointer",
-                        color: item.disabled ? C.grey78 : C.grey11,
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!item.disabled) e.currentTarget.style.background = C.grey96;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "transparent";
-                      }}
-                    >
-                      {item.label}
-                    </button>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {pendingRemove !== null && (
+            <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.88)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 215 }}>
+              <div style={{ background: C.white, borderRadius: 6, boxShadow: "0px 4px 16px rgba(0,0,0,0.14)", padding: "20px 24px", maxWidth: 280, textAlign: "center" }}>
+                <div style={{ fontSize: 12.4, fontWeight: 600, color: C.grey11, marginBottom: 12, lineHeight: "18px" }}>
+                  Remove this file?
+                </div>
+                <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                  <button onClick={() => setPendingRemove(null)} style={{ height: 30, padding: "0 16px", background: C.white, border: `1px solid ${C.grey78}`, borderRadius: 4, fontSize: 12.2, fontFamily: "inherit", cursor: "pointer", color: C.grey11 }}>No</button>
+                  <button onClick={handleRemoveFile} style={{ height: 30, padding: "0 16px", background: C.blue, border: "none", borderRadius: 4, fontSize: 12.2, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", color: C.white }}>Yes</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {viewFileInfo && (
+            <>
+              <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.12)", zIndex: 220 }} onClick={() => setViewFileInfo(null)} />
+              <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 221, background: C.white, borderRadius: 6, boxShadow: "0px 4px 16px rgba(0,0,0,0.14)", padding: "20px 24px", minWidth: 260, maxWidth: 320 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.grey11, marginBottom: 12 }}>File Info</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {(
+                    [
+                      ["File Name", viewFileInfo.fileName],
+                      ["File Type", viewFileInfo.fileType],
+                      ["File Size", viewFileInfo.fileSize],
+                      ["File Date", viewFileInfo.fileDate],
+                      ["File Time", viewFileInfo.fileTime],
+                      ["Description", viewFileInfo.fileDescription],
+                    ] as [string, string][]
+                  ).map(([label, value]) => (
+                    <div key={label} style={{ display: "flex", gap: 6 }}>
+                      <span style={{ fontWeight: 600, fontSize: 12.2, color: C.grey11, minWidth: 80, flexShrink: 0 }}>{label}:</span>
+                      <span style={{ fontSize: 12.2, color: "#444", wordBreak: "break-word" }}>{value || "—"}</span>
+                    </div>
                   ))}
                 </div>
-              )}
-              {pendingRemove !== null && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "rgba(255,255,255,0.88)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    zIndex: 215,
-                  }}
-                >
-                  <div
-                    style={{
-                      background: C.white,
-                      borderRadius: 6,
-                      boxShadow: "0px 4px 16px rgba(0,0,0,0.14)",
-                      padding: "20px 24px",
-                      maxWidth: 280,
-                      textAlign: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 12.4,
-                        fontWeight: 600,
-                        color: C.grey11,
-                        marginBottom: 12,
-                        lineHeight: "18px",
-                      }}
-                    >
-                      Remove this file?
-                    </div>
-                    <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                      <button
-                        onClick={() => setPendingRemove(null)}
-                        style={{
-                          height: 30,
-                          padding: "0 16px",
-                          background: C.white,
-                          border: `1px solid ${C.grey78}`,
-                          borderRadius: 4,
-                          fontSize: 12.2,
-                          fontFamily: "inherit",
-                          cursor: "pointer",
-                          color: C.grey11,
-                        }}
-                      >
-                        No
-                      </button>
-                      <button
-                        onClick={handleRemoveFile}
-                        style={{
-                          height: 30,
-                          padding: "0 16px",
-                          background: C.blue,
-                          border: "none",
-                          borderRadius: 4,
-                          fontSize: 12.2,
-                          fontWeight: 700,
-                          fontFamily: "inherit",
-                          cursor: "pointer",
-                          color: C.white,
-                        }}
-                      >
-                        Yes
-                      </button>
-                    </div>
-                  </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+                  <button onClick={() => setViewFileInfo(null)} style={{ height: 30, padding: "0 16px", background: C.white, border: `1px solid ${C.grey78}`, borderRadius: 4, fontSize: 12.2, fontFamily: "inherit", cursor: "pointer", color: C.grey11 }}>Close</button>
                 </div>
-              )}
-              {viewFileInfo && (
-                <>
-                  <div
-                    style={{
-                      position: "fixed",
-                      inset: 0,
-                      background: "rgba(0,0,0,0.12)",
-                      zIndex: 220,
-                    }}
-                    onClick={() => setViewFileInfo(null)}
-                  />
-                  <div
-                    style={{
-                      position: "fixed",
-                      top: "50%",
-                      left: "50%",
-                      transform: "translate(-50%, -50%)",
-                      zIndex: 221,
-                      background: C.white,
-                      borderRadius: 6,
-                      boxShadow: "0px 4px 16px rgba(0,0,0,0.14)",
-                      padding: "20px 24px",
-                      minWidth: 260,
-                      maxWidth: 320,
-                    }}
-                  >
-                    <div
-                      style={{ fontWeight: 700, fontSize: 14, color: C.grey11, marginBottom: 12 }}
-                    >
-                      File Info
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {(
-                        [
-                          ["File Name", viewFileInfo.fileName],
-                          ["File Type", viewFileInfo.fileType],
-                          ["File Size", viewFileInfo.fileSize],
-                          ["File Date", viewFileInfo.fileDate],
-                          ["File Time", viewFileInfo.fileTime],
-                          ["Description", viewFileInfo.fileDescription],
-                        ] as [string, string][]
-                      ).map(([label, value]) => (
-                        <div key={label} style={{ display: "flex", gap: 6 }}>
-                          <span
-                            style={{
-                              fontWeight: 600,
-                              fontSize: 12.2,
-                              color: C.grey11,
-                              minWidth: 80,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {label}:
-                          </span>
-                          <span style={{ fontSize: 12.2, color: "#444", wordBreak: "break-word" }}>
-                            {value || "—"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div
-                      style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}
-                    >
-                      <button
-                        onClick={() => setViewFileInfo(null)}
-                        style={{
-                          height: 30,
-                          padding: "0 16px",
-                          background: C.white,
-                          border: `1px solid ${C.grey78}`,
-                          borderRadius: 4,
-                          fontSize: 12.2,
-                          fontFamily: "inherit",
-                          cursor: "pointer",
-                          color: C.grey11,
-                        }}
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </PanelTable>
-            <input
-              ref={fileInputRef}
-              type="file"
-              style={{ display: "none" }}
-              onChange={handleFileSelected}
-            />
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
+              </div>
+            </>
+          )}
+        </PanelTable>
+        <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileSelected} />
+      </div>
+    </>
+  );
 
   // Determine if toolbar should show (not on files tab or selection tab when not focused)
   const showToolbar = activeTab !== "files";

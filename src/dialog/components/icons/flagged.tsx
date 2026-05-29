@@ -245,6 +245,28 @@ export function IdentifyPrincipleCmdIcon() {
   );
 }
 
+/** Open-book icon for "Interpret Principle" dialog header badge (18×18, #0078D4). */
+export function InterpretePrincipleHeaderIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9 4.5V14" stroke="#0078D4" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M3.5 3.5C5 3 7 3.2 9 4.5V14C7 12.8 5 12.6 3.5 13V3.5Z" stroke="#0078D4" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M14.5 3.5C13 3 11 3.2 9 4.5V14C11 12.8 13 12.6 14.5 13V3.5Z" stroke="#0078D4" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Open-book icon for "Interpret Principle" primary button (13×13, white). */
+export function InterpretePrincipleCmdIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6.5 3.5V10.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M2.5 2.5C3.7 2.1 5.2 2.3 6.5 3.5V10.5C5.2 9.3 3.7 9.1 2.5 9.5V2.5Z" stroke="white" strokeWidth="1.1" strokeLinejoin="round" />
+      <path d="M10.5 2.5C9.3 2.1 7.8 2.3 6.5 3.5V10.5C7.8 9.3 9.3 9.1 10.5 9.5V2.5Z" stroke="white" strokeWidth="1.1" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /** Folder with info circle badge — "File Information" button in Provide Feedback. */
 export function PfFileInfoIcon() {
   return (
