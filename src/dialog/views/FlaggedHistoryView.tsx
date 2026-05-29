@@ -22,7 +22,7 @@ import {
   FlagProvideIcon,
   FlagListFbIcon,
   FlagListAnalysisIcon,
-  ViewReportIcon,
+  FlagViewReportIcon,
   FilterFunnelIcon,
   SmallCaretDownIcon,
   FilterWordDocIcon,
@@ -546,7 +546,7 @@ export default function FlaggedHistoryView() {
             flexShrink: 0,
           }}
         >
-          <ViewReportIcon />
+          <FlagViewReportIcon />
         </button>
       </div>
 
