@@ -39,6 +39,7 @@ const labelStyle: React.CSSProperties = {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function CommunicationConfigView() {
   const { initData, sendMessage, closeDialog } = useDialogComm();
+  const isOutlook = initData?.source === "Outlook Mail";
 
   const [personName, setPersonName] = useState("");
   const [personEmail, setPersonEmail] = useState("");
@@ -94,19 +95,21 @@ export default function CommunicationConfigView() {
         <div style={rowStyle}>
           <span style={labelStyle}>Person Name</span>
           <input
-            style={readOnlyInputStyle}
+            style={isOutlook ? readOnlyInputStyle : inputStyle}
             value={personName}
-            readOnly
+            readOnly={isOutlook}
+            onChange={isOutlook ? undefined : (e) => setPersonName(e.target.value)}
           />
         </div>
 
         <div style={rowStyle}>
           <span style={labelStyle}>Person Email</span>
           <input
-            style={readOnlyInputStyle}
+            style={isOutlook ? readOnlyInputStyle : inputStyle}
             type="email"
             value={personEmail}
-            readOnly
+            readOnly={isOutlook}
+            onChange={isOutlook ? undefined : (e) => setPersonEmail(e.target.value)}
           />
         </div>
 
