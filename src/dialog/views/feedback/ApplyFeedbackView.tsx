@@ -201,8 +201,8 @@ const TABS: { value: TabValue; label: string }[] = [
   { value: "errors", label: "Errors" },
   { value: "compensators", label: "Compensators" },
   { value: "answers", label: "Answers" },
-  { value: "files", label: "Attached Files" },
   { value: "corrected", label: "Corrected Items" },
+  { value: "files", label: "Attached Files" },
 ];
 
 // ─── Shared inline styles ─────────────────────────────────────────────────────

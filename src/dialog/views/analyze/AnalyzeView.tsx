@@ -253,8 +253,8 @@ const ALL_TABS: { value: TabValue; label: string }[] = [
   { value: "errors", label: "Errors" },
   { value: "compensators", label: "Compensators" },
   { value: "answers", label: "Answers" },
-  { value: "files", label: "Attached Files" },
   { value: "problems", label: "Problems" },
+  { value: "files", label: "Attached Files" },
 ];
 
 export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
