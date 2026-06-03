@@ -19,6 +19,7 @@ import { nowDate, nowTime } from "@/db/db";
 import { colors } from "@/styles/tokens";
 import { useAnalyzePanels } from "@/dialog/views/analyze/useAnalyzePanels";
 import { AnalyzeSubDialogs } from "@/dialog/views/analyze/AnalyzeSubDialogs";
+import { SaveSplitButton } from "@/dialog/views/analyze/SaveSplitButton";
 
 const F = {
   borderInput: `1px solid #C7C7C7`,
@@ -296,6 +297,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
     document.addEventListener("mousedown", onOutside);
     return () => document.removeEventListener("mousedown", onOutside);
   }, []);
+
 
   useEffect(() => {
     function onSelChange() {
@@ -681,9 +683,8 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         <button style={btnStyle("cancel")} onClick={closeDialog}>
           Cancel
         </button>
-        <button style={btnStyle("apply")} onClick={() => save("ApplyAnalysisAsFeedback")}>
-          Apply Analysis
-        </button>
+
+        <SaveSplitButton onSave={save} />
       </div>
 
       <AnalyzeSubDialogs
