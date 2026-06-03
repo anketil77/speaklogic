@@ -27,6 +27,14 @@
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { font-family: "Inter", "Segoe UI", sans-serif; overflow: hidden; color: var(--color-grey-11); }
       #root { height: 100vh; display: flex; flex-direction: column; }
+
+      /* Modern thin scrollbars — no arrows, rounded thumb */
+      * { scrollbar-width: thin; scrollbar-color: #C7C7C7 transparent; }
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #C7C7C7; border-radius: 99px; }
+      ::-webkit-scrollbar-thumb:hover { background: #A0A0A0; }
+      ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
     </style>
   </head>
   <body>
