@@ -6,6 +6,7 @@
 // Messages: BACK · TEMPLATE_CONFIRMED.
 
 import React, { useState, useCallback } from "react";
+import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { TplBackIcon, TplDocIcon } from "@/dialog/components/Icons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import {
@@ -36,6 +37,10 @@ export default function TemplatePickerPanel() {
     sendMessage({ action: "BACK" });
   }, [sendMessage]);
 
+  const handleCancel = useCallback(() => {
+    sendMessage({ action: "CLOSE" });
+  }, [sendMessage]);
+
   return (
     <div
       style={{
@@ -56,7 +61,7 @@ export default function TemplatePickerPanel() {
         selectedTpl={selectedTpl}
         onSelect={setSelectedTpl}
       />
-      <PanelFooter onConfirm={handleConfirm} disabled={!selectedTpl} />
+      <PanelFooter onConfirm={handleConfirm} onCancel={handleCancel} disabled={!selectedTpl} />
     </div>
   );
 }
@@ -306,42 +311,18 @@ function TemplateRow({
 
 function PanelFooter({
   onConfirm,
+  onCancel,
   disabled,
 }: {
   onConfirm: () => void;
+  onCancel:  () => void;
   disabled:  boolean;
 }) {
-  const [hovered, setHovered] = useState(false);
-  const bg = disabled ? "#B0B0B0" : hovered ? "#106EBE" : "#0078D4";
-
   return (
-    <div style={{ padding: "11px 16px 15px", flexShrink: 0 }}>
-      <button
-        onClick={onConfirm}
-        disabled={disabled}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
-          display:        "flex",
-          alignItems:     "center",
-          justifyContent: "center",
-          width:          "100%",
-          height:         34,
-          background:     bg,
-          borderRadius:   6,
-          border:         "none",
-          cursor:         disabled ? "default" : "pointer",
-          fontFamily:     "'Inter','Segoe UI',sans-serif",
-          fontWeight:     700,
-          fontSize:       11.6,
-          lineHeight:     "14px",
-          color:          "#FFFFFF",
-          transition:     "background 0.12s",
-        }}
-      >
-        Select Template
-      </button>
-    </div>
+    <FooterBar>
+      <DismissBtn label="Cancel" onClick={onCancel} />
+      <PrimaryBtn label="Select Template" onClick={onConfirm} disabled={disabled} />
+    </FooterBar>
   );
 }
 

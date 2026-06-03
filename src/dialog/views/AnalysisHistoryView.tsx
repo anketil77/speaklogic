@@ -2,6 +2,7 @@
 // Read-only list of all ProjectAnalysis records. No toolbar.
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
@@ -77,7 +78,6 @@ export default function AnalysisHistoryView() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [filterSource, setFilterSource] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [cancelHover, setCancelHover] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
   const [viewAnalysis, setViewAnalysis] = useState<ProjectAnalysis | null>(null);
@@ -498,65 +498,33 @@ export default function AnalysisHistoryView() {
       </div>
 
       {/* ── Footer ── */}
-      <div
-        style={{
-          height: 57,
-          minHeight: 57,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 20px",
-          borderTop: `1px solid ${colors.grey88}`,
-          background: colors.white,
-          boxSizing: "border-box",
-        }}
-      >
-        <span style={{ fontSize: 10.1, color: colors.grey38, fontFamily: "inherit" }}>
+      <FooterBar>
+        <FooterStatusText>
           {hasSelection
             ? "1 row selected."
             : "No selection active. Select a row to enable actions."}
-        </span>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button
-            onClick={closeDialog}
-            onMouseEnter={() => setCancelHover(true)}
-            onMouseLeave={() => setCancelHover(false)}
-            style={{
-              height: 32,
-              minWidth: 74,
-              padding: "0 12px",
-              background: cancelHover ? "#F3F3F3" : colors.white,
-              border: `1px solid ${colors.grey78}`,
-              borderRadius: 4,
-              fontSize: 12.4,
-              fontFamily: "inherit",
-              cursor: "pointer",
-              color: colors.grey11,
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            disabled={!hasSelection}
-            onClick={() => hasSelection && setInfoMsg(MSG_APPLY)}
-            style={{
-              height: 32,
-              minWidth: 125,
-              padding: "0 12px",
-              background: hasSelection ? colors.azure42 : "#C5C5C5",
-              border: "none",
-              borderRadius: 4,
-              fontSize: 12.7,
-              fontWeight: 700,
-              fontFamily: "inherit",
-              cursor: hasSelection ? "pointer" : "default",
-              color: colors.white,
-            }}
-          >
-            Apply Analysis
-          </button>
-        </div>
-      </div>
+        </FooterStatusText>
+        <DismissBtn label="Close" onClick={closeDialog} />
+        <button
+          disabled={!hasSelection}
+          onClick={() => hasSelection && setInfoMsg(MSG_APPLY)}
+          style={{
+            height: 32,
+            minWidth: 125,
+            padding: "0 12px",
+            background: hasSelection ? colors.azure42 : "#C5C5C5",
+            border: "none",
+            borderRadius: 4,
+            fontSize: 12.7,
+            fontWeight: 700,
+            fontFamily: "inherit",
+            cursor: hasSelection ? "pointer" : "default",
+            color: colors.white,
+          }}
+        >
+          Apply Analysis
+        </button>
+      </FooterBar>
 
       {pendingDelete !== null && (
         <div

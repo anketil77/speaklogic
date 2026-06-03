@@ -20,6 +20,7 @@ import {
 } from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
 import type { Article } from "@/types/db";
+import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 
 // ── Info messages (mirror C# messages verbatim) ───────────────────────────────
 const INFO_MESSAGES = {
@@ -518,41 +519,13 @@ export default function ListArticlesView() {
       </div>
 
       {/* ── Footer ── */}
-      <div
-        style={{
-          height: 48,
-          minHeight: 48,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 16px",
-          borderTop: `1px solid ${colors.grey96}`,
-          background: colors.white,
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontSize: 11.4, color: colors.grey38 }}>
+      <FooterBar>
+        <FooterStatusText>
           {displayRows.length} article{displayRows.length !== 1 ? "s" : ""}
           {filterSource ? ` (filtered by ${SOURCE_DISPLAY[filterSource] ?? filterSource})` : ""}
-        </span>
-        <button
-          onClick={closeDialog}
-          style={{
-            height: 28,
-            padding: "0 16px",
-            background: colors.white,
-            border: `1px solid ${colors.grey88}`,
-            borderRadius: 4,
-            cursor: "pointer",
-            fontSize: 12.4,
-            fontWeight: 600,
-            color: colors.grey38,
-            fontFamily: "inherit",
-          }}
-        >
-          Close
-        </button>
-      </div>
+        </FooterStatusText>
+        <DismissBtn label="Close" onClick={closeDialog} />
+      </FooterBar>
     </div>
 
     {/* ── Info message card ── */}

@@ -4,6 +4,7 @@
 // No toolbar (read-only list). No custom close button (native OS window chrome).
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { ViewFeedbackRequestedDialog } from "@/dialog/components/ViewFeedbackRequestedDialog";
@@ -145,7 +146,6 @@ export default function ListFeedbackRequestedView() {
 
   // ── Button hover states ───────────────────────────────────────────────────
   const [primaryHover, setPrimaryHover] = useState(false);
-  const [closeHover, setCloseHover] = useState(false);
 
   // ── Keyboard: Escape closes info or detail overlay ────────────────────────
   useEffect(() => {
@@ -510,43 +510,10 @@ export default function ListFeedbackRequestedView() {
         </div>
 
         {/* ── Footer ── */}
-        <div
-          style={{
-            height: 44,
-            minHeight: 44,
-            borderTop: `1px solid ${colors.grey88}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 16px",
-            boxSizing: "border-box",
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontSize: 11.2, color: colors.grey38 }}>
-            {requests.length} request{requests.length !== 1 ? "s" : ""}
-          </span>
-          <button
-            onMouseEnter={() => setCloseHover(true)}
-            onMouseLeave={() => setCloseHover(false)}
-            onClick={() => sendMessage({ action: "BACK_TO_FEEDBACK_HISTORY" })}
-            style={{
-              height: 28,
-              paddingLeft: 16,
-              paddingRight: 16,
-              background: closeHover ? "#E5E5E5" : colors.white,
-              color: colors.grey11,
-              border: `1px solid ${colors.grey88}`,
-              borderRadius: 4,
-              fontSize: 11.4,
-              fontWeight: 600,
-              fontFamily: "inherit",
-              cursor: "pointer",
-            }}
-          >
-            Back
-          </button>
-        </div>
+        <FooterBar>
+          <FooterStatusText>{requests.length} request{requests.length !== 1 ? "s" : ""}</FooterStatusText>
+          <DismissBtn label="Back" onClick={() => sendMessage({ action: "BACK_TO_FEEDBACK_HISTORY" })} />
+        </FooterBar>
       </div>
 
       {/* View detail portal */}

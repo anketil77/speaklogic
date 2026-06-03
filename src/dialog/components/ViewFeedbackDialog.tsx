@@ -1,6 +1,7 @@
 // src/dialog/components/ViewFeedbackDialog.tsx
 
 import React, { useState, useMemo, useCallback } from "react";
+import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import { createPortal } from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
@@ -433,11 +434,7 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
         </div>
 
         {/* ── Footer ── */}
-        <div style={{ height: 57, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "0 20px", borderTop: `1px solid ${colors.grey88}` }}>
-          <button onClick={onClose} style={{ height: 32, padding: "0 24px", background: colors.azure42, border: "none", borderRadius: 4, fontSize: "12.4px", fontWeight: 700, fontFamily: "inherit", cursor: "pointer", color: colors.white }}>
-            Close
-          </button>
-        </div>
+        <FooterBar><DismissBtn label="Close" onClick={onClose} /></FooterBar>
 
         {/* ── Info message card ── */}
         {infoMsg && (

@@ -3,6 +3,7 @@
 /* global Office */
 
 import React, { useRef, useState, useCallback } from "react";
+import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { AnswerIcon } from "@/dialog/components/Icons";
@@ -322,49 +323,9 @@ export default function AnswerAnalysisQuestionView() {
       </div>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          height: 57,
-          borderTop: `1px solid ${C.grey88}`,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 20px",
-          gap: 8,
-          flexShrink: 0,
-          background: C.white,
-        }}
-      >
-        <span
-          style={{
-            flex: 1,
-            fontSize: "10.1px",
-            fontWeight: 400,
-            color: C.grey38,
-            lineHeight: "15px",
-          }}
-        >
-          Provide a complete answer to the question and the information it points to.
-        </span>
-
-        <button
-          className="sl-fr-btn"
-          onClick={close}
-          style={{
-            height: 32,
-            padding: "0 18px",
-            background: C.white,
-            border: `1px solid ${C.grey78}`,
-            borderRadius: 4,
-            fontSize: "12.4px",
-            fontFamily: "inherit",
-            color: C.grey11,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          Cancel
-        </button>
-
+      <FooterBar>
+        <FooterHelperText>Provide a complete answer to the question and the information it points to.</FooterHelperText>
+        <DismissBtn label="Cancel" onClick={close} />
         <button
           className="sl-fr-btn"
           onClick={() => submit(true)}
@@ -383,27 +344,8 @@ export default function AnswerAnalysisQuestionView() {
         >
           Save Draft
         </button>
-
-        <button
-          className="sl-fr-btn-primary"
-          onClick={() => submit(false)}
-          style={{
-            height: 32,
-            padding: "0 18px",
-            background: C.blue,
-            border: "none",
-            borderRadius: 4,
-            fontSize: "12.6px",
-            fontWeight: 700,
-            fontFamily: "inherit",
-            color: C.white,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          Submit Answer
-        </button>
-      </div>
+        <PrimaryBtn label="Submit Answer" onClick={() => submit(false)} />
+      </FooterBar>
     </div>
   );
 }

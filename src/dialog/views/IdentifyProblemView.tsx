@@ -3,6 +3,7 @@
 /* global Office */
 
 import React, { useRef, useState, useCallback } from "react";
+import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { ProblemIcon } from "@/dialog/components/Icons";
@@ -53,7 +54,6 @@ export default function IdentifyProblemView({ existingErrors = [] }: IdentifyPro
   const [actualProblem, setActualProblem] = useState("");
   const [fromActualError, setFromActualError] = useState("");
   const [problemDescription, setProblemDescription] = useState("");
-  const [submitHovered, setSubmitHovered] = useState(false);
 
   const close = useCallback(() => {
     try {
@@ -321,70 +321,11 @@ export default function IdentifyProblemView({ existingErrors = [] }: IdentifyPro
       </div>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          height: 57,
-          borderTop: `1px solid ${C.grey88}`,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 20px",
-          gap: 8,
-          flexShrink: 0,
-          background: C.white,
-        }}
-      >
-        <span
-          style={{
-            flex: 1,
-            fontSize: "10.1px",
-            fontWeight: 400,
-            color: C.grey38,
-            lineHeight: "15px",
-          }}
-        >
-          A problem must have a name, an actual problem, and the error it comes from.
-        </span>
-
-        <button
-          className="sl-fr-btn"
-          onClick={close}
-          style={{
-            height: 32,
-            padding: "0 18px",
-            background: C.white,
-            border: `1px solid ${C.grey78}`,
-            borderRadius: 4,
-            fontSize: "12.4px",
-            fontFamily: "inherit",
-            color: C.grey11,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          Cancel
-        </button>
-
-        <button
-          onClick={submit}
-          onMouseEnter={() => setSubmitHovered(true)}
-          onMouseLeave={() => setSubmitHovered(false)}
-          style={{
-            height: 32,
-            padding: "0 20px",
-            background: submitHovered ? "#C50F1F" : C.red,
-            border: "none",
-            borderRadius: 4,
-            fontSize: "12.9px",
-            fontWeight: 700,
-            fontFamily: "inherit",
-            color: C.white,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          Identify Problem
-        </button>
-      </div>
+      <FooterBar>
+        <FooterHelperText>A problem must have a name, an actual problem, and the error it comes from.</FooterHelperText>
+        <DismissBtn label="Cancel" onClick={close} />
+        <PrimaryBtn label="Identify Problem" onClick={submit} />
+      </FooterBar>
     </div>
   );
 }

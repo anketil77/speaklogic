@@ -1,6 +1,7 @@
 // src/dialog/components/AttachFileDialog.tsx
 
 import React, { useRef, useState, useCallback } from "react";
+import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { AttachFileIcon, CloseIcon, FolderBannerIcon } from "@/dialog/components/Icons";
@@ -55,7 +56,6 @@ export function AttachFileDialog({ onAdd, onClose }: AttachFileDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<FieldState>(EMPTY);
   const [error, setError] = useState<string | null>(null);
-  const [applyHover, setApplyHover] = useState(false);
 
   const { pos, onHeaderMouseDown } = useDraggable();
 
@@ -339,57 +339,11 @@ export function AttachFileDialog({ onAdd, onClose }: AttachFileDialogProps) {
         </div>
 
         {/* Footer */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            padding: "9px 14px 12px",
-            gap: 6,
-            height: 48,
-            background: C.grey96,
-            borderTop: `1px solid ${C.grey88}`,
-            boxSizing: "border-box",
-          }}
-        >
-          <button
-            onClick={handleApply}
-            onMouseEnter={() => setApplyHover(true)}
-            onMouseLeave={() => setApplyHover(false)}
-            style={{
-              width: 63,
-              height: 26,
-              background: applyHover ? C.blueHover : C.blue,
-              border: `1px solid ${applyHover ? C.blueHover : C.blue}`,
-              borderRadius: 4,
-              fontSize: 11,
-              fontWeight: 700,
-              color: C.white,
-              cursor: "pointer",
-              boxSizing: "border-box",
-            }}
-          >
-            Apply
-          </button>
-          <button
-            onClick={onClose}
-            style={{
-              width: 67,
-              height: 26,
-              background: C.white,
-              border: `1px solid ${C.grey78}`,
-              borderRadius: 4,
-              fontSize: 11,
-              fontWeight: 500,
-              color: C.grey11,
-              cursor: "pointer",
-              boxSizing: "border-box",
-            }}
-          >
-            Cancel
-          </button>
-        </div>
+        <FooterBar>
+          <span style={{ flex: 1 }} />
+          <DismissBtn label="Cancel" onClick={onClose} />
+          <PrimaryBtn label="Apply" onClick={handleApply} />
+        </FooterBar>
       </div>
 
       <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileChange} />

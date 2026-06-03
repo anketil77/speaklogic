@@ -1,6 +1,7 @@
 // C# ListIdentifiedPrinciple (742×544) — Count, Principle Name, Actual Principle, From Actual Set
 
 import React, { useState, useCallback } from "react";
+import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
@@ -67,7 +68,6 @@ export function ListIdentifiedPrinciplePortal({
 }: ListIdentifiedPrinciplePortalProps) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [cancelHover, setCancelHover] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
 
@@ -223,19 +223,10 @@ export function ListIdentifiedPrinciplePortal({
           )}
         </div>
 
-        <div style={{ height: 57, minHeight: 57, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", borderTop: `1px solid ${colors.grey88}`, background: colors.white, boxSizing: "border-box" }}>
-          <span style={{ fontSize: 10.1, color: colors.grey38, fontFamily: "inherit" }}>
-            {hasSelection ? "1 row selected." : "No selection active. Select a row to enable actions."}
-          </span>
-          <button
-            onClick={onClose}
-            onMouseEnter={() => setCancelHover(true)}
-            onMouseLeave={() => setCancelHover(false)}
-            style={{ height: 32, minWidth: 74, padding: "0 12px", background: cancelHover ? "#F3F3F3" : colors.white, border: `1px solid ${colors.grey78}`, borderRadius: 4, fontSize: 12.4, fontFamily: "inherit", cursor: "pointer", color: colors.grey11 }}
-          >
-            Cancel
-          </button>
-        </div>
+        <FooterBar>
+          <FooterStatusText>{hasSelection ? "1 row selected." : "No selection active. Select a row to enable actions."}</FooterStatusText>
+          <DismissBtn label="Close" onClick={onClose} />
+        </FooterBar>
 
         {pendingDelete !== null && (
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>

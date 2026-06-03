@@ -4,6 +4,7 @@
 // C# refs: ViewIdentifyPrinciple.cs / ViewRelatedPrinciple.cs
 
 import React, { useState, useCallback } from "react";
+import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
@@ -226,14 +227,7 @@ export function ViewPrincipleDetailDialog({
         </div>
 
         {/* Footer */}
-        <div style={{ height: 52, minHeight: 52, display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "0 20px", borderTop: `1px solid ${colors.grey88}`, flexShrink: 0 }}>
-          <button
-            onClick={onClose}
-            style={{ height: 32, minWidth: 74, padding: "0 12px", background: colors.white, border: `1px solid ${colors.grey78}`, borderRadius: 4, fontSize: 12.4, fontFamily: "inherit", cursor: "pointer", color: colors.grey11 }}
-          >
-            Close
-          </button>
-        </div>
+        <FooterBar><DismissBtn label="Close" onClick={onClose} /></FooterBar>
       </div>
     </>,
     document.body

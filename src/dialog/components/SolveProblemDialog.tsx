@@ -4,6 +4,7 @@
 // Styling matches reference portal dialogs (IdentifyPrincipleInSelectionDialog pattern).
 
 import React, { useCallback, useMemo, useRef, useState } from "react";
+import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { useDraggable }    from "@/dialog/hooks/useDraggable";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
@@ -104,7 +105,6 @@ export function SolveProblemDialog({
   const fileInputRef                      = useRef<HTMLInputElement>(null);
 
   const [solveHover, setSolveHover]       = useState(false);
-  const [cancelHover, setCancelHover]     = useState(false);
   const editorRef                         = useRef<HTMLDivElement>(null);
 
   const toggleError = (v: string) =>
@@ -414,21 +414,9 @@ export function SolveProblemDialog({
         </div>
 
         {/* ── Footer ── */}
-        <div style={{
-          height: 57, flexShrink: 0, display: "flex", alignItems: "center",
-          justifyContent: "flex-end", padding: "0 20px",
-          borderTop: `1px solid ${C.grey88}`, background: C.white, boxSizing: "border-box",
-          gap: 8,
-        }}>
-          <button
-            onClick={onClose}
-            onMouseEnter={() => setCancelHover(true)}
-            onMouseLeave={() => setCancelHover(false)}
-            style={{ ...BTN_CANCEL, background: cancelHover ? C.grey96 : C.white }}
-          >
-            Cancel
-          </button>
-        </div>
+        <FooterBar>
+          <DismissBtn label="Cancel" onClick={onClose} />
+        </FooterBar>
       </div>
 
       {/* ── Remove problem confirm ── */}

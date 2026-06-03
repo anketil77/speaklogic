@@ -1,6 +1,7 @@
 // src/dialog/components/ErrorIdentificationDialog.tsx
 
 import React, { useRef, useState, useCallback } from "react";
+import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
@@ -118,7 +119,6 @@ export function ErrorIdentificationDialog({ itemCount, onAdd, onClose, prefilled
 
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
   const [validation, setValidation] = useState<ValKey | null>(null);
-  const [submitHovered, setSubmitHovered] = useState(false);
 
   // ── Dragging ──────────────────────────────────────────────────────────────────
   const { pos, onHeaderMouseDown } = useDraggable();
@@ -289,26 +289,11 @@ export function ErrorIdentificationDialog({ itemCount, onAdd, onClose, prefilled
       </div>
 
       {/* ── Footer ── */}
-      <div style={{ height: 57, borderTop: `1px solid ${C.grey88}`, display: "flex", alignItems: "center", padding: "0 20px", gap: 8, flexShrink: 0, background: C.white }}>
-        <span style={{ flex: 1, fontSize: "10.1px", color: C.grey38, lineHeight: "15px" }}>
-          Error can be linked to a selection and submitted for review.
-        </span>
-        <button
-          className="sl-fr-btn"
-          onClick={onClose}
-          style={{ height: 32, padding: "0 18px", background: C.white, border: `1px solid ${C.grey78}`, borderRadius: 4, fontSize: "12.4px", fontFamily: "inherit", color: C.grey11, cursor: "pointer", flexShrink: 0 }}
-        >
-          Cancel
-        </button>
-        <button
-          onClick={submit}
-          onMouseEnter={() => setSubmitHovered(true)}
-          onMouseLeave={() => setSubmitHovered(false)}
-          style={{ height: 32, padding: "0 18px", background: submitHovered ? "#C50F1F" : C.red, border: "none", borderRadius: 4, fontSize: "12.9px", fontWeight: 700, fontFamily: "inherit", color: C.white, cursor: "pointer", flexShrink: 0 }}
-        >
-          Submit Error
-        </button>
-      </div>
+      <FooterBar>
+        <FooterHelperText>Error can be linked to a selection and submitted for review.</FooterHelperText>
+        <DismissBtn label="Cancel" onClick={onClose} />
+        <PrimaryBtn label="Submit Error" onClick={submit} />
+      </FooterBar>
 
       {/* ── Info card ── */}
       {infoPanel && (

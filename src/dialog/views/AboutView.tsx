@@ -1,12 +1,12 @@
 // src/dialog/views/AboutView.tsx
 
-import React, { useState } from "react";
+import React from "react";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { colors } from "@/styles/tokens";
+import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 
 export default function AboutView() {
   const { closeDialog } = useDialogComm();
-  const [closeHover, setCloseHover] = useState(false);
 
   return (
     <div
@@ -65,27 +65,7 @@ export default function AboutView() {
       <div style={{ height: 1, background: "#C7C7C7", marginLeft: 16, marginRight: 16 }} />
 
       {/* Footer — Close button */}
-      <div style={{ display: "flex", justifyContent: "flex-end", padding: "10px 16px" }}>
-        <button
-          onClick={closeDialog}
-          onMouseEnter={() => setCloseHover(true)}
-          onMouseLeave={() => setCloseHover(false)}
-          style={{
-            height: "28px",
-            width: "100px",
-            border: "1px solid #C7C7C7",
-            borderRadius: "4px",
-            fontSize: "13px",
-            fontFamily: "inherit",
-            cursor: "pointer",
-            background: closeHover ? "#E8E8E8" : colors.white,
-            color: colors.grey11,
-            transition: "background 0.1s",
-          }}
-        >
-          Close
-        </button>
-      </div>
+      <FooterBar><DismissBtn label="Close" onClick={closeDialog} /></FooterBar>
     </div>
   );
 }

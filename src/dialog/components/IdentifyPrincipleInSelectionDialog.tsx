@@ -3,6 +3,7 @@
 // C# original: IdentifyPrincipleInSelection.cs
 
 import React, { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
@@ -144,7 +145,6 @@ export function IdentifyPrincipleInSelectionDialog({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [submitHover, setSubmitHover] = useState(false);
-  const [cancelHover, setCancelHover] = useState(false);
 
   useEffect(() => {
     const el = selectionRef.current;
@@ -849,63 +849,11 @@ export function IdentifyPrincipleInSelectionDialog({
         </div>
 
         {/* ── Footer (57px) ── */}
-        <div
-          style={{
-            height: 57,
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 20px",
-            borderTop: `1px solid ${C.grey88}`,
-            background: C.white,
-            boxSizing: "border-box",
-          }}
-        >
-          <span style={{ fontSize: 10.1, color: C.grey38, fontFamily: "inherit" }}>
-            Identify a principle from the selection and submit.
-          </span>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button
-              onClick={onClose}
-              onMouseEnter={() => setCancelHover(true)}
-              onMouseLeave={() => setCancelHover(false)}
-              style={{
-                width: 74,
-                height: 32,
-                background: cancelHover ? "#F3F3F3" : C.white,
-                border: `1px solid ${C.grey78}`,
-                borderRadius: 4,
-                fontSize: 12.4,
-                fontFamily: "inherit",
-                cursor: "pointer",
-                color: C.grey11,
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              onMouseEnter={() => setSubmitHover(true)}
-              onMouseLeave={() => setSubmitHover(false)}
-              style={{
-                width: 137,
-                height: 32,
-                background: submitHover ? C.blueHover : C.blue,
-                border: "none",
-                borderRadius: 4,
-                fontSize: 12.6,
-                fontWeight: 700,
-                fontFamily: "inherit",
-                cursor: "pointer",
-                color: C.white,
-                whiteSpace: "nowrap",
-              }}
-            >
-              Identify Principle
-            </button>
-          </div>
-        </div>
+        <FooterBar>
+          <FooterHelperText>Identify a principle from the selection and submit.</FooterHelperText>
+          <DismissBtn label="Cancel" onClick={onClose} />
+          <PrimaryBtn label="Identify Principle" onClick={handleSubmit} />
+        </FooterBar>
 
         {/* ── Saved success overlay ── */}
         {saved && (

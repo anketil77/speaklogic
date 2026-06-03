@@ -3,10 +3,10 @@
 // Gradient cover banner → featured image (extracted from content) → title → body → details.
 
 import React, { useCallback } from "react";
+import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import { createPortal } from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { ArticleHeaderIcon, ArticleCloseIcon } from "@/dialog/components/Icons";
-import { colors } from "@/styles/tokens";
 import type { Article } from "@/types/db";
 
 interface Props {
@@ -615,36 +615,7 @@ export function ViewArticleDialog({ article, onClose }: Props) {
         </div>
 
         {/* ── Footer ── */}
-        <div
-          style={{
-            height: 52,
-            minHeight: 52,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            padding: "0 20px",
-            borderTop: "1px solid #F3F4F6",
-            background: "#fff",
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              height: 28,
-              padding: "0 16px",
-              background: "#fff",
-              border: `1px solid ${colors.grey88}`,
-              borderRadius: 4,
-              cursor: "pointer",
-              fontSize: 12.4,
-              fontWeight: 600,
-              color: colors.grey38,
-              fontFamily: "inherit",
-            }}
-          >
-            Close
-          </button>
-        </div>
+        <FooterBar><DismissBtn label="Close" onClick={onClose} /></FooterBar>
       </div>
     </>,
     document.body

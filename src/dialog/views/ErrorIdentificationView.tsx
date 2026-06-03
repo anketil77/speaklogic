@@ -3,6 +3,7 @@
 /* global Office */
 
 import React, { useRef, useState, useCallback } from "react";
+import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { ErrorIcon } from "@/dialog/components/Icons";
@@ -36,7 +37,6 @@ export default function ErrorIdentificationView() {
   const [fromActualCommunication, setFromActualCommunication] = useState("");
   const [entityErrorPointTo, setEntityErrorPointTo] = useState("");
   const [errorDescription, setErrorDescription] = useState("");
-  const [submitHovered, setSubmitHovered] = useState(false);
 
   const errorDate = nowDate();
   const errorTime = nowTime();
@@ -334,49 +334,9 @@ export default function ErrorIdentificationView() {
       </div>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          height: 57,
-          borderTop: `1px solid ${C.grey88}`,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 20px",
-          gap: 8,
-          flexShrink: 0,
-          background: C.white,
-        }}
-      >
-        <span
-          style={{
-            flex: 1,
-            fontSize: "10.1px",
-            fontWeight: 400,
-            color: C.grey38,
-            lineHeight: "15px",
-          }}
-        >
-          Error can be linked to a selection and submitted for review.
-        </span>
-
-        <button
-          className="sl-fr-btn"
-          onClick={close}
-          style={{
-            height: 32,
-            padding: "0 18px",
-            background: C.white,
-            border: `1px solid ${C.grey78}`,
-            borderRadius: 4,
-            fontSize: "12.4px",
-            fontFamily: "inherit",
-            color: C.grey11,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          Cancel
-        </button>
-
+      <FooterBar>
+        <FooterHelperText>Error can be linked to a selection and submitted for review.</FooterHelperText>
+        <DismissBtn label="Cancel" onClick={close} />
         <button
           className="sl-fr-btn"
           onClick={() => submit(true)}
@@ -395,28 +355,8 @@ export default function ErrorIdentificationView() {
         >
           Save Draft
         </button>
-
-        <button
-          onClick={() => submit(false)}
-          onMouseEnter={() => setSubmitHovered(true)}
-          onMouseLeave={() => setSubmitHovered(false)}
-          style={{
-            height: 32,
-            padding: "0 18px",
-            background: submitHovered ? "#C50F1F" : C.red,
-            border: "none",
-            borderRadius: 4,
-            fontSize: "12.9px",
-            fontWeight: 700,
-            fontFamily: "inherit",
-            color: C.white,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          Submit Error
-        </button>
-      </div>
+        <PrimaryBtn label="Submit Error" onClick={() => submit(false)} />
+      </FooterBar>
     </div>
   );
 }

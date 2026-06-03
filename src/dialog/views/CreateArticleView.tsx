@@ -1,6 +1,7 @@
 // src/dialog/views/CreateArticleView.tsx
 
 import React, { useRef, useState, useCallback } from "react";
+import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { ArticleHeaderIcon, ArticleCaretDownIcon } from "@/dialog/components/Icons";
 import {
@@ -21,7 +22,6 @@ export default function CreateArticleView() {
   const [error, setError]             = useState("");
 
   // ── Hover state ─────────────────────────────────────────────────────────────
-  const [saveHover, setSaveHover]   = useState(false);
   const [draftHover, setDraftHover] = useState(false);
 
   // ── Category picker ─────────────────────────────────────────────────────────
@@ -491,18 +491,7 @@ export default function CreateArticleView() {
       </div>
 
       {/* ── Footer ── */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "10px 16px",
-          gap: 8,
-          borderTop: "1px solid #E0E0E0",
-          flexShrink: 0,
-        }}
-      >
+      <FooterBar>
         {/* ── Error indicator (bottom-left) ── */}
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
           {error && (
@@ -528,9 +517,8 @@ export default function CreateArticleView() {
             </>
           )}
         </div>
-
-        {/* ── Action buttons (bottom-right) ── */}
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+        <DismissBtn label="Cancel" onClick={() => sendMessage({ action: "CLOSE" })} />
+        {/* Save as draft — keep inline */}
         <button
           onClick={() => handleSave(1)}
           onMouseEnter={() => setDraftHover(true)}
@@ -555,32 +543,8 @@ export default function CreateArticleView() {
         >
           Save as draft
         </button>
-        <button
-          onClick={() => handleSave(0)}
-          onMouseEnter={() => setSaveHover(true)}
-          onMouseLeave={() => setSaveHover(false)}
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "0 14px",
-            width: 94,
-            height: 28,
-            background: saveHover ? "#106EBE" : "#0078D4",
-            border: `1px solid ${saveHover ? "#106EBE" : "#0078D4"}`,
-            borderRadius: 4,
-            fontWeight: 700,
-            fontSize: 10.7,
-            lineHeight: "13px",
-            color: "#FFFFFF",
-            cursor: "pointer",
-            fontFamily: "inherit",
-          }}
-        >
-          Save Article
-        </button>
-        </div>{/* end buttons wrapper */}
-      </div>
+        <PrimaryBtn label="Save Article" onClick={() => handleSave(0)} />
+      </FooterBar>
 
       {/* ── Category picker portal ── */}
       {categoryOpen && triggerRect && (

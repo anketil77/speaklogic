@@ -2,6 +2,7 @@
 // Read-only list of analyses saved with WhatToDoWithAnalysis = 'RetainAnalysisAsNeed'. No toolbar.
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { ViewAnalysisDialog } from "@/dialog/components/ViewAnalysisDialog";
@@ -108,7 +109,6 @@ export default function RetainedHistoryView() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
-  const [cancelHover, setCancelHover] = useState(false);
   const [viewAnalysis, setViewAnalysis] = useState<ProjectAnalysis | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
 
@@ -584,44 +584,14 @@ export default function RetainedHistoryView() {
       </div>
 
       {/* ── Footer ── */}
-      <div
-        style={{
-          height: 57,
-          minHeight: 57,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 20px",
-          borderTop: `1px solid ${colors.grey88}`,
-          background: colors.white,
-          boxSizing: "border-box",
-        }}
-      >
-        <span style={{ fontSize: 10.1, color: colors.grey38, fontFamily: "inherit" }}>
+      <FooterBar>
+        <FooterStatusText>
           {hasSelection
             ? "1 row selected."
             : "No selection active. Select a row to enable actions."}
-        </span>
-        <button
-          onClick={closeDialog}
-          onMouseEnter={() => setCancelHover(true)}
-          onMouseLeave={() => setCancelHover(false)}
-          style={{
-            height: 32,
-            minWidth: 74,
-            padding: "0 12px",
-            background: cancelHover ? "#F3F3F3" : colors.white,
-            border: `1px solid ${colors.grey78}`,
-            borderRadius: 4,
-            fontSize: 12.4,
-            fontFamily: "inherit",
-            cursor: "pointer",
-            color: colors.grey11,
-          }}
-        >
-          Close
-        </button>
-      </div>
+        </FooterStatusText>
+        <DismissBtn label="Close" onClick={closeDialog} />
+      </FooterBar>
 
       {/* ── Info message overlay ── */}
       {infoMsg && (

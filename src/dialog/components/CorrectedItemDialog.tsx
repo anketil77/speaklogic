@@ -1,6 +1,7 @@
 // src/dialog/components/CorrectedItemDialog.tsx
 
 import React, { useState, useCallback } from "react";
+import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import type { ProjectCorrectedItem } from "@/types/db";
@@ -225,30 +226,12 @@ export function CorrectedItemDialog({
         </div>
 
         {/* Footer */}
-        <div style={{
-          height: 52, borderTop: `1px solid ${C.grey88}`, display: "flex", alignItems: "center",
-          justifyContent: "flex-end", padding: "0 20px", gap: 8, flexShrink: 0,
-        }}>
-          <button
-            onClick={onClose}
-            className="sl-fr-btn"
-            style={{ height: 32, padding: "0 18px", borderRadius: 4, border: `1px solid ${C.grey78}`, background: C.white, fontSize: 12.3, cursor: "pointer", fontFamily: "inherit" }}
-          >
-            {readOnly ? "Close" : "Cancel"}
-          </button>
+        <FooterBar>
+          <DismissBtn label={readOnly ? "Close" : "Cancel"} onClick={onClose} />
           {!readOnly && (
-            <button
-              onClick={handleSave}
-              style={{
-                height: 32, padding: "0 20px", borderRadius: 4, border: "none",
-                background: C.blue, color: C.white, fontSize: 12.3, fontWeight: 700,
-                cursor: "pointer", fontFamily: "inherit",
-              }}
-            >
-              {initialItem ? "Save Changes" : "Add Corrected Item"}
-            </button>
+            <PrimaryBtn label={initialItem ? "Save Changes" : "Add Corrected Item"} onClick={handleSave} />
           )}
-        </div>
+        </FooterBar>
       </div>
     </>
   );

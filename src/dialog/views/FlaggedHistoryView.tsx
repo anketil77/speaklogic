@@ -2,6 +2,7 @@
 // Read-only list of all FlagEntityForAnalysis records. No RichTextToolbar.
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { PanelContextMenu, type PanelMenuEntry } from "@/dialog/components/PanelContextMenu";
@@ -147,7 +148,6 @@ export default function FlaggedHistoryView() {
   const [viewRelated, setViewRelated] = useState<import("@/types/db").SelectionWithPrinciple | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; rowIdx: number | null } | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
-  const [cancelHover, setCancelHover] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const infoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -815,44 +815,14 @@ export default function FlaggedHistoryView() {
       )}
 
       {/* ── Footer ── */}
-      <div
-        style={{
-          height: 52,
-          minHeight: 52,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 20px",
-          borderTop: `1px solid ${colors.grey88}`,
-          background: colors.white,
-          boxSizing: "border-box",
-        }}
-      >
-        <span style={{ fontSize: 10.1, color: colors.grey38, fontFamily: "inherit" }}>
+      <FooterBar>
+        <FooterStatusText>
           {hasSelection
             ? "1 row selected."
             : "No selection active. Select a row to enable actions."}
-        </span>
-        <button
-          onClick={closeDialog}
-          onMouseEnter={() => setCancelHover(true)}
-          onMouseLeave={() => setCancelHover(false)}
-          style={{
-            height: 32,
-            minWidth: 74,
-            padding: "0 12px",
-            background: cancelHover ? "#F3F3F3" : colors.white,
-            border: `1px solid ${colors.grey78}`,
-            borderRadius: 4,
-            fontSize: 12.4,
-            fontFamily: "inherit",
-            cursor: "pointer",
-            color: colors.grey11,
-          }}
-        >
-          Cancel
-        </button>
-      </div>
+        </FooterStatusText>
+        <DismissBtn label="Close" onClick={closeDialog} />
+      </FooterBar>
     </div>
   );
 }

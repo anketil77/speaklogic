@@ -1,6 +1,7 @@
 // src/dialog/components/CompensatorIdentificationDialog.tsx
 
 import React, { useRef, useState, useCallback } from "react";
+import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
@@ -332,25 +333,11 @@ export function CompensatorIdentificationDialog({
       </div>
 
       {/* ── Footer ── */}
-      <div style={{ height: 57, borderTop: `1px solid ${C.grey88}`, display: "flex", alignItems: "center", padding: "0 20px", gap: 8, flexShrink: 0, background: C.white }}>
-        <span style={{ flex: 1, fontSize: "10.1px", color: C.grey38, lineHeight: "15px" }}>
-          Compensator replaces an identified error to enable correction.
-        </span>
-        <button
-          className="sl-fr-btn"
-          onClick={onClose}
-          style={{ height: 32, padding: "0 18px", background: C.white, border: `1px solid ${C.grey78}`, borderRadius: 4, fontSize: "12.4px", fontFamily: "inherit", color: C.grey11, cursor: "pointer", flexShrink: 0 }}
-        >
-          Cancel
-        </button>
-        <button
-          className="sl-fr-btn-primary"
-          onClick={submit}
-          style={{ height: 32, padding: "0 18px", background: C.blue, border: "none", borderRadius: 4, fontSize: "12.9px", fontWeight: 700, fontFamily: "inherit", color: C.white, cursor: "pointer", flexShrink: 0 }}
-        >
-          Submit Compensator
-        </button>
-      </div>
+      <FooterBar>
+        <FooterHelperText>Compensator replaces an identified error to enable correction.</FooterHelperText>
+        <DismissBtn label="Cancel" onClick={onClose} />
+        <PrimaryBtn label="Submit Compensator" onClick={submit} />
+      </FooterBar>
 
       {/* ── Info card ── */}
       {infoPanel && (

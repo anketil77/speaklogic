@@ -3,6 +3,7 @@
 // Matches C# ViewFeedbackRequested.cs — no editing, no save, close only.
 
 import React, { useCallback } from "react";
+import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import type { CommSignalInfo } from "@/types/db";
@@ -220,36 +221,7 @@ export function ViewFeedbackRequestedDialog({ request, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div
-          style={{
-            height: 44,
-            borderTop: `1px solid ${colors.grey88}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            padding: "0 16px",
-            flexShrink: 0,
-          }}
-        >
-          <button
-            onClick={handleClose}
-            style={{
-              height: 28,
-              paddingLeft: 16,
-              paddingRight: 16,
-              background: "#0078D4",
-              color: colors.white,
-              border: "none",
-              borderRadius: 4,
-              fontSize: 11.4,
-              fontWeight: 700,
-              fontFamily: "inherit",
-              cursor: "pointer",
-            }}
-          >
-            Close
-          </button>
-        </div>
+        <FooterBar><DismissBtn label="Close" onClick={handleClose} /></FooterBar>
       </div>
     </>
   );

@@ -1,6 +1,7 @@
 // src/dialog/views/FlagView.tsx
 
 import React, { useState, useEffect, useCallback } from "react";
+import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { Spinner } from "@fluentui/react-components";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import type { FlagEntityForAnalysis } from "@/types/db";
@@ -20,16 +21,13 @@ function localTime(): string {
 const COD_GRAY = "#1B1B1B";
 const DOVE_GRAY = "#616161";
 const SILVER = "#C7C7C7";
-const ALTO = "#E0E0E0";
 const LOCHMARA = "#0078D4";
-const LOCHMARA_HOVER = "#106EBE";
 const NARVIK = "#F5F5F5";
 const CINDERELLA = "#EBF3FC";
 
 const HEADER_H = 77.59;
 const BANNER_H = 61;
 const BODY_H = 284;
-const FOOTER_H = 57;
 
 // Input column starts at 158px from body-left edge (= modal left edge)
 const INPUT_LEFT = 158;
@@ -100,7 +98,6 @@ export default function FlagView() {
   const [flagDate] = useState(() => localDate());
   const [flagTime] = useState(() => localTime());
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [applyHover, setApplyHover] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -303,54 +300,10 @@ export default function FlagView() {
       </div>
 
       {/* FOOTER — h: 57px */}
-      <div style={{ position: "relative", height: FOOTER_H, background: "#FFFFFF", borderTop: `1px solid ${ALTO}`, flexShrink: 0 }}>
-        {/* Apply button — width:76.08, right:110.29 */}
-        <button
-          style={{
-            position: "absolute",
-            width: 76.08,
-            height: 32,
-            right: 110.29,
-            top: "50%",
-            transform: "translateY(-50%)",
-            background: applyHover ? LOCHMARA_HOVER : LOCHMARA,
-            border: "none",
-            borderRadius: 4,
-            fontFamily: "inherit",
-            fontWeight: 700,
-            fontSize: 12.6,
-            color: "#FFFFFF",
-            cursor: "pointer",
-          }}
-          onClick={save}
-          onMouseEnter={() => setApplyHover(true)}
-          onMouseLeave={() => setApplyHover(false)}
-        >
-          Apply
-</button>
-        {/* Cancel button — width:82.3, right:20 */}
-        <button
-          style={{
-            position: "absolute",
-            width: 82.3,
-            height: 32,
-            right: 20,
-            top: "50%",
-            transform: "translateY(-50%)",
-            background: "#FFFFFF",
-            border: `1px solid ${SILVER}`,
-            borderRadius: 4,
-            fontFamily: "inherit",
-            fontWeight: 400,
-            fontSize: 12.4,
-            color: COD_GRAY,
-            cursor: "pointer",
-          }}
-          onClick={closeDialog}
-        >
-          Cancel
-        </button>
-      </div>
+      <FooterBar>
+        <DismissBtn label="Cancel" onClick={closeDialog} />
+        <PrimaryBtn label="Apply" onClick={save} />
+      </FooterBar>
 
     </div>
   );

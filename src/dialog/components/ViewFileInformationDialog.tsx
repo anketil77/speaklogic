@@ -1,6 +1,7 @@
 // src/dialog/components/ViewFileInformationDialog.tsx
 
 import React from "react";
+import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import { createPortal } from "react-dom";
 import { AttachFileIcon, CloseIcon, FolderBannerIcon } from "@/dialog/components/Icons";
 import type { AttachFileToProject } from "@/types/db";
@@ -183,38 +184,7 @@ export function ViewFileInformationDialog({ file, onClose, zIndexBase = 200 }: V
         </div>
 
         {/* Footer */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            padding: "9px 14px 12px",
-            gap: 6,
-            height: 48,
-            background: C.grey96,
-            borderTop: `1px solid ${C.grey88}`,
-            boxSizing: "border-box",
-          }}
-        >
-          <button
-            onClick={onClose}
-            style={{
-              width: 67,
-              height: 26,
-              background: C.white,
-              border: `1px solid ${C.grey78}`,
-              borderRadius: 4,
-              fontSize: 11,
-              fontWeight: 500,
-              color: C.grey11,
-              cursor: "pointer",
-              boxSizing: "border-box",
-            }}
-          >
-            Close
-          </button>
-        </div>
+        <FooterBar><DismissBtn label="Close" onClick={onClose} /></FooterBar>
       </div>
     </>
   );

@@ -1,22 +1,19 @@
 // src/dialog/views/SelectionConfigView.tsx
 
 import React, { useState, useCallback } from "react";
+import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { SelectionConfigHeaderIcon, SelectionConfigBannerIcon } from "@/dialog/components/Icons";
 
 // ── Figma design tokens ───────────────────────────────────────────────────────
 const COD_GRAY    = "#1B1B1B";
 const SILVER      = "#C7C7C7";
-const ALTO        = "#E0E0E0";
-const LOCHMARA    = "#0078D4";
-const LOCHMARA_HV = "#106EBE";
 const NARVIK      = "#F5F5F5";
 
 // ── Layout constants (480×428px dialog) ───────────────────────────────────────
 const HEADER_H = 70;
 const BANNER_H = 61;
 const BODY_H   = 240;
-const FOOTER_H = 57;
 
 // Dropdown column — left:228, right:20 (matches Figma exactly)
 const SELECT_LEFT  = 228;
@@ -107,7 +104,6 @@ export default function SelectionConfigView() {
   const { closeDialog } = useDialogComm();
 
   const [cfg, setCfg] = useState<SelectionConfig>(() => loadSelectionConfig());
-  const [applyHover, setApplyHover] = useState(false);
 
   const set = useCallback(<K extends keyof SelectionConfig>(k: K, v: boolean) => {
     setCfg((prev) => ({ ...prev, [k]: v }));
@@ -187,47 +183,10 @@ export default function SelectionConfigView() {
       </div>
 
       {/* ── FOOTER — h: 57px ── */}
-      <div style={{
-        position: "relative", height: FOOTER_H,
-        background: "#FFFFFF", borderTop: `1px solid ${ALTO}`,
-        flexShrink: 0,
-      }}>
-        {/* Apply button — width:76.08, right:110.29 */}
-        <button
-          onClick={handleApply}
-          onMouseEnter={() => setApplyHover(true)}
-          onMouseLeave={() => setApplyHover(false)}
-          style={{
-            position: "absolute",
-            width: 76.08, height: 32,
-            right: 110.29,
-            top: "50%", transform: "translateY(-50%)",
-            background: applyHover ? LOCHMARA_HV : LOCHMARA,
-            border: "none", borderRadius: 4,
-            fontFamily: "inherit", fontWeight: 700, fontSize: 12.6,
-            color: "#FFFFFF", cursor: "pointer",
-          }}
-        >
-          Apply
-        </button>
-        {/* Cancel button — width:82.3, right:20 */}
-        <button
-          onClick={closeDialog}
-          style={{
-            position: "absolute",
-            width: 82.3, height: 32,
-            right: 20,
-            top: "50%", transform: "translateY(-50%)",
-            background: "#FFFFFF",
-            border: `1px solid ${SILVER}`, borderRadius: 4,
-            fontFamily: "inherit", fontWeight: 400, fontSize: 12.4,
-            color: COD_GRAY, cursor: "pointer",
-            boxSizing: "border-box",
-          }}
-        >
-          Cancel
-        </button>
-      </div>
+      <FooterBar>
+        <DismissBtn label="Cancel" onClick={closeDialog} />
+        <PrimaryBtn label="Apply" onClick={handleApply} />
+      </FooterBar>
 
     </div>
   );

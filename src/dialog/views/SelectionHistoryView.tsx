@@ -22,6 +22,7 @@ import {
 } from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
 import type { FlaggedEntityHistory, FlagEntityForAnalysis } from "@/types/db";
+import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { openSelectionHistoryReport } from "@/dialog/utils/reportGenerator";
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -107,7 +108,6 @@ export default function SelectionHistoryView() {
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [viewSelection, setViewSelection] = useState<FlagEntityForAnalysis | null>(null);
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
-  const [cancelHover, setCancelHover] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
   const displayRows = useMemo(
@@ -520,37 +520,15 @@ export default function SelectionHistoryView() {
       </div>
 
       {/* ── Footer ── */}
-      <div
-        style={{
-          height: 48, minHeight: 48,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "0 20px",
-          borderTop: `1px solid ${colors.grey88}`,
-          boxSizing: "border-box",
-        }}
-      >
-        <span style={{ fontSize: 11.4, color: colors.grey38 }}>
+      <FooterBar>
+        <FooterStatusText>
           {displayRows.length} record{displayRows.length !== 1 ? "s" : ""}
           {activeFilterLabel && activeFilterLabel !== "Show All"
             ? ` · Filtered: ${activeFilterLabel}`
             : ""}
-        </span>
-        <button
-          onClick={closeDialog}
-          onMouseEnter={() => setCancelHover(true)}
-          onMouseLeave={() => setCancelHover(false)}
-          style={{
-            height: 28, padding: "0 16px",
-            background: cancelHover ? colors.grey92 : colors.white,
-            border: `1px solid ${colors.grey78}`,
-            borderRadius: 4, fontSize: 12,
-            fontFamily: "inherit", cursor: "pointer", color: colors.grey11,
-          }}
-        >
-          Close
-        </button>
-      </div>
-
+        </FooterStatusText>
+        <DismissBtn label="Close" onClick={closeDialog} />
+      </FooterBar>
       {/* ── ViewSelectionDialog portal ── */}
       {viewSelection && (
         <ViewSelectionDialog

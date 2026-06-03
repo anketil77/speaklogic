@@ -1,6 +1,7 @@
 // src/dialog/views/CommunicationConfigView.tsx
 
 import React, { useState, useEffect, useCallback } from "react";
+import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { Spinner } from "@fluentui/react-components";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { HamburgerIcon } from "@/dialog/components/Icons";
@@ -21,23 +22,19 @@ const inputStyle: React.CSSProperties = {
   background: colors.white, outline: "none", boxSizing: "border-box",
 };
 
+const readOnlyInputStyle: React.CSSProperties = {
+  ...inputStyle,
+  background: "#F5F5F5", color: "#616161", cursor: "default", border: "1px solid #E0E0E0",
+};
+
 const rowStyle: React.CSSProperties = {
-  display: "flex", alignItems: "center", minHeight: "32px", marginBottom: "16px",
+  display: "flex", flexDirection: "column", gap: "4px", marginBottom: "12px",
 };
 
 const labelStyle: React.CSSProperties = {
-  width: "150px", minWidth: "150px", fontSize: "11.8px", fontWeight: "700",
-  color: colors.grey11, lineHeight: "14px", flexShrink: 0,
+  fontSize: "11.8px", fontWeight: "700", color: colors.grey11, lineHeight: "14px",
 };
 
-const btnStyle = (variant: "cancel" | "apply"): React.CSSProperties => ({
-  height: "32px", borderRadius: "4px", fontSize: "12.3px", fontFamily: "inherit",
-  cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center",
-  whiteSpace: "nowrap", flexShrink: 0,
-  ...(variant === "cancel"
-    ? { padding: "0 18px", background: colors.white, border: "1px solid #C7C7C7", color: colors.grey11, fontWeight: "400" }
-    : { padding: "0 20px", background: colors.azure42, border: "none", color: colors.white, fontWeight: "700" }),
-});
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function CommunicationConfigView() {
@@ -45,10 +42,8 @@ export default function CommunicationConfigView() {
 
   const [personName, setPersonName] = useState("");
   const [personEmail, setPersonEmail] = useState("");
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [applyHover, setApplyHover] = useState(false);
 
-  // Pre-fill from existing CommunicationData record passed in initData
+  // Pre-fill from Office profile (passed via initData from commands.ts)
   useEffect(() => {
     if (initData) {
       setPersonName(initData.communicationPersonName ?? "");
@@ -57,18 +52,6 @@ export default function CommunicationConfigView() {
   }, [initData]);
 
   const save = useCallback(() => {
-    const missing: string[] = [];
-    if (!personName.trim()) missing.push("Person Name");
-    if (!personEmail.trim()) missing.push("Person Email");
-    if (missing.length > 0) {
-      setValidationError(`The ${missing.join(" and ")} field${missing.length > 1 ? "s are" : " is"} mandatory to be filled.`);
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(personEmail.trim())) {
-      setValidationError("Please enter a valid email address.");
-      return;
-    }
     const payload: SaveCommunicationConfigPayload = {
       personName: personName.trim(),
       personEmail: personEmail.trim(),
@@ -85,7 +68,7 @@ export default function CommunicationConfigView() {
   }
 
   return (
-    <div style={{ position: "relative", display: "flex", flexDirection: "column", height: "100vh", background: colors.white, overflow: "hidden", fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+    <div style={{ position: "relative", display: "flex", flexDirection: "column", background: colors.white, fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
 
       {/* ── Title ─────────────────────────────────────────────────────────── */}
       <div style={{ height: "78px", display: "flex", alignItems: "center", padding: "0 20px", gap: "12px", flexShrink: 0 }}>
@@ -106,55 +89,34 @@ export default function CommunicationConfigView() {
       <div style={{ height: "1px", background: F.borderBox, flexShrink: 0 }} />
 
       {/* ── Body ──────────────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+      <div style={{ padding: "16px 24px 8px" }}>
 
         <div style={rowStyle}>
           <span style={labelStyle}>Person Name</span>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-            <input
-              style={inputStyle}
-              value={personName}
-              onChange={(e) => { setPersonName(e.target.value); setValidationError(null); }}
-              placeholder="Enter your name"
-              autoFocus
-            />
-          </div>
+          <input
+            style={readOnlyInputStyle}
+            value={personName}
+            readOnly
+          />
         </div>
 
         <div style={rowStyle}>
           <span style={labelStyle}>Person Email</span>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-            <input
-              style={inputStyle}
-              type="email"
-              value={personEmail}
-              onChange={(e) => { setPersonEmail(e.target.value); setValidationError(null); }}
-              placeholder="Enter your email address"
-            />
-          </div>
+          <input
+            style={readOnlyInputStyle}
+            type="email"
+            value={personEmail}
+            readOnly
+          />
         </div>
 
-        {validationError && (
-          <div style={{ color: colors.redDestructive, fontSize: "11.8px", marginTop: "4px", lineHeight: "16px" }}>
-            {validationError}
-          </div>
-        )}
       </div>
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <div style={{ height: "57px", borderTop: F.borderBox, display: "flex", alignItems: "center", padding: "0 20px", gap: "8px", flexShrink: 0, background: colors.white, justifyContent: "flex-end" }}>
-        <button style={btnStyle("cancel")} onClick={closeDialog}>
-          Cancel
-        </button>
-        <button
-          style={{ ...btnStyle("apply"), background: applyHover ? "#106EBE" : colors.azure42 }}
-          onMouseEnter={() => setApplyHover(true)}
-          onMouseLeave={() => setApplyHover(false)}
-          onClick={save}
-        >
-          Apply
-        </button>
-      </div>
+      <FooterBar>
+        <DismissBtn label="Cancel" onClick={closeDialog} />
+        <PrimaryBtn label="Apply" onClick={save} />
+      </FooterBar>
 
     </div>
   );

@@ -3,6 +3,7 @@
 /* global Office */
 
 import React, { useRef, useState, useCallback } from "react";
+import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { QuestionIcon } from "@/dialog/components/Icons";
@@ -290,58 +291,10 @@ export default function AnalysisQuestionView() {
       </div>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          height: 57,
-          borderTop: `1px solid ${C.grey88}`,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 20px",
-          gap: 8,
-          flexShrink: 0,
-          background: C.white,
-          justifyContent: "flex-end",
-        }}
-      >
-        <button
-          className="sl-fr-btn"
-          onClick={close}
-          style={{
-            height: 32,
-            padding: "0 18px",
-            background: C.white,
-            border: `1px solid ${C.grey78}`,
-            borderRadius: 4,
-            fontSize: "12.4px",
-            fontFamily: "inherit",
-            color: C.grey11,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          Cancel
-        </button>
-
-        <button
-          className="sl-fr-btn-primary"
-          onClick={submit}
-          style={{
-            height: 32,
-            padding: "0 20px",
-            background: C.blue,
-            border: "none",
-            borderRadius: 4,
-            fontSize: "12.7px",
-            fontWeight: 700,
-            fontFamily: "inherit",
-            color: C.white,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          Add Question
-        </button>
-      </div>
+      <FooterBar>
+        <DismissBtn label="Cancel" onClick={close} />
+        <PrimaryBtn label="Add Question" onClick={submit} />
+      </FooterBar>
     </div>
   );
 }
