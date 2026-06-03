@@ -2257,15 +2257,14 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
     let prefillEmail = "";
 
     if (Office.context.host === Office.HostType.Outlook) {
-      // Outlook: always read live profile first — it's always accurate
       try {
         const p = Office.context.mailbox.userProfile;
-        prefillName  = p.displayName  ?? "";
-        prefillEmail = p.emailAddress ?? "";
-      } catch { /* ignore */ }
-      // Fall back to saved config only if profile returned empty
-      if (!prefillName)  prefillName  = commConfig?.personName  ?? "";
-      if (!prefillEmail) prefillEmail = commConfig?.personEmail ?? "";
+        prefillName  = p.displayName  || commConfig?.personName  || "";
+        prefillEmail = p.emailAddress || commConfig?.personEmail || "";
+      } catch {
+        prefillName  = commConfig?.personName  ?? "";
+        prefillEmail = commConfig?.personEmail ?? "";
+      }
     } else {
       // Word / PPT: use saved config first; Office.context.userProfile is unreliable
       prefillName  = commConfig?.personName  ?? "";
