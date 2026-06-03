@@ -18,9 +18,11 @@ interface AnalyzeSubDialogsProps {
   panels: AnalyzePanelsState;
   applicationName?: string;
   sendMessage: (msg: { action: string; payload?: unknown }) => void;
+  onAddError?: (text: string) => void;
+  onAddCompensator?: (text: string) => void;
 }
 
-export function AnalyzeSubDialogs({ panels, applicationName, sendMessage }: AnalyzeSubDialogsProps) {
+export function AnalyzeSubDialogs({ panels, applicationName, sendMessage, onAddError, onAddCompensator }: AnalyzeSubDialogsProps) {
   const {
     showAddQuestion, setShowAddQuestion, addQuestionInitial, setAddQuestionInitial,
     questions, addQuestion, viewQuestion, setViewQuestion,
@@ -62,7 +64,7 @@ export function AnalyzeSubDialogs({ panels, applicationName, sendMessage }: Anal
       {showAddError && (
         <ErrorIdentificationDialog
           itemCount={errors.length}
-          onAdd={addError}
+          onAdd={(e) => { addError(e); onAddError?.(e.actualError); }}
           onClose={() => { setShowAddError(false); clearErrorPrefills(); }}
           prefilledActualError={prefilledErrorText}
           prefilledDescription={prefilledErrorDescription}
@@ -105,7 +107,7 @@ export function AnalyzeSubDialogs({ panels, applicationName, sendMessage }: Anal
           itemCount={compensators.length}
           existingErrors={errors.map((e) => e.actualError)}
           existingApplications={errors.map((e) => e.fromActualCommunication)}
-          onAdd={addCompensator}
+          onAdd={(c) => { addCompensator(c); onAddCompensator?.(c.actualCompensator); }}
           onClose={() => { setShowAddCompensator(false); clearCompensatorPrefills(); }}
           prefilledError={prefilledError}
           prefilledApplication={prefilledApplication}

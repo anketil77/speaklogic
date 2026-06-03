@@ -311,6 +311,24 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
 
   const [form, setForm] = useState({ fromPerson: "", analysisSubject: "", actualAnalysis: "" });
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [euaHtml, setEuaHtml] = useState("");
+
+  useEffect(() => {
+    if (initData?.selection) {
+      setEuaHtml(
+        initData.selection
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+      );
+    }
+  }, [initData?.selection]);
+
+  const applyEuaHighlight = useCallback((text: string, bg: string) => {
+    const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const span = `<span style="background-color:${bg};color:#fff">${escaped}</span>`;
+    setEuaHtml((prev) => prev.replace(escaped, span));
+  }, []);
 
   useEffect(() => {
     if (initData?.communicationPersonName) {
@@ -409,7 +427,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         action: "SAVE_ANALYSIS",
         payload: {
           analysis: {
-            entityUnderAnalysis: initData.selection,
+            entityUnderAnalysis: euaHtml,
             fromPerson: form.fromPerson,
             analysisSubject: form.analysisSubject,
             actualAnalysis: form.actualAnalysis,
@@ -570,12 +588,13 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
       >
         {(activeTab === "analysis" || entityOnlyMode) && (
           <EntitySplitPanel
-            selection={initData.selection}
+            euaHtml={euaHtml}
             entityViewMode={entityViewMode}
             onEntityViewModeChange={setEntityViewMode}
             entityOnlyMode={entityOnlyMode}
             showEntityBox={showEntityBox}
             onContextMenuError={panels.handleContextMenuError}
+            onContextMenuCompensator={panels.handleContextMenuCompensator}
           >
             <AnalysisTabForm
               peopleList={initData.peopleList ?? []}
@@ -671,6 +690,8 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         panels={panels}
         applicationName={initData?.applicationName}
         sendMessage={sendMessage}
+        onAddError={(text) => applyEuaHighlight(text, "#FF0000")}
+        onAddCompensator={(text) => applyEuaHighlight(text, "#00C800")}
       />
 
       {retainSaved && (

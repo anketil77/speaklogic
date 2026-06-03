@@ -4,22 +4,24 @@ import { colors } from "@/styles/tokens";
 type EntityViewMode = "both" | "analysis-only" | "entity-only";
 
 interface EntitySplitPanelProps {
-  selection: string;
+  euaHtml: string;
   entityViewMode: EntityViewMode;
   onEntityViewModeChange: (mode: EntityViewMode) => void;
   entityOnlyMode: boolean;
   showEntityBox: boolean;
   onContextMenuError: (text: string) => void;
+  onContextMenuCompensator: (text: string) => void;
   children: React.ReactNode;
 }
 
 export function EntitySplitPanel({
-  selection,
+  euaHtml,
   entityViewMode,
   onEntityViewModeChange,
   entityOnlyMode,
   showEntityBox,
   onContextMenuError,
+  onContextMenuCompensator,
   children,
 }: EntitySplitPanelProps) {
   const [entityPanelHeight, setEntityPanelHeight] = useState(130);
@@ -108,9 +110,9 @@ export function EntitySplitPanel({
               background: colors.white,
             }}
             onContextMenu={handleEntityContextMenu}
-          >
-            {selection}
-          </div>
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: euaHtml }}
+          />
         </div>
       )}
 
@@ -155,20 +157,26 @@ export function EntitySplitPanel({
             overflow: "hidden",
             fontFamily: "'Inter', 'Segoe UI', sans-serif",
           }}>
-            <button
-              disabled={!ctxMenu.text}
-              style={{
-                display: "block", width: "100%", padding: "7px 14px", textAlign: "left",
-                background: "transparent", border: "none", fontSize: "12.2px", fontFamily: "inherit",
-                color: "#1B1B1B", cursor: ctxMenu.text ? "pointer" : "default",
-                whiteSpace: "nowrap", opacity: ctxMenu.text ? 1 : 0.4,
-              }}
-              onMouseEnter={(e) => { if (ctxMenu.text) (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-              onClick={() => { onContextMenuError(ctxMenu.text); setCtxMenu(null); }}
-            >
-              Identify Selection as Error
-            </button>
+            {[
+              { label: "Identify Selection as Error", action: () => onContextMenuError(ctxMenu.text) },
+              { label: "Identify Selection as Compensator", action: () => onContextMenuCompensator(ctxMenu.text) },
+            ].map(({ label, action }) => (
+              <button
+                key={label}
+                disabled={!ctxMenu.text}
+                style={{
+                  display: "block", width: "100%", padding: "7px 14px", textAlign: "left",
+                  background: "transparent", border: "none", fontSize: "12.2px", fontFamily: "inherit",
+                  color: "#1B1B1B", cursor: ctxMenu.text ? "pointer" : "default",
+                  whiteSpace: "nowrap", opacity: ctxMenu.text ? 1 : 0.4,
+                }}
+                onMouseEnter={(e) => { if (ctxMenu.text) (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                onClick={() => { action(); setCtxMenu(null); }}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </>
       )}
