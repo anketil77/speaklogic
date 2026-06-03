@@ -2258,10 +2258,29 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
 
     if (Office.context.host === Office.HostType.Outlook) {
       try {
-        const p = Office.context.mailbox.userProfile;
+        const mb = Office.context.mailbox;
+        const p = mb.userProfile;
+        // ── TEMP DIAGNOSTIC: identify why userProfile is empty on M365. Remove once root cause found. ──
+        // Read from any same-origin console:
+        //   JSON.parse(localStorage.getItem('sl-debug')||'[]').filter(l=>l.includes('IDENTITY')).forEach(l=>console.log(l))
+        dbg("IDENTITY", "Outlook userProfile snapshot", {
+          hasMailbox: !!mb,
+          hasUserProfile: !!p,
+          displayName: p?.displayName ?? null,
+          emailAddress: p?.emailAddress ?? null,
+          accountType: p?.accountType ?? null,        // enterprise = on-prem/hybrid (empty expected); office365 = real bug
+          timeZone: p?.timeZone ?? null,
+          mailbox16Supported: Office.context.requirements.isSetSupported("Mailbox", "1.6"),
+          mbHostName: mb?.diagnostics?.hostName ?? null,
+          mbHostVersion: mb?.diagnostics?.hostVersion ?? null,
+          diagHost: Office.context.diagnostics?.host ?? null,
+          diagPlatform: Office.context.diagnostics?.platform ?? null,
+          diagVersion: Office.context.diagnostics?.version ?? null,
+        });
         prefillName  = p.displayName  || commConfig?.personName  || "";
         prefillEmail = p.emailAddress || commConfig?.personEmail || "";
-      } catch {
+      } catch (err) {
+        dbg("IDENTITY", "Outlook userProfile read THREW", String(err));
         prefillName  = commConfig?.personName  ?? "";
         prefillEmail = commConfig?.personEmail ?? "";
       }

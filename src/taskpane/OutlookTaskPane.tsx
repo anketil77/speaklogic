@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { initDb, nowDate } from "@/db/db";
+import { dbg } from "@/debug/log";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { getPeopleEmailMap, getPeopleNames, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import {
@@ -222,6 +223,27 @@ export function OutlookTaskPane() {
   const dialogRef = useRef<Office.Dialog | null>(null);
 
   useEffect(() => {
+    // ── TEMP DIAGNOSTIC: why is userProfile empty on M365? Remove once root cause found. ──
+    // This task pane is a visible runtime — open its console (F12 / right-click → Inspect)
+    // and the snapshot prints on load. Or read the persisted log with:
+    //   JSON.parse(localStorage.getItem('sl-debug')||'[]').filter(l=>l.includes('IDENTITY')).forEach(l=>console.log(l))
+    try {
+      const p = Office.context.mailbox.userProfile;
+      dbg("IDENTITY", "Outlook taskpane userProfile snapshot", {
+        displayName: p.displayName || null,
+        emailAddress: p.emailAddress || null,
+        accountType: p.accountType || null,        // enterprise = on-prem/hybrid (empty expected); office365 = real bug
+        timeZone: p.timeZone || null,
+        mailbox16Supported: Office.context.requirements.isSetSupported("Mailbox", "1.6"),
+        mbHostName: Office.context.mailbox.diagnostics.hostName,
+        mbHostVersion: Office.context.mailbox.diagnostics.hostVersion,
+        diagPlatform: Office.context.diagnostics.platform,
+        diagVersion: Office.context.diagnostics.version,
+      });
+    } catch (err) {
+      dbg("IDENTITY", "Outlook taskpane userProfile read THREW", String(err));
+    }
+
     initDb()
       .then(() => setDbReady(true))
       .catch(() => setStatus({ msg: "Failed to initialize database.", ok: false }));
@@ -782,10 +804,20 @@ export function OutlookTaskPane() {
   const handleCommunicationConfig = useCallback(() => {
     if (!dbReady) return;
     const commConfig = getCommunicationConfig();
+    let prefillName = "";
+    let prefillEmail = "";
+    try {
+      const p = Office.context.mailbox.userProfile;
+      prefillName  = p.displayName  || commConfig?.personName  || "";
+      prefillEmail = p.emailAddress || commConfig?.personEmail || "";
+    } catch {
+      prefillName  = commConfig?.personName  ?? "";
+      prefillEmail = commConfig?.personEmail ?? "";
+    }
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=communication-config`,
       COMM_CONFIG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], communicationPersonName: prefillName, communicationPersonEmail: prefillEmail }),
       (dialog, action) => {
         if (action.action === "SAVE_COMMUNICATION_CONFIG") {
           saveCommunicationConfig(action.payload as SaveCommunicationConfigPayload);
