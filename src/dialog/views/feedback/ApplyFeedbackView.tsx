@@ -193,17 +193,7 @@ const useStyles = makeStyles({
   footerHint: { flex: 1, fontSize: "10.3px", fontWeight: "400", color: colors.grey38, lineHeight: "15px" },
 });
 
-type TabValue = "feedback" | "questions" | "errors" | "compensators" | "answers" | "files" | "corrected";
-
-const TABS: { value: TabValue; label: string }[] = [
-  { value: "feedback", label: "Feedback" },
-  { value: "questions", label: "Analysis Question" },
-  { value: "errors", label: "Errors" },
-  { value: "compensators", label: "Compensators" },
-  { value: "answers", label: "Answers" },
-  { value: "corrected", label: "Corrected Items" },
-  { value: "files", label: "Attached Files" },
-];
+type TabValue = "feedback" | "analysis" | "selection" | "questions" | "errors" | "compensators" | "answers" | "files" | "corrected";
 
 // ─── Shared inline styles ─────────────────────────────────────────────────────
 const inputStyle: React.CSSProperties = {
@@ -317,6 +307,8 @@ export default function ApplyView() {
     errorSubstituted: "",
     compensatorReplaced: "",
     feedbackApplication: "",
+    fromPerson: "",
+    toPerson: "",
   });
 
   // ── Tab item state (initialized from initData) ─────────────────────────────
@@ -351,12 +343,14 @@ export default function ApplyView() {
   // ── Init from payload ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!initData) return;
+    const ad = initData.analysisData;
     setForm((prev) => ({
       ...prev,
       applicationName: prev.applicationName || initData.applicationName || "",
       communicationFunction: prev.communicationFunction || initData.communicationFunction || "",
+      fromPerson: prev.fromPerson || ad?.fromPerson || initData.personName || "",
+      toPerson: prev.toPerson || ad?.fromPerson || initData.personName || "",
     }));
-    const ad = initData.analysisData;
     if (ad) {
       setQuestions(ad.questions.map((q) => ({ ...q })));
       setErrors(ad.errors.map((e) => ({ ...e })));
@@ -383,6 +377,23 @@ export default function ApplyView() {
   }, []);
 
   const analysisData = initData?.analysisData;
+
+  const tabs = useMemo((): { value: TabValue; label: string }[] => {
+    const mid: { value: TabValue; label: string } | null =
+      initData?.mode === "selection" ? { value: "selection", label: "Selection" } :
+      (initData?.mode === "paragraph" && initData?.analysisData) ? { value: "analysis", label: "Analysis" } :
+      null;
+    return [
+      { value: "feedback", label: "Feedback" },
+      ...(mid ? [mid] : []),
+      { value: "questions", label: "Analysis Question" },
+      { value: "errors", label: "Errors" },
+      { value: "compensators", label: "Compensators" },
+      { value: "answers", label: "Answers" },
+      { value: "corrected", label: "Corrected Items" },
+      { value: "files", label: "Attached Files" },
+    ];
+  }, [initData]);
 
   // ── Derived lists for dropdowns ─────────────────────────────────────────────
   const errorOptions = useMemo(() => errors.map((e) => e.actualError).filter(Boolean), [errors]);
@@ -555,8 +566,8 @@ export default function ApplyView() {
         feedbackApplication: form.feedbackApplication,
         feedbackDate: nowDate(),
         feedbackTime: nowTime(),
-        fromPerson: analysisData?.fromPerson ?? "",
-        toPerson: analysisData?.fromPerson ?? "",
+        fromPerson: form.fromPerson || analysisData?.fromPerson || "",
+        toPerson: form.toPerson || analysisData?.fromPerson || "",
         feedbackSubject: form.feedbackSubject,
         internalFeedbackName: "",
         feedbackType: "Applied",
@@ -640,7 +651,7 @@ export default function ApplyView() {
 
       {/* ── Tab bar ───────────────────────────────────────────────────────── */}
       <div className={styles.tabBar}>
-        {TABS.map(({ value, label }) => {
+        {tabs.map(({ value, label }) => {
           const isActive = activeTab === value;
           return (
             <button
@@ -753,6 +764,57 @@ export default function ApplyView() {
               </div>
             </div>
           </>
+        )}
+
+        {/* ── Selection tab (selection mode) ────────────────────────────── */}
+        {activeTab === "selection" && (
+          <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column" }}>
+            <div style={rowStyle}>
+              <span style={labelStyle}>Selection Type</span>
+              <span style={readonlyDisplayStyle}>{initData.source}</span>
+            </div>
+            <div style={rowStyle}>
+              <span style={labelStyle}>From Person</span>
+              <input style={inputStyle} value={form.fromPerson} onChange={(e) => updateForm("fromPerson", e.target.value)} placeholder="From person" />
+            </div>
+            <div style={rowStyle}>
+              <span style={labelStyle}>To Person</span>
+              <input style={inputStyle} value={form.toPerson} onChange={(e) => updateForm("toPerson", e.target.value)} placeholder="To person" />
+            </div>
+            <div style={rowTopStyle}>
+              <span style={labelTopStyle}>Actual Selection</span>
+              <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: "18px" }}>
+                {initData.selection || <em>No selection captured.</em>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Analysis tab (paragraph mode) ─────────────────────────────── */}
+        {activeTab === "analysis" && analysisData && (
+          <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column" }}>
+            {analysisData.fromPerson && (
+              <div style={rowStyle}>
+                <span style={labelStyle}>From Person</span>
+                <span style={readonlyDisplayStyle}>{analysisData.fromPerson}</span>
+              </div>
+            )}
+            {analysisData.analysisSubject && (
+              <div style={rowStyle}>
+                <span style={labelStyle}>Analysis Subject</span>
+                <span style={readonlyDisplayStyle}>{analysisData.analysisSubject}</span>
+              </div>
+            )}
+            {analysisData.actualAnalysis && (
+              <div style={rowTopStyle}>
+                <span style={labelTopStyle}>Actual Analysis</span>
+                <div
+                  style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto" }}
+                  dangerouslySetInnerHTML={{ __html: analysisData.actualAnalysis }}
+                />
+              </div>
+            )}
+          </div>
         )}
 
         {/* ── Analysis Question tab ──────────────────────────────────────── */}

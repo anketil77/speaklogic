@@ -921,7 +921,7 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           });
           const applyPayload: DialogInitPayload = {
             selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "",
-            mode: "selection",
+            mode: analysis.selectionType === "Paragraph" ? "paragraph" : "selection",
             source: getSource(),
             personName,
             personEmail,
@@ -2252,6 +2252,34 @@ function buildRequestSLMailtoUrl(p: SaveRequestSLFeedbackPayload): string {
 function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void {
   ensureDb().then(() => {
     const commConfig = getCommunicationConfig();
+
+    let prefillName = "";
+    let prefillEmail = "";
+
+    if (Office.context.host === Office.HostType.Outlook) {
+      // Outlook: always read live profile first — it's always accurate
+      try {
+        const p = Office.context.mailbox.userProfile;
+        prefillName  = p.displayName  ?? "";
+        prefillEmail = p.emailAddress ?? "";
+      } catch { /* ignore */ }
+      // Fall back to saved config only if profile returned empty
+      if (!prefillName)  prefillName  = commConfig?.personName  ?? "";
+      if (!prefillEmail) prefillEmail = commConfig?.personEmail ?? "";
+    } else {
+      // Word / PPT: use saved config first; Office.context.userProfile is unreliable
+      prefillName  = commConfig?.personName  ?? "";
+      prefillEmail = commConfig?.personEmail ?? "";
+      if (!prefillName || !prefillEmail) {
+        try {
+          const up = (Office.context as { userProfile?: { displayName?: string; email?: string } }).userProfile;
+          if (!prefillName)  prefillName  = up?.displayName ?? "";
+          if (!prefillEmail) prefillEmail = up?.email       ?? "";
+        } catch { /* not available */ }
+      }
+    }
+
+
     const initPayload: DialogInitPayload = {
       selection: "",
       mode: "selection",
@@ -2263,12 +2291,22 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
       communicationSignal: "",
       projectName: "",
       peopleList: [],
-      communicationPersonName: commConfig?.personName ?? "",
-      communicationPersonEmail: commConfig?.personEmail ?? "",
+      communicationPersonName: prefillName,
+      communicationPersonEmail: prefillEmail,
     };
+    // Convert target pixel dimensions to % of screen resolution — the only
+    // workaround for Office.js's % -only API (confirmed "by design", GitHub #4155).
+    // This gives a near-fixed pixel size on a normal full-screen window.
+    const TARGET_H_PX = 340;
+    const TARGET_W_PX = 420;
+    const screenH = window.screen?.availHeight || 900;
+    const screenW = window.screen?.availWidth  || 1440;
+    const commConfigHeight = Math.min(75, Math.max(28, Math.round((TARGET_H_PX / (screenH * 0.93)) * 100) + 4));
+    const commConfigWidth  = Math.min(80, Math.max(22, Math.round((TARGET_W_PX / (screenW * 0.95)) * 100)));
+
     Office.context.ui.displayDialogAsync(
       `${DIALOG_BASE}/dialog.html?view=communication-config`,
-      { height: 36, width: 28, displayInIframe: true },
+      { height: commConfigHeight, width: commConfigWidth, displayInIframe: true },
       (result) => {
         if (result.status === Office.AsyncResultStatus.Failed) {
           handleDialogOpenError(result.error, event);
