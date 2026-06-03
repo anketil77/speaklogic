@@ -4,6 +4,7 @@ import { CheckmarkRegular } from "@fluentui/react-icons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { QuestionPanel } from "@/dialog/views/analyze/panels/QuestionPanel";
 import { AnalysisTabForm } from "@/dialog/views/analyze/AnalysisTabForm";
+import { EntitySplitPanel } from "@/dialog/views/analyze/EntitySplitPanel";
 import { AnswerPanel } from "@/dialog/views/analyze/panels/AnswerPanel";
 import { ErrorPanel } from "@/dialog/views/analyze/panels/ErrorPanel";
 import { CompensatorPanel } from "@/dialog/views/analyze/panels/CompensatorPanel";
@@ -269,7 +270,6 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
   const showEntityBox = entityViewMode !== "analysis-only";
   const entityOnlyMode = entityViewMode === "entity-only";
   const [toolbarCloseSignal, setToolbarCloseSignal] = useState(0);
-
   const toggleDd = useCallback((id: DropdownId) => {
     setOpenDropdown((prev) => {
       const next = prev === id ? null : id;
@@ -561,34 +561,39 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         })}
       </div>
 
-      <div className={styles.body} style={!entityOnlyMode && activeTab !== "analysis" ? { padding: 0 } : undefined}>
-        <div
-          style={{
-            display: activeTab === "analysis" || entityOnlyMode ? "flex" : "none",
-            flexDirection: "column",
-            width: "100%",
-          }}
-        >
-          <AnalysisTabForm
+      <div
+        className={styles.body}
+        style={{
+          padding: 0,
+          ...((activeTab === "analysis" || entityOnlyMode) ? { overflow: "hidden" } : {}),
+        }}
+      >
+        {(activeTab === "analysis" || entityOnlyMode) && (
+          <EntitySplitPanel
             selection={initData.selection}
-            peopleList={initData.peopleList ?? []}
-            showEntityBox={showEntityBox}
+            entityViewMode={entityViewMode}
+            onEntityViewModeChange={setEntityViewMode}
             entityOnlyMode={entityOnlyMode}
-            fromPerson={form.fromPerson}
-            onFromPersonChange={(v) => updateForm("fromPerson", v)}
-            analysisSubject={form.analysisSubject}
-            onAnalysisSubjectChange={(v) => updateForm("analysisSubject", v)}
-            actualAnalysis={form.actualAnalysis}
-            onActualAnalysisChange={(v) => updateForm("actualAnalysis", v)}
-            editorRef={editorRef}
-            onContextMenuQuestion={(text) => {
-              panels.setAddQuestionInitial(text || null);
-              panels.setShowAddQuestion(true);
-            }}
-            onContextMenuCompensator={panels.handleContextMenuCompensator}
+            showEntityBox={showEntityBox}
             onContextMenuError={panels.handleContextMenuError}
-          />
-        </div>
+          >
+            <AnalysisTabForm
+              peopleList={initData.peopleList ?? []}
+              fromPerson={form.fromPerson}
+              onFromPersonChange={(v) => updateForm("fromPerson", v)}
+              analysisSubject={form.analysisSubject}
+              onAnalysisSubjectChange={(v) => updateForm("analysisSubject", v)}
+              actualAnalysis={form.actualAnalysis}
+              onActualAnalysisChange={(v) => updateForm("actualAnalysis", v)}
+              editorRef={editorRef}
+              onContextMenuQuestion={(text) => {
+                panels.setAddQuestionInitial(text || null);
+                panels.setShowAddQuestion(true);
+              }}
+              onContextMenuCompensator={panels.handleContextMenuCompensator}
+            />
+          </EntitySplitPanel>
+        )}
 
         {!entityOnlyMode && activeTab === "questions" && (
           <QuestionPanel
@@ -643,6 +648,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
             onSelectionChange={panels.setSelectedAnswerIdx}
           />
         )}
+
       </div>
 
       <div className={styles.footer}>
