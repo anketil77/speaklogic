@@ -347,10 +347,13 @@ export function OutlookTaskPane() {
     try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
     if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
     const { personName, personEmail } = getUserIdentity();
+    const commConfig = getCommunicationConfig();
     const subject = await readSubject();
     const initPayload: DialogInitPayload = {
       selection: text, mode, source: getSource(), personName, personEmail,
       applicationName: subject, communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [],
+      communicationPersonName: commConfig?.personName || personName,
+      communicationPersonEmail: commConfig?.personEmail || personEmail,
     };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=flag&mode=${mode}`,
