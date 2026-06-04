@@ -35,7 +35,7 @@
           <FunctionFile resid="Commands.Url"/>
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
             <CustomTab id="tabSpeakLogic">
-              <Group id="grpAnalysis">
+              <Group id="grpAnalyze">
                 <Label resid="grpAnalysis.Label"/>
                 <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="analyzeSelection">
@@ -50,6 +50,11 @@
                   <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
                 </Control>
+              </Group>
+
+              <Group id="grpFlag">
+                <Label resid="grpFlag.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="flagSelection">
                   <Label resid="flagSelection.Label"/>
                   <Supertip><Title resid="flagSelection.Label"/><Description resid="flagSelection.Tooltip"/></Supertip>
@@ -76,8 +81,8 @@
                 </Control>
               </Group>
 
-              <Group id="grpFeedback">
-                <Label resid="grpFeedback.Label"/>
+              <Group id="grpApply">
+                <Label resid="grpApply.Label"/>
                 <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="applySelection">
                   <Label resid="applySelection.Label"/>
@@ -91,6 +96,11 @@
                   <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
                 </Control>
+              </Group>
+
+              <Group id="grpProvide">
+                <Label resid="grpFeedback.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="provideFeedbackSelection">
                   <Label resid="provideFeedbackSelection.Label"/>
                   <Supertip><Title resid="provideFeedbackSelection.Label"/><Description resid="provideFeedbackSelection.Tooltip"/></Supertip>
@@ -128,8 +138,8 @@
                 </Control>
               </Group>
 
-              <Group id="grpHistory">
-                <Label resid="grpHistory.Label"/>
+              <Group id="grpFlagged">
+                <Label resid="grpFlagged.Label"/>
                 <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="flaggedSelection">
                   <Label resid="flaggedSelection.Label"/>
@@ -143,6 +153,11 @@
                   <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>listAnalysis</FunctionName></Action>
                 </Control>
+              </Group>
+
+              <Group id="grpLists">
+                <Label resid="grpHistory.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="listFeedback">
                   <Label resid="listFeedback.Label"/>
                   <Supertip><Title resid="listFeedback.Label"/><Description resid="listFeedback.Tooltip"/></Supertip>
@@ -232,7 +247,7 @@
           <FunctionFile resid="Commands.Url"/>
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
             <CustomTab id="tabSpeakLogic_PPT">
-              <Group id="grpAnalysis_PPT">
+              <Group id="grpAnalyze_PPT">
                 <Label resid="grpAnalysis.Label"/>
                 <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="analyzeSelection_PPT">
@@ -247,6 +262,11 @@
                   <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
                 </Control>
+              </Group>
+
+              <Group id="grpFlag_PPT">
+                <Label resid="grpFlag.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="flagSelection_PPT">
                   <Label resid="flagSelection.Label"/>
                   <Supertip><Title resid="flagSelection.Label"/><Description resid="flagSelection.Tooltip"/></Supertip>
@@ -273,8 +293,8 @@
                 </Control>
               </Group>
 
-              <Group id="grpFeedback_PPT">
-                <Label resid="grpFeedback.Label"/>
+              <Group id="grpApply_PPT">
+                <Label resid="grpApply.Label"/>
                 <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="applySelection_PPT">
                   <Label resid="applySelection.Label"/>
@@ -288,6 +308,11 @@
                   <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
                 </Control>
+              </Group>
+
+              <Group id="grpProvide_PPT">
+                <Label resid="grpFeedback.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="provideFeedbackSelection_PPT">
                   <Label resid="provideFeedbackSelection.Label"/>
                   <Supertip><Title resid="provideFeedbackSelection.Label"/><Description resid="provideFeedbackSelection.Tooltip"/></Supertip>
@@ -325,8 +350,8 @@
                 </Control>
               </Group>
 
-              <Group id="grpHistory_PPT">
-                <Label resid="grpHistory.Label"/>
+              <Group id="grpFlagged_PPT">
+                <Label resid="grpFlagged.Label"/>
                 <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="flaggedSelection_PPT">
                   <Label resid="flaggedSelection.Label"/>
@@ -340,6 +365,11 @@
                   <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>listAnalysis</FunctionName></Action>
                 </Control>
+              </Group>
+
+              <Group id="grpLists_PPT">
+                <Label resid="grpHistory.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Button" id="listFeedback_PPT">
                   <Label resid="listFeedback.Label"/>
                   <Supertip><Title resid="listFeedback.Label"/><Description resid="listFeedback.Tooltip"/></Supertip>
@@ -548,9 +578,12 @@
         <bt:String id="ctx_flagParagraph.Label" DefaultValue="Flag Paragraph for Analysis"/>
         <bt:String id="ctx_applyParagraph.Label" DefaultValue="Apply Paragraph as Feedback"/>
         <bt:String id="grpAnalysis.Label" DefaultValue="Analysis"/>
+        <bt:String id="grpFlag.Label" DefaultValue="Flag"/>
         <bt:String id="grpFeedback.Label" DefaultValue="Feedback"/>
+        <bt:String id="grpApply.Label" DefaultValue="Apply"/>
         <bt:String id="grpArticle.Label" DefaultValue="Article"/>
         <bt:String id="grpHistory.Label" DefaultValue="History"/>
+        <bt:String id="grpFlagged.Label" DefaultValue="Flagged"/>
         <bt:String id="grpAbout.Label" DefaultValue="About"/>
         <bt:String id="analyzeSelection.Label" DefaultValue="Analyze Selection"/>
         <bt:String id="analyzeParagraph.Label" DefaultValue="Analyze Paragraph"/>
@@ -627,7 +660,7 @@
             <!-- ── Read mode (viewing a received email) ── -->
             <ExtensionPoint xsi:type="MessageReadCommandSurface">
               <CustomTab id="tabSpeakLogic_OL">
-                <Group id="grpAnalysis_OL">
+                <Group id="grpAnalyze_OL">
                   <Label resid="grpAnalysis.Label"/>
                   <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="analyzeSelection_OL">
@@ -642,6 +675,11 @@
                     <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
                   </Control>
+                </Group>
+
+                <Group id="grpFlag_OL">
+                  <Label resid="grpFlag.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="flagSelection_OL">
                     <Label resid="flagSelection.Label"/>
                     <Supertip><Title resid="flagSelection.Label"/><Description resid="flagSelection.Tooltip"/></Supertip>
@@ -668,8 +706,8 @@
                   </Control>
                 </Group>
 
-                <Group id="grpFeedback_OL">
-                  <Label resid="grpFeedback.Label"/>
+                <Group id="grpApply_OL">
+                  <Label resid="grpApply.Label"/>
                   <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="applySelection_OL">
                     <Label resid="applySelection.Label"/>
@@ -683,6 +721,11 @@
                     <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
                   </Control>
+                </Group>
+
+                <Group id="grpProvide_OL">
+                  <Label resid="grpFeedback.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="provideFeedbackSelection_OL">
                     <Label resid="provideFeedbackSelection.Label"/>
                     <Supertip><Title resid="provideFeedbackSelection.Label"/><Description resid="provideFeedbackSelection.Tooltip"/></Supertip>
@@ -720,8 +763,8 @@
                   </Control>
                 </Group>
 
-                <Group id="grpHistory_OL">
-                  <Label resid="grpHistory.Label"/>
+                <Group id="grpFlagged_OL">
+                  <Label resid="grpFlagged.Label"/>
                   <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="flaggedSelection_OL">
                     <Label resid="flaggedSelection.Label"/>
@@ -735,6 +778,11 @@
                     <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>listAnalysis</FunctionName></Action>
                   </Control>
+                </Group>
+
+                <Group id="grpLists_OL">
+                  <Label resid="grpHistory.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="listFeedback_OL">
                     <Label resid="listFeedback.Label"/>
                     <Supertip><Title resid="listFeedback.Label"/><Description resid="listFeedback.Tooltip"/></Supertip>
@@ -773,7 +821,7 @@
             <!-- ── Compose mode (new email / reply) ── -->
             <ExtensionPoint xsi:type="MessageComposeCommandSurface">
               <CustomTab id="tabSpeakLogic_OLC">
-                <Group id="grpAnalysis_OLC">
+                <Group id="grpAnalyze_OLC">
                   <Label resid="grpAnalysis.Label"/>
                   <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="analyzeSelection_OLC">
@@ -788,6 +836,11 @@
                     <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
                   </Control>
+                </Group>
+
+                <Group id="grpFlag_OLC">
+                  <Label resid="grpFlag.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="flagSelection_OLC">
                     <Label resid="flagSelection.Label"/>
                     <Supertip><Title resid="flagSelection.Label"/><Description resid="flagSelection.Tooltip"/></Supertip>
@@ -814,8 +867,8 @@
                   </Control>
                 </Group>
 
-                <Group id="grpFeedback_OLC">
-                  <Label resid="grpFeedback.Label"/>
+                <Group id="grpApply_OLC">
+                  <Label resid="grpApply.Label"/>
                   <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="applySelection_OLC">
                     <Label resid="applySelection.Label"/>
@@ -829,6 +882,11 @@
                     <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
                   </Control>
+                </Group>
+
+                <Group id="grpProvide_OLC">
+                  <Label resid="grpFeedback.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="provideFeedbackSelection_OLC">
                     <Label resid="provideFeedbackSelection.Label"/>
                     <Supertip><Title resid="provideFeedbackSelection.Label"/><Description resid="provideFeedbackSelection.Tooltip"/></Supertip>
@@ -866,8 +924,8 @@
                   </Control>
                 </Group>
 
-                <Group id="grpHistory_OLC">
-                  <Label resid="grpHistory.Label"/>
+                <Group id="grpFlagged_OLC">
+                  <Label resid="grpFlagged.Label"/>
                   <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="flaggedSelection_OLC">
                     <Label resid="flaggedSelection.Label"/>
@@ -881,6 +939,11 @@
                     <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>listAnalysis</FunctionName></Action>
                   </Control>
+                </Group>
+
+                <Group id="grpLists_OLC">
+                  <Label resid="grpHistory.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Button" id="listFeedback_OLC">
                     <Label resid="listFeedback.Label"/>
                     <Supertip><Title resid="listFeedback.Label"/><Description resid="listFeedback.Tooltip"/></Supertip>
