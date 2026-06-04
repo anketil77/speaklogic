@@ -22,11 +22,6 @@ const inputStyle: React.CSSProperties = {
   background: colors.white, outline: "none", boxSizing: "border-box",
 };
 
-const readOnlyInputStyle: React.CSSProperties = {
-  ...inputStyle,
-  background: "#F5F5F5", color: "#616161", cursor: "default", border: "1px solid #E0E0E0",
-};
-
 const rowStyle: React.CSSProperties = {
   display: "flex", flexDirection: "column", gap: "4px", marginBottom: "12px",
 };
@@ -39,8 +34,6 @@ const labelStyle: React.CSSProperties = {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function CommunicationConfigView() {
   const { initData, sendMessage, closeDialog } = useDialogComm();
-  const isOutlook = initData?.source === "Outlook Mail";
-
   const [personName, setPersonName] = useState("");
   const [personEmail, setPersonEmail] = useState("");
 
@@ -95,21 +88,19 @@ export default function CommunicationConfigView() {
         <div style={rowStyle}>
           <span style={labelStyle}>Person Name</span>
           <input
-            style={isOutlook ? readOnlyInputStyle : inputStyle}
+            style={inputStyle}
             value={personName}
-            readOnly={isOutlook}
-            onChange={isOutlook ? undefined : (e) => setPersonName(e.target.value)}
+            onChange={(e) => setPersonName(e.target.value)}
           />
         </div>
 
         <div style={rowStyle}>
           <span style={labelStyle}>Person Email</span>
           <input
-            style={isOutlook ? readOnlyInputStyle : inputStyle}
+            style={inputStyle}
             type="email"
             value={personEmail}
-            readOnly={isOutlook}
-            onChange={isOutlook ? undefined : (e) => setPersonEmail(e.target.value)}
+            onChange={(e) => setPersonEmail(e.target.value)}
           />
         </div>
 

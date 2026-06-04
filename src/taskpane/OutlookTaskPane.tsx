@@ -81,7 +81,9 @@ function getSource(): "Outlook Mail" { return "Outlook Mail"; }
 function getUserIdentity(): { personName: string; personEmail: string } {
   try {
     const p = Office.context.mailbox.userProfile;
-    return { personName: p.displayName ?? "", personEmail: p.emailAddress ?? "" };
+    const rawName = p.displayName ?? "";
+    const personName = rawName.includes("@") ? "" : rawName;
+    return { personName, personEmail: p.emailAddress ?? "" };
   } catch { return { personName: "", personEmail: "" }; }
 }
 
@@ -808,7 +810,8 @@ export function OutlookTaskPane() {
     let prefillEmail = "";
     try {
       const p = Office.context.mailbox.userProfile;
-      prefillName  = p.displayName  || commConfig?.personName  || "";
+      const rawName = p.displayName ?? "";
+      prefillName  = (rawName.includes("@") ? "" : rawName) || commConfig?.personName || "";
       prefillEmail = p.emailAddress || commConfig?.personEmail || "";
     } catch {
       prefillName  = commConfig?.personName  ?? "";

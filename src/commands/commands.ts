@@ -212,7 +212,10 @@ function getUserIdentity(): { personName: string; personEmail: string } {
   try {
     if (Office.context.host === Office.HostType.Outlook) {
       const p = Office.context.mailbox.userProfile;
-      return { personName: p.displayName ?? "", personEmail: p.emailAddress ?? "" };
+      const rawName = p.displayName ?? "";
+      // Desktop Outlook sometimes returns the email address as displayName — treat it as no name
+      const personName = rawName.includes("@") ? "" : rawName;
+      return { personName, personEmail: p.emailAddress ?? "" };
     }
     const p = (Office.context as { userProfile?: { displayName?: string; email?: string } })
       .userProfile;
@@ -2277,7 +2280,8 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
           diagPlatform: Office.context.diagnostics?.platform ?? null,
           diagVersion: Office.context.diagnostics?.version ?? null,
         });
-        prefillName  = p.displayName  || commConfig?.personName  || "";
+        const rawName = p.displayName ?? "";
+        prefillName  = (rawName.includes("@") ? "" : rawName) || commConfig?.personName || "";
         prefillEmail = p.emailAddress || commConfig?.personEmail || "";
       } catch (err) {
         dbg("IDENTITY", "Outlook userProfile read THREW", String(err));
