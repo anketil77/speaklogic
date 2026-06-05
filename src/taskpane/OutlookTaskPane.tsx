@@ -282,8 +282,12 @@ export function OutlookTaskPane() {
           onCustomMessage(dialog, m);
         }
       });
-      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        const code = (evt as { error: number }).error;
         dialogRef.current = null;
+        if (code === 12002) setStatus({ msg: "Dialog page not found — check deployment.", ok: false });
+        else if (code === 12003) setStatus({ msg: "Dialog requires HTTPS.", ok: false });
+        // 12006 = user closed via X — no message needed
       });
     });
   }, []);
@@ -383,9 +387,10 @@ export function OutlookTaskPane() {
     try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
     if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
     const { personName, personEmail } = getUserIdentity();
+    const commConfig = getCommunicationConfig();
     const analyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
     const feedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
-    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: getPeopleNames(), analyses, feedbacks };
+    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "", analyses, feedbacks };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=apply`,
       DIALOG_SIZE,
@@ -500,7 +505,7 @@ export function OutlookTaskPane() {
           const { personName: pn, personEmail: pe } = getUserIdentity();
           const allAnalyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
           const allFeedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
-          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: { selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: getPeopleNames(), analyses: allAnalyses, feedbacks: allFeedbacks } } as HostMessage));
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: { selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "", mode: analysis.selectionType === "Paragraph" ? "paragraph" : "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: getPeopleNames(), analyses: allAnalyses, feedbacks: allFeedbacks } } as HostMessage));
         }
         if (action.action === "SAVE_FEEDBACK") {
           try { saveFeedback(action.payload as SaveFeedbackPayload); } catch { /* ignore */ }
@@ -944,7 +949,7 @@ export function OutlookTaskPane() {
 
       {/* Footer */}
       <div style={{ padding: "8px 16px", borderTop: "1px solid #E0E0E0", fontSize: 10, color: "#9E9E9E", textAlign: "center", flexShrink: 0 }}>
-        Speak Logic Add-in
+        Speak Logic
       </div>
     </div>
   );

@@ -615,6 +615,7 @@ export interface AnalysisDataForApply {
 
 export interface DialogInitPayload {
   selection: string;
+  selectionHtml?: string;
   mode: SelectionMode;
   source: HostSource;
   personName: string;

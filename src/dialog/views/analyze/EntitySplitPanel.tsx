@@ -98,7 +98,7 @@ export function EntitySplitPanel({
               marginBottom: entityOnlyMode ? 12 : 0,
               border: "1px solid #E0E0E0",
               borderRadius: 4,
-              padding: "10px 14px",
+              padding: "4px 14px 10px",
               overflowY: "auto",
               fontSize: "14px",
               lineHeight: "22px",

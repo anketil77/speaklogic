@@ -42,8 +42,7 @@ import type {
 } from "@/types/db";
 
 const DIALOG_SIZE = { height: 69, width: 43 } as const;
-// Flag dialog: 480×479.59px → 58% height, 25% width ≈ 480px on 1920px screens
-const FLAG_DIALOG_SIZE = { height: 58, width: 25 } as const;
+// Flag dialog: computed dynamically via pixel formula in openFlagDialog
 // Selection Config dialog: 480×428px → 52% height, 25% width (same ref as FLAG_DIALOG_SIZE)
 const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: 25 } as const;
 // About dialog: 604×292px → 27% height, 32% width on 1920×1080
@@ -298,13 +297,13 @@ async function getOutlookTextAndMeta(mode: SelectionMode): Promise<{ text: strin
   return { text, documentTitle: subject, documentName: "" };
 }
 
-async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string; pageNumber: string }> {
+async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; selectionHtml?: string; documentTitle: string; documentName: string; pageNumber: string }> {
   if (Office.context.host === Office.HostType.Outlook) return { ...await getOutlookTextAndMeta(mode), pageNumber: "" };
   if (Office.context.host === Office.HostType.PowerPoint) return { ...await getPowerPointTextAndMeta(mode), pageNumber: "" };
   return getWordTextAndMeta(mode);
 }
 
-async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; documentTitle: string; documentName: string; pageNumber: string }> {
+async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; selectionHtml: string; documentTitle: string; documentName: string; pageNumber: string }> {
   return Word.run(async (context) => {
     let text = "";
     let textRange: Word.Range;
@@ -322,6 +321,8 @@ async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
       text = para.text.trim();
       textRange = para.getRange();
     }
+
+    const htmlResult = textRange.getHtml();
     const props = context.document.properties;
     props.load("title");
     await context.sync();
@@ -342,7 +343,7 @@ async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
       } catch { /* non-critical */ }
     }
 
-    return { text, documentTitle: props.title ?? "", documentName, pageNumber };
+    return { text, selectionHtml: htmlResult.value ?? "", documentTitle: props.title ?? "", documentName, pageNumber };
   });
 }
 
@@ -418,11 +419,12 @@ async function openAnalyzeDialog(
   dbg("HOST", "openAnalyzeDialog start", { mode });
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   let selection = "";
+  let selectionHtml: string | undefined;
   let documentTitle = "";
   let documentName = "";
   let pageNumber = "";
   try {
-    ({ text: selection, documentTitle, documentName, pageNumber } = await getHostTextAndMeta(mode));
+    ({ text: selection, selectionHtml, documentTitle, documentName, pageNumber } = await getHostTextAndMeta(mode));
   } catch (err) {
     dbg("HOST", "getWordText threw — completing event", String(err));
     event.completed();
@@ -448,6 +450,7 @@ async function openAnalyzeDialog(
   const commConfig = getCommunicationConfig();
   const initPayload: DialogInitPayload = {
     selection,
+    selectionHtml,
     mode,
     source: getSource(),
     personName,
@@ -2057,9 +2060,13 @@ function openSelectionConfigDialog(addInEvent: Office.AddinCommands.Event): void
 }
 
 function openFlagDialog(initPayload: DialogInitPayload, addInEvent: Office.AddinCommands.Event): void {
+  const screenH = window.screen?.availHeight || 1080;
+  const screenW = window.screen?.availWidth  || 1440;
+  const flagHeight = Math.min(75, Math.max(28, Math.round((433 / (screenH * 0.93)) * 100) + 4));
+  const flagWidth  = Math.min(80, Math.max(22, Math.round((380 / (screenW * 0.95)) * 100)));
   Office.context.ui.displayDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=flag`,
-    { ...FLAG_DIALOG_SIZE, displayInIframe: true },
+    { height: flagHeight, width: flagWidth, displayInIframe: true },
     (result) => {
       if (result.status === Office.AsyncResultStatus.Failed) {
         handleDialogOpenError(result.error, addInEvent);

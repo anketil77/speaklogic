@@ -62,7 +62,7 @@ export default function CommunicationConfigView() {
   }
 
   return (
-    <div style={{ position: "relative", display: "flex", flexDirection: "column", background: colors.white, fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: colors.white, fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
 
       {/* ── Title ─────────────────────────────────────────────────────────── */}
       <div style={{ height: "78px", display: "flex", alignItems: "center", padding: "0 20px", gap: "12px", flexShrink: 0 }}>
@@ -83,7 +83,7 @@ export default function CommunicationConfigView() {
       <div style={{ height: "1px", background: F.borderBox, flexShrink: 0 }} />
 
       {/* ── Body ──────────────────────────────────────────────────────────── */}
-      <div style={{ padding: "16px 24px 8px" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 24px" }}>
 
         <div style={rowStyle}>
           <span style={labelStyle}>Person Name</span>

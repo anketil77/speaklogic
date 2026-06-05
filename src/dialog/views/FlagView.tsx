@@ -27,18 +27,28 @@ const CINDERELLA = "#EBF3FC";
 
 const HEADER_H = 77.59;
 const BANNER_H = 61;
-const BODY_H = 284;
 
-// Input column starts at 158px from body-left edge (= modal left edge)
-const INPUT_LEFT = 158;
-const INPUT_RIGHT = 20;
-
-const inputBase: React.CSSProperties = {
-  boxSizing: "border-box",
-  position: "absolute",
+const fieldRow: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
   height: 32,
-  left: INPUT_LEFT,
-  right: INPUT_RIGHT,
+  marginBottom: 12,
+};
+
+const fieldLabel: React.CSSProperties = {
+  width: 138,
+  minWidth: 138,
+  fontFamily: "Inter, 'Segoe UI', sans-serif",
+  fontWeight: 700,
+  fontSize: 11.6,
+  lineHeight: "14px",
+  color: COD_GRAY,
+  flexShrink: 0,
+};
+
+const fieldInput: React.CSSProperties = {
+  flex: 1,
+  height: 32,
   background: "#FFFFFF",
   border: `1px solid ${SILVER}`,
   borderRadius: 4,
@@ -46,16 +56,8 @@ const inputBase: React.CSSProperties = {
   fontFamily: "Inter, 'Segoe UI', sans-serif",
   color: COD_GRAY,
   outline: "none",
-};
-
-const labelBase: React.CSSProperties = {
-  position: "absolute",
-  left: 20,
-  fontFamily: "Inter, 'Segoe UI', sans-serif",
-  fontWeight: 700,
-  fontSize: 11.6,
-  lineHeight: "14px",
-  color: COD_GRAY,
+  boxSizing: "border-box",
+  fontSize: 12,
 };
 
 const chevronSvg = `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23616161' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`;
@@ -221,82 +223,79 @@ export default function FlagView() {
         </span>
       </div>
 
-      {/* BODY — grows to fill available space, children positioned absolutely */}
-      <div style={{ position: "relative", flex: 1, minHeight: BODY_H }}>
+      {/* BODY */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 8px" }}>
 
         {validationError && (
-          <div style={{ position: "absolute", left: 20, right: 20, top: 8, background: "#FDE7E9", border: "1px solid #F1707B", borderRadius: 4, padding: "8px 12px", fontSize: 11.5, color: "#A4262C", lineHeight: "17px", zIndex: 10 }}>
+          <div style={{ marginBottom: 12, background: "#FDE7E9", border: "1px solid #F1707B", borderRadius: 4, padding: "8px 12px", fontSize: 11.5, color: "#A4262C", lineHeight: "17px" }}>
             {validationError}
           </div>
         )}
 
-        {/* Entity Name — label top:26, input top:16 */}
-        <span style={{ ...labelBase, top: 26 }}>Entity Name</span>
-        <input
-          style={{ ...inputBase, top: 16, fontSize: 12 }}
-          value={entityName}
-          onChange={(e) => { setEntityName(e.target.value); setValidationError(null); }}
-          placeholder="Enter entity name…"
-        />
-
-        {/* Date Flagged — label top:70, input top:60 */}
-        <span style={{ ...labelBase, top: 70 }}>Date Flagged</span>
-        <div style={{ ...inputBase, top: 60, display: "flex", alignItems: "center", fontSize: 11.8, pointerEvents: "none" }}>
-          {flagDate}
-        </div>
-
-        {/* Time Flagged — label top:114, input top:104 */}
-        <span style={{ ...labelBase, top: 114 }}>Time Flagged</span>
-        <div style={{ ...inputBase, top: 104, display: "flex", alignItems: "center", fontSize: 12.7, pointerEvents: "none" }}>
-          {flagTime}
-        </div>
-
-        {/* Entity Analyzed — label top:158, input top:148 */}
-        <span style={{ ...labelBase, top: 158 }}>Entity Analyzed</span>
-        <div style={{ ...inputBase, top: 148, display: "flex", alignItems: "center", fontSize: 12.4, pointerEvents: "none" }}>
-          No
-        </div>
-
-        {/* Entity Type — label top:202, input top:192 */}
-        <span style={{ ...labelBase, top: 202 }}>Entity Type</span>
-        <div style={{ ...inputBase, top: 192, display: "flex", alignItems: "center", fontSize: 12.3, pointerEvents: "none" }}>
-          {source}
-        </div>
-
-        {/* Person Flagged — label top:246, input top:236 */}
-        <span style={{ ...labelBase, top: 246 }}>
-          Person Flagged <span style={{ color: "#C50F1F" }}>*</span>
-        </span>
-        {peopleList.length > 0 ? (
-          <select
-            style={{
-              ...inputBase,
-              top: 236,
-              paddingRight: 28,
-              appearance: "none",
-              backgroundImage: chevronSvg,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "right 10px center",
-              cursor: "pointer",
-              fontSize: 12,
-              color: personFlagged ? COD_GRAY : DOVE_GRAY,
-            }}
-            value={personFlagged}
-            onChange={(e) => { setPersonFlagged(e.target.value); setValidationError(null); }}
-          >
-            <option value="">-- Select person --</option>
-            {peopleList.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        ) : (
+        <div style={fieldRow}>
+          <span style={fieldLabel}>Entity Name</span>
           <input
-            style={{ ...inputBase, top: 236, fontSize: 12 }}
-            value={personFlagged}
-            onChange={(e) => { setPersonFlagged(e.target.value); setValidationError(null); }}
-            placeholder="Enter person name…"
+            style={fieldInput}
+            value={entityName}
+            onChange={(e) => { setEntityName(e.target.value); setValidationError(null); }}
+            placeholder="Enter entity name…"
           />
-        )}
+        </div>
+
+        <div style={fieldRow}>
+          <span style={fieldLabel}>Date Flagged</span>
+          <div style={{ ...fieldInput, display: "flex", alignItems: "center", pointerEvents: "none" }}>{flagDate}</div>
+        </div>
+
+        <div style={fieldRow}>
+          <span style={fieldLabel}>Time Flagged</span>
+          <div style={{ ...fieldInput, display: "flex", alignItems: "center", pointerEvents: "none" }}>{flagTime}</div>
+        </div>
+
+        <div style={fieldRow}>
+          <span style={fieldLabel}>Entity Analyzed</span>
+          <div style={{ ...fieldInput, display: "flex", alignItems: "center", pointerEvents: "none" }}>No</div>
+        </div>
+
+        <div style={fieldRow}>
+          <span style={fieldLabel}>Entity Type</span>
+          <div style={{ ...fieldInput, display: "flex", alignItems: "center", pointerEvents: "none" }}>{source}</div>
+        </div>
+
+        <div style={fieldRow}>
+          <span style={fieldLabel}>
+            Person Flagged <span style={{ color: "#C50F1F" }}>*</span>
+          </span>
+          {peopleList.length > 0 ? (
+            <select
+              style={{
+                ...fieldInput,
+                paddingRight: 28,
+                appearance: "none",
+                backgroundImage: chevronSvg,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 10px center",
+                cursor: "pointer",
+                color: personFlagged ? COD_GRAY : DOVE_GRAY,
+              }}
+              value={personFlagged}
+              onChange={(e) => { setPersonFlagged(e.target.value); setValidationError(null); }}
+            >
+              <option value="">-- Select person --</option>
+              {peopleList.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              style={fieldInput}
+              value={personFlagged}
+              onChange={(e) => { setPersonFlagged(e.target.value); setValidationError(null); }}
+              placeholder="Enter person name…"
+            />
+          )}
+        </div>
+
       </div>
 
       {/* FOOTER — h: 57px */}
