@@ -75,6 +75,10 @@ export interface RichTextToolbarProps {
 export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextToolbarProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
+  // Captures the selection at the moment the font panel opens so repeated size
+  // changes always re-select the same text (savedRange drifts after each apply).
+  const fontPanelRangeRef = useRef<Range | null>(null);
+  const sizeInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fontGroupRef = useRef<HTMLDivElement>(null);
   const alignGroupRef = useRef<HTMLDivElement>(null);
@@ -263,8 +267,18 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   function applyFontSize(pxStr: string) {
     const px = parseInt(pxStr, 10);
     if (!px || px <= 0) return;
-    restoreSelection();
     const el = editorRef.current;
+    if (!el) return;
+
+    // Always restore the range saved when the font panel opened, not savedRange —
+    // savedRange collapses to a cursor after the first apply, making subsequent
+    // changes appear to do nothing.
+    const range = fontPanelRangeRef.current ?? savedRange.current;
+    if (!range) return;
+    el.focus();
+    const sel = window.getSelection();
+    if (sel) { sel.removeAllRanges(); sel.addRange(range.cloneRange()); }
+
     // styleWithCSS must be false so execCommand produces <font size="7"> (HTML attribute),
     // not <span style="font-size: x-large"> (CSS name). With styleWithCSS=true the
     // querySelectorAll below finds nothing and the px value is never applied.
@@ -273,15 +287,16 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
     // eslint-disable-next-line @typescript-eslint/no-deprecated
     document.execCommand("fontSize", false, "7");
     // Fix up the legacy <font size="7"> tags to real px values
-    if (el) {
-      el.querySelectorAll('font[size="7"]').forEach((node) => {
-        (node as HTMLElement).style.fontSize = `${px}px`;
-        node.removeAttribute("size");
-      });
-      // Direct DOM manipulation doesn't trigger the input event, so fire it manually
-      // so RichEditor's onChange callback receives the updated innerHTML.
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-    }
+    el.querySelectorAll('font[size="7"]').forEach((node) => {
+      (node as HTMLElement).style.fontSize = `${px}px`;
+      node.removeAttribute("size");
+    });
+    // Direct DOM manipulation doesn't trigger the input event, so fire it manually
+    // so RichEditor's onChange callback receives the updated innerHTML.
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+
+    // Return focus to the size input so the cursor stays there, not in the editor.
+    sizeInputRef.current?.focus();
   }
 
   function applyColor(color: string) {
@@ -291,7 +306,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
     // eslint-disable-next-line @typescript-eslint/no-deprecated
     document.execCommand("foreColor", false, color);
     setFontColor(color);
-    setOpenDropdown(null);
+    // Keep the dropdown open so the user can pick multiple colors without reopening.
   }
 
   function applyHighlight(color: string) {
@@ -301,7 +316,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
     // eslint-disable-next-line @typescript-eslint/no-deprecated
     document.execCommand("hiliteColor", false, color);
     setHighlight(color);
-    setOpenDropdown(null);
+    // Keep the dropdown open so the user can pick multiple highlights without reopening.
   }
 
   function applyAlignment(align: Alignment) {
@@ -552,7 +567,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
           className="sl-icon-btn"
           style={{ ...iconBtnBase, flexDirection: "column", gap: "2px" }}
           title="Font"
-          onClick={() => toggleDd("font", fontGroupRef)}
+          onClick={() => { fontPanelRangeRef.current = savedRange.current?.cloneRange() ?? null; toggleDd("font", fontGroupRef); }}
         >
           <span style={{ fontSize: "13px", fontWeight: "700", color: "#1B1B1B", lineHeight: "13px" }}>
             A
@@ -570,7 +585,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
           className="sl-icon-btn"
           style={{ ...iconBtnBase, width: "10px", padding: 0, minWidth: 0 }}
           title="Font dropdown"
-          onClick={() => toggleDd("font", fontGroupRef)}
+          onClick={() => { fontPanelRangeRef.current = savedRange.current?.cloneRange() ?? null; toggleDd("font", fontGroupRef); }}
         >
           <ChevronDown />
         </button>
@@ -596,8 +611,15 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
                 onClose={() => setOpenDropdown(null)}
               />
               <input
+                ref={sizeInputRef}
                 value={fontSizeVal}
-                onChange={(e) => setFontSizeVal(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setFontSizeVal(v);
+                  // Live update: apply immediately when value is a plausible size (>=6)
+                  // to avoid applying single-digit intermediates like "1" while typing "16".
+                  if (parseInt(v, 10) >= 6) applyFontSize(v);
+                }}
                 onBlur={() => applyFontSize(fontSizeVal)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") { e.preventDefault(); applyFontSize(fontSizeVal); }
