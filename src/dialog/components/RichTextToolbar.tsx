@@ -79,6 +79,8 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   // changes always re-select the same text (savedRange drifts after each apply).
   const fontPanelRangeRef = useRef<Range | null>(null);
   const sizeInputRef = useRef<HTMLInputElement>(null);
+  // Guards against onBlur re-entering applyFontSize while el.focus() is in progress.
+  const applyingFontSize = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fontGroupRef = useRef<HTMLDivElement>(null);
   const alignGroupRef = useRef<HTMLDivElement>(null);
@@ -265,38 +267,51 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   }
 
   function applyFontSize(pxStr: string) {
-    const px = parseInt(pxStr, 10);
-    if (!px || px <= 0) return;
-    const el = editorRef.current;
-    if (!el) return;
+    // el.focus() below fires blur on the size input synchronously, which re-enters
+    // this function via onBlur. The guard prevents that recursive call from running
+    // so execCommand always fires with the editor focused.
+    if (applyingFontSize.current) return;
+    applyingFontSize.current = true;
 
-    // Always restore the range saved when the font panel opened, not savedRange —
-    // savedRange collapses to a cursor after the first apply, making subsequent
-    // changes appear to do nothing.
-    const range = fontPanelRangeRef.current ?? savedRange.current;
-    if (!range) return;
-    el.focus();
-    const sel = window.getSelection();
-    if (sel) { sel.removeAllRanges(); sel.addRange(range.cloneRange()); }
+    try {
+      const px = parseInt(pxStr, 10);
+      if (!px || px <= 0) return;
+      const el = editorRef.current;
+      if (!el) return;
 
-    // styleWithCSS must be false so execCommand produces <font size="7"> (HTML attribute),
-    // not <span style="font-size: x-large"> (CSS name). With styleWithCSS=true the
-    // querySelectorAll below finds nothing and the px value is never applied.
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    document.execCommand("styleWithCSS", false, "false");
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    document.execCommand("fontSize", false, "7");
-    // Fix up the legacy <font size="7"> tags to real px values
-    el.querySelectorAll('font[size="7"]').forEach((node) => {
-      (node as HTMLElement).style.fontSize = `${px}px`;
-      node.removeAttribute("size");
-    });
-    // Direct DOM manipulation doesn't trigger the input event, so fire it manually
-    // so RichEditor's onChange callback receives the updated innerHTML.
-    el.dispatchEvent(new Event("input", { bubbles: true }));
+      // Always restore the range saved when the font panel opened, not savedRange —
+      // savedRange collapses to a cursor after the first apply, making subsequent
+      // changes appear to do nothing.
+      const range = fontPanelRangeRef.current ?? savedRange.current;
+      if (!range) return;
 
-    // Return focus to the size input so the cursor stays there, not in the editor.
-    sizeInputRef.current?.focus();
+      el.focus();
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        try { sel.addRange(range.cloneRange()); } catch { return; }
+      }
+
+      // styleWithCSS must be false so execCommand produces <font size="7"> (HTML attribute),
+      // not <span style="font-size: x-large"> (CSS name). With styleWithCSS=true the
+      // querySelectorAll below finds nothing and the px value is never applied.
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      document.execCommand("styleWithCSS", false, "false");
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      document.execCommand("fontSize", false, "7");
+      // Fix up the legacy <font size="7"> tags to real px values
+      el.querySelectorAll('font[size="7"]').forEach((node) => {
+        (node as HTMLElement).style.fontSize = `${px}px`;
+        node.removeAttribute("size");
+      });
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    } finally {
+      applyingFontSize.current = false;
+    }
+
+    // Defer refocus so blur/focus events from el.focus() fully settle before
+    // we move focus back to the size input.
+    setTimeout(() => sizeInputRef.current?.focus(), 0);
   }
 
   function applyColor(color: string) {
