@@ -267,46 +267,48 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   }
 
   function applyFontSize(pxStr: string) {
-    if (applyingFontSize.current) return;
+    if (applyingFontSize.current) { console.log("[FS] blocked by guard"); return; }
     applyingFontSize.current = true;
 
     try {
       const px = parseInt(pxStr, 10);
-      if (!px || px <= 0) return;
+      if (!px || px <= 0) { console.log("[FS] bad px:", pxStr); return; }
       const el = editorRef.current;
-      if (!el) return;
+      if (!el) { console.log("[FS] no editorRef"); return; }
 
       const range = fontPanelRangeRef.current ?? savedRange.current;
-      if (!range || range.collapsed) return;
+      console.log("[FS] range:", range, "collapsed:", range?.collapsed, "panelRange:", fontPanelRangeRef.current, "savedRange:", savedRange.current);
+      if (!range || range.collapsed) { console.log("[FS] range null or collapsed"); return; }
 
-      // Use Range API directly — no el.focus() needed, no execCommand styleWithCSS
-      // issues. Wrap the selected content in a <span style="font-size:Xpx">.
       const span = document.createElement("span");
       span.style.fontSize = `${px}px`;
 
       try {
-        // Fast path: selection is entirely within one element
         range.surroundContents(span);
-      } catch {
-        // Slow path: selection crosses element boundaries (e.g. partially bold text)
-        const fragment = range.extractContents();
-        span.appendChild(fragment);
-        range.insertNode(span);
+        console.log("[FS] surroundContents ok");
+      } catch (e1) {
+        console.log("[FS] surroundContents failed:", e1, "trying extractContents");
+        try {
+          const fragment = range.extractContents();
+          span.appendChild(fragment);
+          range.insertNode(span);
+          console.log("[FS] extractContents+insertNode ok");
+        } catch (e2) {
+          console.log("[FS] extractContents also failed:", e2);
+          return;
+        }
       }
 
-      // Update the panel range to point inside the new span so subsequent size
-      // changes re-select the same text correctly.
       const next = document.createRange();
       next.selectNodeContents(span);
       fontPanelRangeRef.current = next;
 
       el.dispatchEvent(new Event("input", { bubbles: true }));
+      console.log("[FS] done, innerHTML:", el.innerHTML.slice(0, 120));
     } finally {
       applyingFontSize.current = false;
     }
 
-    // Keep cursor in size input (no el.focus() call above, so focus stays naturally;
-    // setTimeout ensures any async browser focus settling doesn't steal it away).
     setTimeout(() => sizeInputRef.current?.focus(), 0);
   }
 
