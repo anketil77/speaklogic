@@ -126,8 +126,8 @@ export function FontPicker({ value, onChange, onClose }: FontPickerProps) {
   // Input starts empty → all fonts shown; current font is just highlighted.
   const [inputText, setInputText] = useState("");
   const [highlighted, setHighlighted] = useState(value);
-  // The dropdown list starts open when the panel first appears.
-  const [listOpen, setListOpen] = useState(true);
+  // The dropdown list starts closed; opens when the user clicks/types in the input.
+  const [listOpen, setListOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -246,7 +246,7 @@ export function FontPicker({ value, onChange, onClose }: FontPickerProps) {
         placeholder={value}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
-        onFocus={() => setListOpen(true)}
+        onClick={() => setListOpen(true)}
         style={{
           width: "100%",
           height: "28px",

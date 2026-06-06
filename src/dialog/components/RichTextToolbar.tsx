@@ -265,8 +265,11 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
     if (!px || px <= 0) return;
     restoreSelection();
     const el = editorRef.current;
+    // styleWithCSS must be false so execCommand produces <font size="7"> (HTML attribute),
+    // not <span style="font-size: x-large"> (CSS name). With styleWithCSS=true the
+    // querySelectorAll below finds nothing and the px value is never applied.
     // eslint-disable-next-line @typescript-eslint/no-deprecated
-    document.execCommand("styleWithCSS", false, "true");
+    document.execCommand("styleWithCSS", false, "false");
     // eslint-disable-next-line @typescript-eslint/no-deprecated
     document.execCommand("fontSize", false, "7");
     // Fix up the legacy <font size="7"> tags to real px values
@@ -275,6 +278,9 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
         (node as HTMLElement).style.fontSize = `${px}px`;
         node.removeAttribute("size");
       });
+      // Direct DOM manipulation doesn't trigger the input event, so fire it manually
+      // so RichEditor's onChange callback receives the updated innerHTML.
+      el.dispatchEvent(new Event("input", { bubbles: true }));
     }
   }
 
