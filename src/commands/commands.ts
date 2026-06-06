@@ -4,6 +4,7 @@
 
 const DIALOG_BASE = window.location.origin;
 
+
 import { initDb, nowDate } from "@/db/db";
 import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
@@ -216,9 +217,8 @@ function getUserIdentity(): { personName: string; personEmail: string } {
       const personName = rawName.includes("@") ? "" : rawName;
       return { personName, personEmail: p.emailAddress ?? "" };
     }
-    const p = (Office.context as { userProfile?: { displayName?: string; email?: string } })
-      .userProfile;
-    return { personName: p?.displayName ?? "", personEmail: p?.email ?? "" };
+    // Word / PowerPoint: no automatic identity API available
+    return { personName: "", personEmail: "" };
   } catch {
     return { personName: "", personEmail: "" };
   }
