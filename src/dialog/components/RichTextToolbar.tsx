@@ -600,7 +600,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
                 onChange={(e) => setFontSizeVal(e.target.value)}
                 onBlur={() => applyFontSize(fontSizeVal)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") applyFontSize(fontSizeVal);
+                  if (e.key === "Enter") { e.preventDefault(); applyFontSize(fontSizeVal); }
                 }}
                 style={{
                   width: "44px",
