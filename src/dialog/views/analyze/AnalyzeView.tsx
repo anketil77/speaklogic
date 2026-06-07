@@ -435,9 +435,31 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
   }, [initData?.selection, initData?.selectionHtml]);
 
   const applyEuaHighlight = useCallback((text: string, bg: string) => {
-    const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const span = `<span style="background-color:${bg};color:#fff">${escaped}</span>`;
-    setEuaHtml((prev) => prev.replace(escaped, span));
+    if (!text) return;
+    setEuaHtml((prev) => {
+      const container = document.createElement("div");
+      container.innerHTML = prev;
+      // Walk only text nodes so we never replace inside HTML tag names or attributes.
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      let node = walker.nextNode() as Text | null;
+      while (node) {
+        const value = node.nodeValue ?? "";
+        const idx = value.indexOf(text);
+        if (idx !== -1) {
+          // Split: [before] [match] [after] — afterNode already sits in correct DOM position.
+          node.splitText(idx + text.length);
+          const match = node.splitText(idx);
+          const span = document.createElement("span");
+          span.style.backgroundColor = bg;
+          span.style.color = "#ffffff";
+          match.parentNode!.insertBefore(span, match);
+          span.appendChild(match);
+          break;
+        }
+        node = walker.nextNode() as Text | null;
+      }
+      return container.innerHTML;
+    });
   }, []);
 
   const analysisCompensatorRangeRef = useRef<Range | null>(null);
