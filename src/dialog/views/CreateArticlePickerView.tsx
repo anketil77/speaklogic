@@ -2,15 +2,19 @@
 
 import React, { useState } from "react";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
+import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import {
   ArticlePickerBlankIcon,
   ArticlePickerTemplateIcon,
 } from "@/dialog/components/Icons";
 
+type PickerChoice = "blank" | "template";
+
 export default function CreateArticlePickerView() {
   const { sendMessage } = useDialogComm();
   const [blankHover, setBlankHover] = useState(false);
   const [tmplHover,  setTmplHover]  = useState(false);
+  const [selected,   setSelected]   = useState<PickerChoice | null>(null);
 
   const itemBase: React.CSSProperties = {
     display: "flex", flexDirection: "row", alignItems: "center",
@@ -20,6 +24,15 @@ export default function CreateArticlePickerView() {
     boxSizing: "border-box", flexShrink: 0,
     color: "#1B1B1B",           // reset browser button colour
     fontFamily: "'Inter','Segoe UI',sans-serif",
+  };
+
+  // Background per row: selected (blue tint) wins over hover.
+  const rowBg = (choice: PickerChoice, hover: boolean) =>
+    selected === choice ? "#EBF3FC" : hover ? "#F5F5F5" : "#FFFFFF";
+
+  const handleDone = () => {
+    if (selected === "blank") sendMessage({ action: "BLANK_SELECTED" });
+    else if (selected === "template") sendMessage({ action: "TEMPLATE_SELECTED" });
   };
 
   return (
@@ -52,10 +65,11 @@ export default function CreateArticlePickerView() {
 
         {/* Blank */}
         <button
-          onClick={() => sendMessage({ action: "BLANK_SELECTED" })}
+          onClick={() => setSelected("blank")}
+          aria-pressed={selected === "blank"}
           onMouseEnter={() => setBlankHover(true)}
           onMouseLeave={() => setBlankHover(false)}
-          style={{ ...itemBase, background: blankHover ? "#F5F5F5" : "#FFFFFF" }}
+          style={{ ...itemBase, background: rowBg("blank", blankHover) }}
         >
           <div style={{
             width: 32, height: 32, background: "#EBF3FC", borderRadius: 6,
@@ -75,10 +89,11 @@ export default function CreateArticlePickerView() {
 
         {/* Use Template */}
         <button
-          onClick={() => sendMessage({ action: "TEMPLATE_SELECTED" })}
+          onClick={() => setSelected("template")}
+          aria-pressed={selected === "template"}
           onMouseEnter={() => setTmplHover(true)}
           onMouseLeave={() => setTmplHover(false)}
-          style={{ ...itemBase, background: tmplHover ? "#F5F5F5" : "#FFFFFF", borderTop: "1px solid #E0E0E0" }}
+          style={{ ...itemBase, background: rowBg("template", tmplHover), borderTop: "1px solid #E0E0E0" }}
         >
           <div style={{
             width: 32, height: 32, background: "#EBF3FC", borderRadius: 6,
@@ -97,8 +112,11 @@ export default function CreateArticlePickerView() {
         </button>
       </div>
 
-      {/* ── Bottom breathing room ── */}
-      <div style={{ height: 10, flexShrink: 0 }} />
+      {/* ── Footer: Close + Done (Done enabled once an option is selected) ── */}
+      <FooterBar>
+        <DismissBtn label="Close" onClick={() => sendMessage({ action: "CLOSE" })} />
+        <PrimaryBtn label="Done" onClick={handleDone} disabled={selected === null} />
+      </FooterBar>
     </div>
   );
 }

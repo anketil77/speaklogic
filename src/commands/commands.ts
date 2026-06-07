@@ -50,7 +50,7 @@ const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: 25 } as const;
 const ABOUT_DIALOG_SIZE = { height: 27, width: 32 } as const;
 // Create Article dialog: 520×508px → 61% height, 27% width (height % is of Word viewport ~827px, not raw 1080)
 // Picker (260×163px on 1920×1080): width=14%, height≈20% of Word viewport (~827px)
-const CREATE_ARTICLE_PICKER_SIZE        = { height: 20, width: 14 } as const;
+const CREATE_ARTICLE_PICKER_SIZE        = { height: 30, width: 16 } as const;
 const CREATE_ARTICLE_TEMPLATE_SIZE      = { height: 56, width: 27 } as const; // ~605×520px — fits 460×516 card
 const CREATE_ARTICLE_DIALOG_SIZE        = { height: 61, width: 27 } as const;
 const ARTICLE_WIZARD_SIZE               = { height: 53, width: 27 } as const; // ~572px @ 1080p — all steps fit cleanly
