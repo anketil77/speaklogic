@@ -1,5 +1,5 @@
 // src/dialog/views/sub/AnalysisTabForm.tsx
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { makeStyles } from "@fluentui/react-components";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { colors } from "@/styles/tokens";
@@ -62,7 +62,7 @@ export interface AnalysisTabFormProps {
   onActualAnalysisChange: (html: string) => void;
   editorRef: React.RefObject<HTMLDivElement>;
   onContextMenuQuestion?: (selectedText: string) => void;
-  onContextMenuCompensator?: (selectedText: string) => void;
+  onContextMenuCompensator?: (selectedText: string, range: Range | null) => void;
 }
 
 const ctxItemStyle: React.CSSProperties = {
@@ -93,11 +93,14 @@ export function AnalysisTabForm({
 }: AnalysisTabFormProps) {
   const styles = useStyles();
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; text: string } | null>(null);
+  const compensatorRangeRef = useRef<Range | null>(null);
 
   function handleEditorContextMenu(e: React.MouseEvent) {
     if (!onContextMenuQuestion && !onContextMenuCompensator) return;
     e.preventDefault();
-    const text = window.getSelection()?.toString().trim() ?? "";
+    const sel = window.getSelection();
+    const text = sel?.toString().trim() ?? "";
+    compensatorRangeRef.current = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0).cloneRange() : null;
     setCtxMenu({ x: e.clientX, y: e.clientY, text });
   }
 
@@ -186,7 +189,7 @@ export function AnalysisTabForm({
                 style={{ ...ctxItemStyle, opacity: ctxMenu.text ? 1 : 0.4, cursor: ctxMenu.text ? "pointer" : "default" }}
                 onMouseEnter={(e) => { if (ctxMenu.text) (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-                onClick={() => { onContextMenuCompensator(ctxMenu.text); setCtxMenu(null); }}
+                onClick={() => { onContextMenuCompensator(ctxMenu.text, compensatorRangeRef.current); setCtxMenu(null); }}
               >
                 Identify Selection as Compensator
               </button>

@@ -10,7 +10,6 @@ interface EntitySplitPanelProps {
   entityOnlyMode: boolean;
   showEntityBox: boolean;
   onContextMenuError: (text: string) => void;
-  onContextMenuCompensator: (text: string) => void;
   children: React.ReactNode;
 }
 
@@ -21,7 +20,6 @@ export function EntitySplitPanel({
   entityOnlyMode,
   showEntityBox,
   onContextMenuError,
-  onContextMenuCompensator,
   children,
 }: EntitySplitPanelProps) {
   const [entityPanelHeight, setEntityPanelHeight] = useState(130);
@@ -159,7 +157,6 @@ export function EntitySplitPanel({
           }}>
             {[
               { label: "Identify Selection as Error", action: () => onContextMenuError(ctxMenu.text) },
-              { label: "Identify Selection as Compensator", action: () => onContextMenuCompensator(ctxMenu.text) },
             ].map(({ label, action }) => (
               <button
                 key={label}

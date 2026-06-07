@@ -440,6 +440,22 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
     setEuaHtml((prev) => prev.replace(escaped, span));
   }, []);
 
+  const analysisCompensatorRangeRef = useRef<Range | null>(null);
+
+  const applyAnalysisHighlight = useCallback(() => {
+    const range = analysisCompensatorRangeRef.current;
+    const editor = editorRef.current;
+    if (!range || !editor) return;
+    const span = document.createElement("span");
+    span.style.backgroundColor = "#00C800";
+    span.style.color = "#fff";
+    const fragment = range.extractContents();
+    span.appendChild(fragment);
+    range.insertNode(span);
+    updateForm("actualAnalysis", editor.innerHTML);
+    analysisCompensatorRangeRef.current = null;
+  }, []);
+
   useEffect(() => {
     if (initData?.communicationPersonName) {
       setForm((prev) => prev.fromPerson ? prev : { ...prev, fromPerson: initData.communicationPersonName! });
@@ -704,7 +720,6 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
             entityOnlyMode={entityOnlyMode}
             showEntityBox={showEntityBox}
             onContextMenuError={panels.handleContextMenuError}
-            onContextMenuCompensator={panels.handleContextMenuCompensator}
           >
             <AnalysisTabForm
               peopleList={initData.peopleList ?? []}
@@ -719,7 +734,10 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
                 panels.setAddQuestionInitial(text || null);
                 panels.setShowAddQuestion(true);
               }}
-              onContextMenuCompensator={panels.handleContextMenuCompensator}
+              onContextMenuCompensator={(text, range) => {
+                analysisCompensatorRangeRef.current = range;
+                panels.handleContextMenuCompensator(text);
+              }}
             />
           </EntitySplitPanel>
         )}
@@ -800,7 +818,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         applicationName={initData?.applicationName}
         sendMessage={sendMessage}
         onAddError={(text) => applyEuaHighlight(text, "#FF0000")}
-        onAddCompensator={(text) => applyEuaHighlight(text, "#00C800")}
+        onAddCompensator={() => applyAnalysisHighlight()}
       />
 
       {retainSaved && (

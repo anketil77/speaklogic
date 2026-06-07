@@ -147,16 +147,48 @@ function registerHandlers(): void {
   );
 }
 
-// Handles displayDialogAsync failure codes that need explicit treatment.
-// 12007: a dialog is already open from this host window — user can interact with the existing one.
-// 12009: user blocked the dialog on Office on the web — no task pane to show alternate feedback.
-// 12011: browser pop-up config blocks the dialog (Safari, Edge Legacy) — same limitation.
-// All other codes: unexpected platform/network error — still must complete the event.
+// 12007: dialog already open — user can still see it; complete silently.
+// All other codes: unexpected failure — open a message dialog to tell the user.
 function handleDialogOpenError(
-  _error: { code: number; message: string },
+  error: { code: number; message: string },
   event: Office.AddinCommands.Event
 ): void {
-  event.completed();
+  if ((error as { code: number }).code === 12007) { event.completed(); return; }
+  const code = (error as { code: number }).code;
+  showNoSelectionMessage(
+    "Dialog Error",
+    `Speak Logic could not open the dialog (code ${code}). Please close any open dialogs and try again.`,
+    event
+  );
+}
+
+// Sends a typed ERROR message to an open dialog so the view can show it inline.
+// Best-effort — if messageChild itself fails, nothing more can be done.
+function replyError(dialog: Office.Dialog, message: string): void {
+  try { dialog.messageChild(JSON.stringify({ type: "ERROR", message } as HostMessage)); }
+  catch { /* messageChild failed — nothing more to do */ }
+}
+
+// Gets text from the host and handles every failure path: API errors and empty
+// selection both show the message dialog instead of silently completing the event.
+async function fetchSelectionOrNotify(
+  mode: SelectionMode,
+  emptyTitle: string,
+  emptyText: string,
+  event: Office.AddinCommands.Event
+): Promise<{ text: string; selectionHtml?: string; documentTitle: string; documentName: string; pageNumber: string } | null> {
+  let meta: { text: string; selectionHtml?: string; documentTitle: string; documentName: string; pageNumber: string };
+  try {
+    meta = await getHostTextAndMeta(mode);
+  } catch (err) {
+    showNoSelectionMessage("Unable to Read Selection", String(err), event);
+    return null;
+  }
+  if (!meta.text) {
+    showNoSelectionMessage(emptyTitle, emptyText, event);
+    return null;
+  }
+  return meta;
 }
 
 // overhead = header(58) + divider(1) + body-padding(40) + footer(64) = 163px
@@ -181,7 +213,8 @@ function showNoSelectionMessage(
     { height: heightPct, width: 26, displayInIframe: true },
     (result) => {
       if (result.status === Office.AsyncResultStatus.Failed) {
-        handleDialogOpenError(result.error, event);
+        // Simple fallback — do NOT call handleDialogOpenError here (would recurse).
+        event.completed();
         return;
       }
       const dialog = result.value;
@@ -225,12 +258,14 @@ function getUserIdentity(): { personName: string; personEmail: string } {
 }
 
 async function getPowerPointText(_mode: SelectionMode): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
+  return new Promise<string>((resolve) => {
     Office.context.document.getSelectedDataAsync(
       Office.CoercionType.Text,
       (result) => {
+        // Failed means no text box is focused or no text selected — resolve "" so
+        // the caller can show the message dialog rather than swallowing the event.
         if (result.status === Office.AsyncResultStatus.Failed) {
-          reject(new Error(result.error?.message ?? "Failed to get selection"));
+          resolve("");
           return;
         }
         resolve((result.value as string)?.trim() ?? "");
@@ -304,47 +339,78 @@ async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
 }
 
 async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; selectionHtml: string; documentTitle: string; documentName: string; pageNumber: string }> {
-  return Word.run(async (context) => {
-    let text = "";
-    let textRange: Word.Range;
-    if (mode === "selection") {
-      const sel = context.document.getSelection();
-      sel.load("text");
-      await context.sync();
-      text = sel.text.trim();
-      textRange = sel;
-    } else {
-      const sel = context.document.getSelection();
-      const para = sel.paragraphs.getFirst();
-      para.load("text");
-      await context.sync();
-      text = para.text.trim();
-      textRange = para.getRange();
-    }
-
-    const htmlResult = textRange.getHtml();
-    const props = context.document.properties;
-    props.load("title");
-    await context.sync();
-    const url = (Office.context.document as { url?: string }).url ?? "";
-    const documentName = url ? (url.split("/").pop()?.split("\\").pop() ?? "") : "";
-
-    let pageNumber = "";
-    if (Office.context.requirements.isSetSupported("WordApiDesktop", "1.2")) {
-      try {
-        const pages = textRange.pages;
-        pages.load("items");
+  try {
+    return await Word.run(async (context) => {
+      let text = "";
+      let textRange: Word.Range;
+      if (mode === "selection") {
+        const sel = context.document.getSelection();
+        sel.load("text");
         await context.sync();
-        if (pages.items.length > 0) {
-          pages.items[0].load("index");
-          await context.sync();
-          pageNumber = String(pages.items[0].index);
-        }
-      } catch { /* non-critical */ }
-    }
+        // Replace NBSP ( ) with regular space so .trim() treats it as empty content.
+        // Word Online can produce NBSP in otherwise-empty ranges.
+        text = sel.text.replace(/\u00A0/g, " ").trim();
+        textRange = sel;
+      } else {
+        const sel = context.document.getSelection();
+        const para = sel.paragraphs.getFirst();
+        para.load("text");
+        await context.sync();
+        text = para.text.replace(/\u00A0/g, " ").trim();
+        textRange = para.getRange();
+      }
 
-    return { text, selectionHtml: htmlResult.value ?? "", documentTitle: props.title ?? "", documentName, pageNumber };
-  });
+      // Short-circuit: no selection → no HTML needed; caller will show the message dialog.
+      // Avoids calling getHtml() on a collapsed range, which can throw in some Word versions.
+      if (!text) {
+        return { text: "", selectionHtml: "", documentTitle: "", documentName: "", pageNumber: "" };
+      }
+
+      const props = context.document.properties;
+      props.load("title");
+      await context.sync();
+      const documentTitle = props.title ?? "";
+      const url = (Office.context.document as { url?: string }).url ?? "";
+      const documentName = url ? (url.split("/").pop()?.split("\\").pop() ?? "") : "";
+
+      // getHtml() can throw GeneralException on Word Online for complex content (tracked changes,
+      // tables, embedded objects). Isolate it so the dialog still opens with plain text on failure.
+      let selectionHtml = "";
+      try {
+        const htmlResult = textRange.getHtml();
+        await context.sync();
+        selectionHtml = htmlResult.value ?? "";
+      } catch { /* non-critical — HTML unavailable for this content type */ }
+
+      let pageNumber = "";
+      if (Office.context.requirements.isSetSupported("WordApiDesktop", "1.2")) {
+        try {
+          const pages = textRange.pages;
+          pages.load("items");
+          await context.sync();
+          if (pages.items.length > 0) {
+            pages.items[0].load("index");
+            await context.sync();
+            pageNumber = String(pages.items[0].index);
+          }
+        } catch { /* non-critical */ }
+      }
+
+      return { text, selectionHtml, documentTitle, documentName, pageNumber };
+    });
+  } catch (err) {
+    // Word.run failed entirely (e.g. GeneralException on Word Online for tracked-change content,
+    // document permission errors, or other Word internals). Fall back to getSelectedDataAsync
+    // for plain text — no HTML or metadata, but the dialog still opens instead of crashing.
+    dbg("HOST", "getWordTextAndMeta Word.run threw — falling back to getSelectedDataAsync", String(err));
+    const text = await new Promise<string>((resolve) => {
+      Office.context.document.getSelectedDataAsync(
+        Office.CoercionType.Text,
+        (result) => { resolve(result.status === Office.AsyncResultStatus.Failed ? "" : ((result.value as string)?.trim() ?? "")); }
+      );
+    });
+    return { text, selectionHtml: "", documentTitle: "", documentName: "", pageNumber: "" };
+  }
 }
 
 function buildEntityName(documentTitle: string, documentName: string, pageNumber = ""): string {
@@ -418,32 +484,19 @@ async function openAnalyzeDialog(
 ): Promise<void> {
   dbg("HOST", "openAnalyzeDialog start", { mode });
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
-  let selection = "";
-  let selectionHtml: string | undefined;
-  let documentTitle = "";
-  let documentName = "";
-  let pageNumber = "";
-  try {
-    ({ text: selection, selectionHtml, documentTitle, documentName, pageNumber } = await getHostTextAndMeta(mode));
-  } catch (err) {
-    dbg("HOST", "getWordText threw — completing event", String(err));
-    event.completed();
-    return;
-  }
-  if (!selection) {
-    dbg("HOST", "empty selection — showing message dialog");
-    const title =
-      mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message";
-    const text =
-      "In order to analyze an entity, that entity must exist.  In order " +
-      "to perform an analysis to an entity, that entity must be identified. " +
-      "It is not possible to analyze an entity if that entity is not identified " +
-      "or cannot be identified.  Here I will need to specify the entity that " +
-      "I need to analyze.  In this case, I will to select the actual text or put " +
-      "the cursor or point the mouse to the text that needs to be analyzed.";
-    showNoSelectionMessage(title, text, event);
-    return;
-  }
+  const meta = await fetchSelectionOrNotify(
+    mode,
+    mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
+    "In order to analyze an entity, that entity must exist.  In order " +
+    "to perform an analysis to an entity, that entity must be identified. " +
+    "It is not possible to analyze an entity if that entity is not identified " +
+    "or cannot be identified.  Here I will need to specify the entity that " +
+    "I need to analyze.  In this case, I will to select the actual text or put " +
+    "the cursor or point the mouse to the text that needs to be analyzed.",
+    event
+  );
+  if (!meta) return;
+  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber } = meta;
 
   dbg("HOST", "selection obtained, building initPayload", { selectionLength: selection.length });
   const { personName, personEmail } = getUserIdentity();
@@ -495,9 +548,8 @@ async function openAnalyzeDialog(
               if (payload.analysis.fromPerson) upsertPersonName(payload.analysis.fromPerson);
               dbg("HOST", "saveFullAnalysis OK", { savedId });
             } catch (err) {
-              dbg("HOST", "saveFullAnalysis THREW — closing dialog", String(err));
-              dialog.close();
-              event.completed();
+              dbg("HOST", "saveFullAnalysis THREW", String(err));
+              replyError(dialog, `Failed to save analysis: ${String(err)}`);
               break;
             }
             if (payload.analysis.whatToDoWithAnalysis === "ApplyAnalysisAsFeedback") {
@@ -571,19 +623,22 @@ async function openAnalyzeDialog(
               dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "provide-feedback", payload: providePayload } as HostMessage));
             } else {
               dbg("HOST", "whatToDo === Retain — writing audit record, sending RETAIN_SAVED");
-              saveFeedbackHistory({
-                selectionAction: "Retain as Needed",
-                entityName: payload.analysis.entityUnderAnalysis,
-                actualSelection: payload.analysis.entityUnderAnalysis,
-                selectionType: payload.analysis.selectionType ?? "",
-                source: payload.analysis.source,
-                applicationName: payload.analysis.applicationName ?? "",
-                communicationFunction: payload.analysis.communicationFunction ?? "",
-                communicationSignal: payload.analysis.communicationSignal ?? "",
-                projectName: payload.analysis.projectName ?? "",
-                personName: payload.analysis.personName ?? "",
-                personEmail: payload.analysis.personEmail ?? "",
-              });
+              // Audit trail is non-critical — analysis is already saved. Catch so RETAIN_SAVED always sends.
+              try {
+                saveFeedbackHistory({
+                  selectionAction: "Retain as Needed",
+                  entityName: payload.analysis.entityUnderAnalysis,
+                  actualSelection: payload.analysis.entityUnderAnalysis,
+                  selectionType: payload.analysis.selectionType ?? "",
+                  source: payload.analysis.source,
+                  applicationName: payload.analysis.applicationName ?? "",
+                  communicationFunction: payload.analysis.communicationFunction ?? "",
+                  communicationSignal: payload.analysis.communicationSignal ?? "",
+                  projectName: payload.analysis.projectName ?? "",
+                  personName: payload.analysis.personName ?? "",
+                  personEmail: payload.analysis.personEmail ?? "",
+                });
+              } catch (err) { dbg("HOST", "saveFeedbackHistory (retain) failed — non-critical", String(err)); }
               dialog.messageChild(JSON.stringify({ type: "RETAIN_SAVED" } as HostMessage));
               // Stay open — wait for CLOSE from the success screen
             }
@@ -605,21 +660,24 @@ async function openAnalyzeDialog(
               upsertPersonWithEmail(fbPayload.feedback.toPerson, fbPayload.toPersonEmail ?? "");
             }
             // Audit trail — mirrors C# ProvideFeedbackSelection.cs lines 217-224
+            // Non-critical: feedback is already saved; catch so SAVED still sends if audit write fails.
             if (fbPayload.feedback.feedbackType === "Provided") {
               const f = fbPayload.feedback;
-              saveFeedbackHistory({
-                selectionAction: "Provided as Feedback",
-                entityName: f.internalFeedbackName || `Text selected from ${f.source} on ${f.feedbackDate}`,
-                actualSelection: f.feedbackApplication,
-                selectionType: f.selectionType,
-                source: f.source,
-                applicationName: f.applicationName,
-                communicationFunction: f.communicationFunction,
-                communicationSignal: f.communicationSignal,
-                projectName: f.projectName,
-                personName: f.personName,
-                personEmail: f.personEmail,
-              });
+              try {
+                saveFeedbackHistory({
+                  selectionAction: "Provided as Feedback",
+                  entityName: f.internalFeedbackName || `Text selected from ${f.source} on ${f.feedbackDate}`,
+                  actualSelection: f.feedbackApplication,
+                  selectionType: f.selectionType,
+                  source: f.source,
+                  applicationName: f.applicationName,
+                  communicationFunction: f.communicationFunction,
+                  communicationSignal: f.communicationSignal,
+                  projectName: f.projectName,
+                  personName: f.personName,
+                  personEmail: f.personEmail,
+                });
+              } catch (err) { dbg("HOST", "saveFeedbackHistory (provide) failed — non-critical", String(err)); }
             }
             // For "Provided" feedback: send SAVED with a mailto URL back to the dialog
             // so the user can open it via a user-initiated click (window.open from dialog
@@ -651,6 +709,7 @@ async function openAnalyzeDialog(
               });
             } catch (err) {
               dbg("HOST", "saveProblemSolution THREW", String(err));
+              replyError(dialog, `Failed to save problem solution: ${String(err)}`);
             }
             break;
           }
@@ -676,24 +735,25 @@ async function openAnalyzeDialog(
 
 async function openRequestFeedbackFromRibbon(event: Office.AddinCommands.Event): Promise<void> {
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
-  let selection = "";
-  let documentTitle = "";
-  let documentName = "";
-  let pageNumber = "";
-  try {
-    ({ text: selection, documentTitle, documentName, pageNumber } = await getHostTextAndMeta("paragraph"));
-  } catch {
-    event.completed();
-    return;
-  }
-  if (!selection) {
-    showNoSelectionMessage(
-      "Paragraph Selection Message",
-      "In order to request feedback, the entity must exist. Place the cursor in the paragraph you want to request feedback on, then click the button again.",
-      event
-    );
-    return;
-  }
+  const meta = await fetchSelectionOrNotify(
+    "paragraph",
+    "Text Selection Message",
+    "A feedback is requested to correct an identified error or solve an identified problem. " +
+    "Let's assume that a selection is identified, where that selection points to a valid entity, " +
+    "then it is possible for us to request a feedback in relationship with that selection to enable " +
+    "the correction of an error or solve and identified problem.  Since the feedback is requested " +
+    "in relationship with the actual selection, we assume that there is a relationship with " +
+    "the correction of the identified error in relationship with the feedback and that " +
+    "selection.  By understanding that, we can see the absence of the selection prevents " +
+    "the actual request for the feedback.  To enable the correction of the error with " +
+    "with the actual feedback requested in relationship with the actual selection, that " +
+    "selection must be identified.  Since the feedback is requested in relationship with the " +
+    "actual selection, it is not possible to request the feedback without the selection.  Here " +
+    "I will need to specify or identify the actual selection that I need to request the feedback with.",
+    event
+  );
+  if (!meta) return;
+  const { text: selection, documentTitle, documentName, pageNumber } = meta;
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
   openRequestFeedbackDialog({
@@ -915,7 +975,7 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         if (m.action === "NAVIGATE_TO_APPLY") {
           const navM = m as { action: string; analysisId: number };
           const analysis = getAnalysisById(navM.analysisId);
-          if (!analysis) return;
+          if (!analysis) { replyError(dialog, "Analysis record not found."); return; }
           const { personName, personEmail } = getUserIdentity();
           const allAnalyses = getAllAnalyses().map((a) => {
             if (!a.id) return a;
@@ -958,7 +1018,7 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         if (m.action === "NAVIGATE_TO_PROVIDE") {
           const navM = m as { action: string; analysisId: number };
           const analysis = getAnalysisById(navM.analysisId);
-          if (!analysis) return;
+          if (!analysis) { replyError(dialog, "Analysis record not found."); return; }
           const { personName, personEmail } = getUserIdentity();
           const commConfig = getCommunicationConfig();
           const providePayload: DialogInitPayload = {
@@ -1034,7 +1094,8 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           dialog.messageChild(JSON.stringify(hostMsg));
         }
         if (m.action === "DELETE_FEEDBACK") {
-          deleteFeedback((m as { action: string; id: number }).id);
+          try { deleteFeedback((m as { action: string; id: number }).id); }
+          catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         }
         if (m.action === "LIST_FEEDBACK_APPLIED" || m.action === "LIST_FEEDBACK_PROVIDED") {
           // Views not yet implemented — no-op until ListFeedbackAppliedView / ListFeedbackProvidedView are built
@@ -1083,11 +1144,8 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "feedback-history", payload: backPayload } as HostMessage));
         }
         if (m.action === "DELETE_COMM_SIGNAL_REQUEST") {
-          try {
-            deleteCommSignalRequest((m as { action: string; id: number }).id);
-          } catch (err) {
-            dbg("commands", "DELETE_COMM_SIGNAL_REQUEST failed", String(err));
-          }
+          try { deleteCommSignalRequest((m as { action: string; id: number }).id); }
+          catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         }
         if (m.action === "CLOSE") {
           dialog.close();
@@ -1150,7 +1208,8 @@ function openRetainedHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           dialog.messageChild(JSON.stringify(hostMsg));
         }
         if (m.action === "DELETE_ANALYSIS") {
-          deleteAnalysis((m as { action: string; id: number }).id);
+          try { deleteAnalysis((m as { action: string; id: number }).id); }
+          catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         }
         if (m.action === "CLOSE") {
           dialog.close();
@@ -1234,31 +1293,32 @@ function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
           sendInit();
         }
         if (m.action === "DELETE_FLAG") {
-          deleteFlag((m as { action: string; id: number }).id);
+          try { deleteFlag((m as { action: string; id: number }).id); }
+          catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         }
         if (m.action === "DELETE_INTERPRETED_PRINCIPLE") {
-          deleteInterpretation((m as { action: string; id: number }).id);
-          sendInit();
+          try { deleteInterpretation((m as { action: string; id: number }).id); sendInit(); }
+          catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         }
         if (m.action === "DELETE_PRINCIPLE") {
-          deletePrincipleInSelection((m as { action: string; id: number }).id);
-          sendInit();
+          try { deletePrincipleInSelection((m as { action: string; id: number }).id); sendInit(); }
+          catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         }
         if (m.action === "DELETE_RELATED_SELECTION") {
-          deleteSelectionWithPrinciple((m as { action: string; id: number }).id);
-          sendInit();
+          try { deleteSelectionWithPrinciple((m as { action: string; id: number }).id); sendInit(); }
+          catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         }
         if (m.action === "REPORT_INTERPRETED_PRINCIPLE") {
-          const { interpretation } = m as { action: string; interpretation: import("@/types/db").PrincipleInterpretation };
-          openInterpretedPrincipleReport(interpretation);
+          try { openInterpretedPrincipleReport((m as { action: string; interpretation: import("@/types/db").PrincipleInterpretation }).interpretation); }
+          catch { /* non-critical */ }
         }
         if (m.action === "REPORT_IDENTIFIED_PRINCIPLE") {
-          const { principle } = m as { action: string; principle: import("@/types/db").PrincipleInSelection };
-          openIdentifiedPrincipleReport(principle);
+          try { openIdentifiedPrincipleReport((m as { action: string; principle: import("@/types/db").PrincipleInSelection }).principle); }
+          catch { /* non-critical */ }
         }
         if (m.action === "REPORT_RELATED_SELECTION") {
-          const { relation } = m as { action: string; relation: import("@/types/db").SelectionWithPrinciple };
-          openRelatedPrincipleReport(relation);
+          try { openRelatedPrincipleReport((m as { action: string; relation: import("@/types/db").SelectionWithPrinciple }).relation); }
+          catch { /* non-critical */ }
         }
         if (m.action === "ADD_ATTACHED_FILE") {
           const { file } = m as { action: string; file: import("@/types/db").AttachFileToProject };
@@ -1269,28 +1329,28 @@ function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
           removeAttachedFile((m as { action: string; id: number }).id);
         }
         if (m.action === "SAVE_RELATED_SELECTION") {
-          const { payload } = m as { action: string; payload: SaveRelatedSelectionPayload };
-          const newId = saveSelectionWithPrinciple(payload.record);
-          for (const file of payload.files) {
-            addAttachedFile({ ...file, selectionWithPrincipleId: newId });
-          }
-          sendInit();
+          try {
+            const { payload } = m as { action: string; payload: SaveRelatedSelectionPayload };
+            const newId = saveSelectionWithPrinciple(payload.record);
+            for (const file of payload.files) addAttachedFile({ ...file, selectionWithPrincipleId: newId });
+            sendInit();
+          } catch (err) { replyError(dialog, `Save failed: ${String(err)}`); }
         }
         if (m.action === "SAVE_PRINCIPLE_IN_SELECTION") {
-          const { payload } = m as { action: string; payload: SavePrincipleInSelectionPayload };
-          const newId = savePrincipleInSelection(payload.record);
-          for (const file of payload.files) {
-            addAttachedFile({ ...file, principleInSelectionId: newId });
-          }
-          sendInit();
+          try {
+            const { payload } = m as { action: string; payload: SavePrincipleInSelectionPayload };
+            const newId = savePrincipleInSelection(payload.record);
+            for (const file of payload.files) addAttachedFile({ ...file, principleInSelectionId: newId });
+            sendInit();
+          } catch (err) { replyError(dialog, `Save failed: ${String(err)}`); }
         }
         if (m.action === "SAVE_INTERPRETATION") {
-          const { payload } = m as { action: string; payload: SaveInterpretationPayload };
-          const newId = saveInterpretation(payload.record);
-          for (const file of payload.files) {
-            addAttachedFile({ ...file, principleInterpretationId: newId });
-          }
-          sendInit();
+          try {
+            const { payload } = m as { action: string; payload: SaveInterpretationPayload };
+            const newId = saveInterpretation(payload.record);
+            for (const file of payload.files) addAttachedFile({ ...file, principleInterpretationId: newId });
+            sendInit();
+          } catch (err) { replyError(dialog, `Save failed: ${String(err)}`); }
         }
         if (m.action === "CLOSE") {
           dialog.close();
@@ -1611,11 +1671,8 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
             dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
             break;
           case "DELETE_ARTICLE": {
-            try {
-              deleteArticle((m as { action: string; id: number }).id);
-            } catch (err) {
-              dbg("commands", "DELETE_ARTICLE failed", String(err));
-            }
+            try { deleteArticle((m as { action: string; id: number }).id); }
+            catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
             break;
           }
           case "CLOSE":
@@ -1668,11 +1725,8 @@ async function openListSelectionDialog(event: Office.AddinCommands.Event): Promi
             dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
             break;
           case "DELETE_SELECTION_HISTORY": {
-            try {
-              deleteSelectionHistory((m as { action: string; id: number }).id);
-            } catch (err) {
-              dbg("commands", "DELETE_SELECTION_HISTORY failed", String(err));
-            }
+            try { deleteSelectionHistory((m as { action: string; id: number }).id); }
+            catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
             break;
           }
           case "CLOSE":
@@ -1716,11 +1770,13 @@ async function openListIdentifiedPrincipleDialog(event: Office.AddinCommands.Eve
         if (m.action === "READY") {
           dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
         } else if (m.action === "DELETE_PRINCIPLE") {
-          deletePrincipleInSelection((m as { action: string; id: number }).id);
-          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          try {
+            deletePrincipleInSelection((m as { action: string; id: number }).id);
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          } catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         } else if (m.action === "REPORT_IDENTIFIED_PRINCIPLE") {
-          const { principle } = m as { action: string; principle: import("@/types/db").PrincipleInSelection };
-          openIdentifiedPrincipleReport(principle);
+          try { openIdentifiedPrincipleReport((m as { action: string; principle: import("@/types/db").PrincipleInSelection }).principle); }
+          catch { /* non-critical */ }
         } else if (m.action === "CLOSE") {
           dialog.close(); event.completed();
         }
@@ -1758,11 +1814,13 @@ async function openListInterpretedPrincipleDialog(event: Office.AddinCommands.Ev
         if (m.action === "READY") {
           dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
         } else if (m.action === "DELETE_INTERPRETED_PRINCIPLE") {
-          deleteInterpretation((m as { action: string; id: number }).id);
-          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          try {
+            deleteInterpretation((m as { action: string; id: number }).id);
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          } catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         } else if (m.action === "REPORT_INTERPRETED_PRINCIPLE") {
-          const { interpretation } = m as { action: string; interpretation: import("@/types/db").PrincipleInterpretation };
-          openInterpretedPrincipleReport(interpretation);
+          try { openInterpretedPrincipleReport((m as { action: string; interpretation: import("@/types/db").PrincipleInterpretation }).interpretation); }
+          catch { /* non-critical */ }
         } else if (m.action === "ADD_ATTACHED_FILE") {
           const { file } = m as { action: string; file: import("@/types/db").AttachFileToProject };
           const newId = addAttachedFile(file as Omit<import("@/types/db").AttachFileToProject, "id">);
@@ -1806,11 +1864,15 @@ async function openListSelectionRelatedPrincipleDialog(event: Office.AddinComman
         if (m.action === "READY") {
           dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
         } else if (m.action === "DELETE_RELATED_SELECTION") {
-          deleteSelectionWithPrinciple((m as { action: string; id: number }).id);
-          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          try {
+            deleteSelectionWithPrinciple((m as { action: string; id: number }).id);
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          } catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         } else if (m.action === "REPORT_RELATED_SELECTION") {
-          const { relation } = m as { action: string; relation: import("@/types/db").SelectionWithPrinciple };
-          openRelatedPrincipleReport(relation);
+          try {
+            const { relation } = m as { action: string; relation: import("@/types/db").SelectionWithPrinciple };
+            openRelatedPrincipleReport(relation);
+          } catch { /* non-critical — report window blocked or failed */ }
         } else if (m.action === "CLOSE") {
           dialog.close(); event.completed();
         }
@@ -1893,24 +1955,23 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
 
 async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
-  let selection = "";
-  let documentTitle = "";
-  let documentName = "";
-  let pageNumber = "";
-  try {
-    ({ text: selection, documentTitle, documentName, pageNumber } = await getHostTextAndMeta(mode));
-  } catch {
-    event.completed();
-    return;
-  }
-  if (!selection) {
-    const title = mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message";
-    const text =
-      "In order to provide feedback, the entity must exist. " +
-      "Select the text you want to provide feedback on, then click the button again.";
-    showNoSelectionMessage(title, text, event);
-    return;
-  }
+  const meta = await fetchSelectionOrNotify(
+    mode,
+    mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
+    "The feedback entity is an entity that enables us to make an adjustment to " +
+    "to another entity where the other entity contains error.  In this case, " +
+    "the feedback entity enables us to correct error in the other entity.  In " +
+    "order for that to happen, the feedback entity must exists.  It is not possible " +
+    "to correct error to an entity with the absence of the feedback entity.  For instance " +
+    "if we have a sentence that contains error, where that error is being viewed as a bad " +
+    "word, with the help and the existence of the feedback entity, it is possible for us to " +
+    "correct that error.  Since in order for the error to be corrected the feedback entity must " +
+    "exist, here I will need to identify that actual paragraph or selected text that I need to " +
+    "to provide as feedback.",
+    event
+  );
+  if (!meta) return;
+  const { text: selection, documentTitle, documentName, pageNumber } = meta;
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
   openProvideFeedbackDialog({
@@ -1978,27 +2039,18 @@ function openApplyDialog(initPayload: DialogInitPayload, addInEvent: Office.Addi
 
 async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
-  let selection = "";
-  let documentTitle = "";
-  let documentName = "";
-  let pageNumber = "";
-  try {
-    ({ text: selection, documentTitle, documentName, pageNumber } = await getHostTextAndMeta(mode));
-  } catch {
-    event.completed();
-    return;
-  }
-  if (!selection) {
-    const title = mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message";
-    const text =
-      "In order to apply an entity as feedback, that entity must exist. " +
-      "If an entity does not exist, then that entity cannot be applied as " +
-      "feedback.  In order for me to apply a paragraph or a selected text " +
-      "as feedback, I must I must select that paragraph by pointing to it " +
-      "or select the portion of the text that I want to apply as feedback.";
-    showNoSelectionMessage(title, text, event);
-    return;
-  }
+  const meta = await fetchSelectionOrNotify(
+    mode,
+    mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
+    "In order to apply an entity as feedback, that entity must exist. " +
+    "If an entity does not exist, then that entity cannot be applied as " +
+    "feedback.  In order for me to apply a paragraph or a selected text " +
+    "as feedback, I must I must select that paragraph by pointing to it " +
+    "or select the portion of the text that I want to apply as feedback.",
+    event
+  );
+  if (!meta) return;
+  const { text: selection, documentTitle, documentName, pageNumber } = meta;
   const { personName, personEmail } = getUserIdentity();
   const analyses = getAllAnalyses().map((a) => {
     if (!a.id) return a;
@@ -2108,31 +2160,18 @@ function openFlagDialog(initPayload: DialogInitPayload, addInEvent: Office.Addin
 
 async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.AddinCommands.Event): Promise<void> {
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
-  let selection = "";
-  let documentTitle = "";
-  let documentName = "";
-  let pageNumber = "";
-  try {
-    const meta = await getHostTextAndMeta(mode);
-    selection = meta.text;
-    documentTitle = meta.documentTitle;
-    documentName = meta.documentName;
-    pageNumber = meta.pageNumber;
-  } catch {
-    event.completed();
-    return;
-  }
-  if (!selection) {
-    const title = mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message";
-    const text =
-      "In order to flag an entity for analysis, that entity must exist. " +
-      "In order to flag an entity for analysis, that entity must be identified. " +
-      "It is not possible to flag an entity for analysis if that entity is not " +
-      "identified or cannot be identified. Here I will need to select the actual " +
-      "text or put the cursor or point the mouse to the text that needs to be flagged.";
-    showNoSelectionMessage(title, text, event);
-    return;
-  }
+  const meta = await fetchSelectionOrNotify(
+    mode,
+    mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
+    "In order to flag an entity for analysis, that entity must exist. " +
+    "In order to flag an entity for analysis, that entity must be identified. " +
+    "It is not possible to flag an entity for analysis if that entity is not " +
+    "identified or cannot be identified. Here I will need to select the actual " +
+    "text or put the cursor or point the mouse to the text that needs to be flagged.",
+    event
+  );
+  if (!meta) return;
+  const { text: selection, documentTitle, documentName, pageNumber } = meta;
   const entityName = buildEntityName(documentTitle, documentName, pageNumber);
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
@@ -2352,9 +2391,11 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
               dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
               break;
             case "SAVE_COMMUNICATION_CONFIG":
-              saveCommunicationConfig(m.payload as SaveCommunicationConfigPayload);
-              dialog.close();
-              event.completed();
+              try {
+                saveCommunicationConfig(m.payload as SaveCommunicationConfigPayload);
+                dialog.close();
+                event.completed();
+              } catch (err) { replyError(dialog, `Failed to save configuration: ${String(err)}`); }
               break;
             case "CLOSE":
               dialog.close();
@@ -2366,5 +2407,7 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
         });
       }
     );
+  }).catch((err: unknown) => {
+    showNoSelectionMessage("Database Error", String(err), event);
   });
 }

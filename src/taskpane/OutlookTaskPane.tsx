@@ -320,7 +320,10 @@ export function OutlookTaskPane() {
           try {
             savedId = saveFullAnalysis(payload);
             if (payload.analysis.fromPerson) upsertPersonName(payload.analysis.fromPerson);
-          } catch { dialog.close(); dialogRef.current = null; return; }
+          } catch (err) {
+            dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+            return;
+          }
 
           if (payload.analysis.whatToDoWithAnalysis === "ApplyAnalysisAsFeedback") {
             const { personName: pn, personEmail: pe } = getUserIdentity();
@@ -336,7 +339,8 @@ export function OutlookTaskPane() {
           }
         } else if (action.action === "SAVE_FEEDBACK") {
           const p = action.payload as SaveFeedbackPayload;
-          try { saveFeedback(p); } catch { /* ignore */ }
+          try { saveFeedback(p); }
+          catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); return; }
           const mailtoUrl = buildMailtoUrl(p);
           if (mailtoUrl) { dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage)); }
           else { dialog.close(); dialogRef.current = null; }
@@ -365,7 +369,8 @@ export function OutlookTaskPane() {
       () => initPayload,
       (dialog, action) => {
         if (action.action === "SAVE_FLAG") {
-          try { saveFlag({ ...(action.payload as object), wasEntityAnalyzed: "No" } as Parameters<typeof saveFlag>[0]); } catch { /* ignore */ }
+          try { saveFlag({ ...(action.payload as object), wasEntityAnalyzed: "No" } as Parameters<typeof saveFlag>[0]); }
+          catch (err) { setStatus({ msg: `Failed to save flag: ${String(err)}`, ok: false }); dialog.close(); dialogRef.current = null; return; }
           dialog.close(); dialogRef.current = null;
         }
       }
@@ -397,7 +402,8 @@ export function OutlookTaskPane() {
       () => initPayload,
       (dialog, action) => {
         if (action.action === "SAVE_FEEDBACK") {
-          try { saveFeedback(action.payload as SaveFeedbackPayload); } catch { /* ignore */ }
+          try { saveFeedback(action.payload as SaveFeedbackPayload); }
+          catch (err) { setStatus({ msg: `Failed to save feedback: ${String(err)}`, ok: false }); dialog.close(); dialogRef.current = null; return; }
           dialog.close(); dialogRef.current = null;
         }
       }
@@ -419,7 +425,8 @@ export function OutlookTaskPane() {
       (dialog, action) => {
         if (action.action === "SAVE_FEEDBACK") {
           const p = action.payload as SaveFeedbackPayload;
-          try { saveFeedback(p); } catch { /* ignore */ }
+          try { saveFeedback(p); }
+          catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); return; }
           dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: buildMailtoUrl(p) } as HostMessage));
         }
       }
@@ -445,7 +452,7 @@ export function OutlookTaskPane() {
             saveCommSignalInfo({ fromPerson: p.fromPerson ?? "", toPerson: (p as { toPerson?: string }).toPerson ?? "", toPersonEmail: (p as { toPersonEmail?: string }).toPersonEmail ?? "", applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignalType: (p as { communicationSignalType?: string }).communicationSignalType ?? "", communicationSubject: p.communicationSubject ?? "", actualCommunication: p.actualCommunication ?? "", actualSelection: "", selectionType: "Request Feedback", entitySelected: "", files: (p as { files?: AttachFileToProject[] }).files ?? [] });
             const email = (p as { toPersonEmail?: string }).toPersonEmail ?? "";
             if (email) upsertPersonWithEmail((p as { toPerson?: string }).toPerson ?? "", email);
-          } catch { /* ignore */ }
+          } catch (err) { setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false }); }
           dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: buildRequestMailtoUrl(p) } as HostMessage));
         }
       }
@@ -466,8 +473,14 @@ export function OutlookTaskPane() {
       DIALOG_SIZE,
       () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], flaggedEntities, principleInterpretations, filesByInterpretationId }),
       (dialog, action) => {
-        if (action.action === "DELETE_FLAG") deleteFlag((action as { action: string; id: number }).id);
-        if (action.action === "DELETE_INTERPRETED_PRINCIPLE") deleteInterpretation((action as { action: string; id: number }).id);
+        if (action.action === "DELETE_FLAG") {
+          try { deleteFlag((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
+        }
+        if (action.action === "DELETE_INTERPRETED_PRINCIPLE") {
+          try { deleteInterpretation((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
+        }
         if (action.action === "REPORT_INTERPRETED_PRINCIPLE") openInterpretedPrincipleReport((action as { action: string; interpretation: PrincipleInterpretation }).interpretation);
         if (action.action === "ADD_ATTACHED_FILE") {
           const newId = addAttachedFile((action as { action: string; file: AttachFileToProject }).file as Omit<AttachFileToProject, "id">);
@@ -475,14 +488,18 @@ export function OutlookTaskPane() {
         }
         if (action.action === "REMOVE_ATTACHED_FILE") removeAttachedFile((action as { action: string; id: number }).id);
         if (action.action === "SAVE_RELATED_SELECTION") {
-          const { payload } = action as { action: string; payload: SaveRelatedSelectionPayload };
-          const newId = saveSelectionWithPrinciple(payload.record);
-          for (const file of payload.files) addAttachedFile({ ...file, selectionWithPrincipleId: newId });
+          try {
+            const { payload } = action as { action: string; payload: SaveRelatedSelectionPayload };
+            const newId = saveSelectionWithPrinciple(payload.record);
+            for (const file of payload.files) addAttachedFile({ ...file, selectionWithPrincipleId: newId });
+          } catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); }
         }
         if (action.action === "SAVE_PRINCIPLE_IN_SELECTION") {
-          const { payload } = action as { action: string; payload: SavePrincipleInSelectionPayload };
-          const newId = savePrincipleInSelection(payload.record);
-          for (const file of payload.files) addAttachedFile({ ...file, principleInSelectionId: newId });
+          try {
+            const { payload } = action as { action: string; payload: SavePrincipleInSelectionPayload };
+            const newId = savePrincipleInSelection(payload.record);
+            for (const file of payload.files) addAttachedFile({ ...file, principleInSelectionId: newId });
+          } catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); }
         }
       }
     );
@@ -497,7 +514,10 @@ export function OutlookTaskPane() {
       DIALOG_SIZE,
       () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], analyses }),
       (dialog, action) => {
-        if (action.action === "DELETE_ANALYSIS") deleteAnalysis((action as { action: string; id: number }).id);
+        if (action.action === "DELETE_ANALYSIS") {
+          try { deleteAnalysis((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
+        }
         if (action.action === "NAVIGATE_TO_APPLY") {
           const { analysisId } = action as { action: string; analysisId: number };
           const analysis = getAnalysisById(analysisId);
@@ -508,7 +528,8 @@ export function OutlookTaskPane() {
           dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: { selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "", mode: analysis.selectionType === "Paragraph" ? "paragraph" : "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: getPeopleNames(), analyses: allAnalyses, feedbacks: allFeedbacks } } as HostMessage));
         }
         if (action.action === "SAVE_FEEDBACK") {
-          try { saveFeedback(action.payload as SaveFeedbackPayload); } catch { /* ignore */ }
+          try { saveFeedback(action.payload as SaveFeedbackPayload); }
+          catch (err) { setStatus({ msg: `Failed to save feedback: ${String(err)}`, ok: false }); }
           dialog.close(); dialogRef.current = null;
         }
       }
@@ -527,7 +548,8 @@ export function OutlookTaskPane() {
       () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], feedbacks: buildFeedbacks() }),
       (dialog, action) => {
         if (action.action === "DELETE_FEEDBACK") {
-          deleteFeedback((action as { action: string; id: number }).id);
+          try { deleteFeedback((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
         }
         if (action.action === "LIST_FEEDBACK_REQUESTED") {
           const { personName: pn, personEmail: pe } = getUserIdentity();
@@ -538,7 +560,8 @@ export function OutlookTaskPane() {
           dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "feedback-history", payload: { selection: "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], feedbacks: buildFeedbacks() } } as HostMessage));
         }
         if (action.action === "DELETE_COMM_SIGNAL_REQUEST") {
-          try { deleteCommSignalRequest((action as { action: string; id: number }).id); } catch { /* ignore */ }
+          try { deleteCommSignalRequest((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
         }
       }
     );
@@ -553,7 +576,10 @@ export function OutlookTaskPane() {
       DIALOG_SIZE,
       () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], analyses }),
       (_dialog, action) => {
-        if (action.action === "DELETE_ANALYSIS") deleteAnalysis((action as { action: string; id: number }).id);
+        if (action.action === "DELETE_ANALYSIS") {
+          try { deleteAnalysis((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
+        }
       }
     );
   }, [dbReady, openManagedDialog]);
@@ -567,7 +593,8 @@ export function OutlookTaskPane() {
       () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], selectionHistories: getAllSelectionHistories() }),
       (_dialog, action) => {
         if (action.action === "DELETE_SELECTION_HISTORY") {
-          try { deleteSelectionHistory((action as { action: string; id: number }).id); } catch { /* ignore */ }
+          try { deleteSelectionHistory((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
         }
       }
     );
@@ -589,7 +616,8 @@ export function OutlookTaskPane() {
       },
       (dialog, action) => {
         if (action.action === "DELETE_PRINCIPLE") {
-          deletePrincipleInSelection((action as { action: string; id: number }).id);
+          try { deletePrincipleInSelection((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); return; }
           const principlesInSelection = getPrinciplesInSelection();
           const filesByPrincipleInSelectionId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
           for (const p of principlesInSelection) {
@@ -621,7 +649,8 @@ export function OutlookTaskPane() {
       },
       (dialog, action) => {
         if (action.action === "DELETE_INTERPRETED_PRINCIPLE") {
-          deleteInterpretation((action as { action: string; id: number }).id);
+          try { deleteInterpretation((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); return; }
           const principleInterpretations = getAllInterpretations();
           const filesByInterpretationId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
           for (const pi of principleInterpretations) {
@@ -653,7 +682,8 @@ export function OutlookTaskPane() {
       },
       (dialog, action) => {
         if (action.action === "DELETE_RELATED_SELECTION") {
-          deleteSelectionWithPrinciple((action as { action: string; id: number }).id);
+          try { deleteSelectionWithPrinciple((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); return; }
           const selectionsWithPrinciple = getSelectionsWithPrinciple();
           const filesBySelectionWithPrincipleId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
           for (const s of selectionsWithPrinciple) {
@@ -678,7 +708,8 @@ export function OutlookTaskPane() {
       () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], articles: getAllArticles() }),
       (_dialog, action) => {
         if (action.action === "DELETE_ARTICLE") {
-          try { deleteArticle((action as { action: string; id: number }).id); } catch { /* ignore */ }
+          try { deleteArticle((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
         }
       }
     );
@@ -831,8 +862,10 @@ export function OutlookTaskPane() {
       () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], communicationPersonName: prefillName, communicationPersonEmail: prefillEmail }),
       (dialog, action) => {
         if (action.action === "SAVE_COMMUNICATION_CONFIG") {
-          saveCommunicationConfig(action.payload as SaveCommunicationConfigPayload);
-          dialog.close(); dialogRef.current = null;
+          try {
+            saveCommunicationConfig(action.payload as SaveCommunicationConfigPayload);
+            dialog.close(); dialogRef.current = null;
+          } catch (err) { setStatus({ msg: `Failed to save configuration: ${String(err)}`, ok: false }); }
         }
       }
     );
@@ -851,7 +884,7 @@ export function OutlookTaskPane() {
           const p = action.payload as SaveRequestSLFeedbackPayload;
           try {
             saveCommSignalInfo({ fromPerson: p.fromPerson ?? "", toPerson: "Speak Logic", toPersonEmail: "support@speaklogic.org", applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignalType: (p as { communicationSignalType?: string }).communicationSignalType ?? "", communicationSubject: p.communicationSubject ?? "", actualCommunication: p.actualCommunication ?? "", actualSelection: "", selectionType: "Speak Logic Request", entitySelected: `Speak Logic feedback request on ${nowDate()}`, files: (p as { files?: AttachFileToProject[] }).files ?? [] });
-          } catch { /* ignore */ }
+          } catch (err) { setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false }); }
           dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: buildRequestSLMailtoUrl(p) } as HostMessage));
         }
       }
