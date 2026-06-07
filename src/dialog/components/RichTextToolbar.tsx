@@ -267,34 +267,31 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   }
 
   function applyFontSize(pxStr: string) {
-    if (applyingFontSize.current) { console.log("[FS] blocked by guard"); return; }
+    if (applyingFontSize.current) return;
     applyingFontSize.current = true;
 
     try {
       const px = parseInt(pxStr, 10);
-      if (!px || px <= 0) { console.log("[FS] bad px:", pxStr); return; }
+      if (!px || px <= 0) return;
       const el = editorRef.current;
-      if (!el) { console.log("[FS] no editorRef"); return; }
+      if (!el) return;
 
       const range = fontPanelRangeRef.current ?? savedRange.current;
-      console.log("[FS] range:", range, "collapsed:", range?.collapsed, "panelRange:", fontPanelRangeRef.current, "savedRange:", savedRange.current);
-      if (!range || range.collapsed) { console.log("[FS] range null or collapsed"); return; }
+      if (!range || range.collapsed) return;
 
       const span = document.createElement("span");
       span.style.fontSize = `${px}px`;
 
       try {
         range.surroundContents(span);
-        console.log("[FS] surroundContents ok");
-      } catch (e1) {
-        console.log("[FS] surroundContents failed:", e1, "trying extractContents");
+      } catch {
+        // surroundContents throws when the range spans element boundaries —
+        // fall back to extract + re-insert which handles partial-node ranges.
         try {
           const fragment = range.extractContents();
           span.appendChild(fragment);
           range.insertNode(span);
-          console.log("[FS] extractContents+insertNode ok");
-        } catch (e2) {
-          console.log("[FS] extractContents also failed:", e2);
+        } catch {
           return;
         }
       }
@@ -302,9 +299,18 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
       const next = document.createRange();
       next.selectNodeContents(span);
       fontPanelRangeRef.current = next;
+      // Keep savedRange + the live selection pointed at the text we just
+      // resized. Every other toolbar control (bold, color, highlight, font
+      // family…) restores from savedRange, so without this they would act on
+      // the now-stale pre-resize range and silently do nothing.
+      savedRange.current = next.cloneRange();
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(next.cloneRange());
+      }
 
       el.dispatchEvent(new Event("input", { bubbles: true }));
-      console.log("[FS] done, innerHTML:", el.innerHTML.slice(0, 120));
     } finally {
       applyingFontSize.current = false;
     }
