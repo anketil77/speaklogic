@@ -34,16 +34,13 @@ export default function AboutView() {
         {/* Text stack */}
         <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
           <span style={{ fontSize: "21px", fontWeight: "400", color: "#1F1F1F", lineHeight: "1.25", marginBottom: 6 }}>
-            Speak Logic Information Analysis
+            Speak Logic
           </span>
           <span style={{ fontSize: "19px", fontWeight: "400", color: "#1F1F1F", lineHeight: "1.25", marginBottom: 10 }}>
             For Microsoft Office
           </span>
           <span style={{ fontSize: "16px", color: "#1F1F1F", lineHeight: "1.4", marginBottom: 4 }}>
-            Copyright © 2012
-          </span>
-          <span style={{ fontSize: "16px", color: "#1F1F1F", lineHeight: "1.4", marginBottom: 16 }}>
-            The Speak Logic Project
+            Copyright © 2011-2026
           </span>
           <a
             href="http://speaklogic.org"
@@ -58,7 +55,7 @@ export default function AboutView() {
 
       {/* Version — bottom-right of content, above divider */}
       <div style={{ paddingRight: 16, paddingBottom: 6, textAlign: "right" }}>
-        <span style={{ fontSize: "11px", color: colors.grey11 }}>Version 2012 Release 2.1</span>
+        <span style={{ fontSize: "11px", color: colors.grey11 }}>Version 2026 Release 2.1</span>
       </div>
 
       {/* Divider */}
