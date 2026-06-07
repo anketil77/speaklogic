@@ -158,6 +158,12 @@ const inputStyle: React.CSSProperties = {
   background: colors.white, outline: "none", boxSizing: "border-box",
 };
 
+// From Person is the account holder (Communication Config name) — locked read-only.
+const readonlyDisplayStyle: React.CSSProperties = {
+  ...inputStyle, display: "flex", alignItems: "center",
+  background: colors.grey96, color: colors.grey38, cursor: "default",
+};
+
 const selectStyle: React.CSSProperties = {
   ...inputStyle,
   padding: "0 32px 0 11px",
@@ -311,8 +317,6 @@ export default function RequestSLFeedbackView() {
     );
   }
 
-  const peopleList = initData.peopleList ?? [];
-
   return (
     <div className={styles.root}>
       {/* ── Title ─────────────────────────────────────────────────────────── */}
@@ -392,17 +396,10 @@ export default function RequestSLFeedbackView() {
         {/* ── About Feedback tab ──────────────────────────────────────────── */}
         {activeTab === "feedback" && (
           <>
-            {/* From Person — dropdown from PeopleInProject */}
+            {/* From Person — account holder, locked read-only */}
             <div style={rowStyle}>
               <span style={labelStyle}>From Person</span>
-              <select
-                style={selectStyle}
-                value={form.fromPerson}
-                onChange={(e) => updateForm("fromPerson", e.target.value)}
-              >
-                <option value="">-- Select person --</option>
-                {peopleList.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
+              <div style={readonlyDisplayStyle}>{form.fromPerson}</div>
             </div>
 
             <div style={sectionDivider} />

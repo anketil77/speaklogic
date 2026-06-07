@@ -160,6 +160,12 @@ const inputStyle: React.CSSProperties = {
   background: colors.white, outline: "none", boxSizing: "border-box",
 };
 
+// From Person is the account holder (Communication Config name) — locked read-only.
+const readonlyDisplayStyle: React.CSSProperties = {
+  ...inputStyle, display: "flex", alignItems: "center",
+  background: colors.grey96, color: colors.grey38, cursor: "default",
+};
+
 const selectStyle: React.CSSProperties = {
   ...inputStyle,
   padding: "0 32px 0 11px",
@@ -436,17 +442,10 @@ export default function RequestFeedbackView() {
         {/* ── About Feedback tab ──────────────────────────────────────────── */}
         {activeTab === "feedback" && (
           <>
-            {/* From Person — always dropdown */}
+            {/* From Person — account holder, locked read-only */}
             <div style={rowStyle}>
               <span style={labelStyle}>From Person</span>
-              <select
-                style={selectStyle}
-                value={form.fromPerson}
-                onChange={(e) => updateForm("fromPerson", e.target.value)}
-              >
-                <option value="">-- Select person --</option>
-                {peopleList.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
+              <div style={readonlyDisplayStyle}>{form.fromPerson}</div>
             </div>
 
             {/* To Person — multi-select combobox */}

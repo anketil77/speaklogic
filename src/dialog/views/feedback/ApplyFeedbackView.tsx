@@ -35,6 +35,7 @@ import { PanelTable, PanelTableCol } from "@/dialog/components/PanelTable";
 import { nowDate, nowTime } from "@/db/db";
 import { colors } from "@/styles/tokens";
 import { dbg } from "@/debug/log";
+import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
 import type { SaveFeedbackPayload, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, AttachFileToProject, ProjectAnalysis, ProjectFeedback } from "@/types/db";
 
 // ─── Draft types ──────────────────────────────────────────────────────────────
@@ -348,7 +349,8 @@ export default function ApplyView() {
       ...prev,
       applicationName: prev.applicationName || initData.applicationName || "",
       communicationFunction: prev.communicationFunction || initData.communicationFunction || "",
-      fromPerson: prev.fromPerson || ad?.fromPerson || initData.personName || "",
+      // From Person = the account holder (Communication Config name). Read-only.
+      fromPerson: prev.fromPerson || initData.communicationPersonName || ad?.fromPerson || initData.personName || "",
       toPerson: prev.toPerson || ad?.fromPerson || initData.personName || "",
     }));
     if (ad) {
@@ -377,6 +379,13 @@ export default function ApplyView() {
   }, []);
 
   const analysisData = initData?.analysisData;
+
+  // Formatted (HTML) version of the selection, cleaned for display on white.
+  // Falls back to "" when the host gave no HTML (PowerPoint / Outlook plain text).
+  const selectionHtml = useMemo(
+    () => (initData?.selectionHtml ? sanitizeWordHtml(initData.selectionHtml) : ""),
+    [initData?.selectionHtml],
+  );
 
   const tabs = useMemo((): { value: TabValue; label: string }[] => {
     const mid: { value: TabValue; label: string } | null =
@@ -571,7 +580,9 @@ export default function ApplyView() {
         feedbackSubject: form.feedbackSubject,
         internalFeedbackName: "",
         feedbackType: "Applied",
-        actualSelection: initData.selection,
+        // Persist the formatted (HTML) selection so View Feedback shows it with
+        // its original Word formatting; fall back to plain text when no HTML.
+        actualSelection: selectionHtml || initData.selection,
         selectionType: initData.mode === "selection" ? "Selection" : "Paragraph",
         actualErrorSubstituted: form.errorSubstituted,
         actualCompensatorReplaced: form.compensatorReplaced,
@@ -775,7 +786,7 @@ export default function ApplyView() {
             </div>
             <div style={rowStyle}>
               <span style={labelStyle}>From Person</span>
-              <input style={inputStyle} value={form.fromPerson} onChange={(e) => updateForm("fromPerson", e.target.value)} placeholder="From person" />
+              <span style={readonlyDisplayStyle}>{form.fromPerson}</span>
             </div>
             <div style={rowStyle}>
               <span style={labelStyle}>To Person</span>
@@ -783,9 +794,16 @@ export default function ApplyView() {
             </div>
             <div style={rowTopStyle}>
               <span style={labelTopStyle}>Actual Selection</span>
-              <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: "18px" }}>
-                {initData.selection || <em>No selection captured.</em>}
-              </div>
+              {selectionHtml ? (
+                <div
+                  style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", wordBreak: "break-word", lineHeight: "18px" }}
+                  dangerouslySetInnerHTML={{ __html: selectionHtml }}
+                />
+              ) : (
+                <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: "18px" }}>
+                  {initData.selection || <em>No selection captured.</em>}
+                </div>
+              )}
             </div>
           </div>
         )}

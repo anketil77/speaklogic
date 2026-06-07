@@ -2111,8 +2111,9 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
     event
   );
   if (!meta) return;
-  const { text: selection, documentTitle, documentName, pageNumber } = meta;
+  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber } = meta;
   const { personName, personEmail } = getUserIdentity();
+  const commConfig = getCommunicationConfig();
   const analyses = getAllAnalyses().map((a) => {
     if (!a.id) return a;
     return { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) };
@@ -2123,6 +2124,7 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
   });
   openApplyDialog({
     selection,
+    selectionHtml,
     mode,
     source: getSource(),
     personName,
@@ -2131,7 +2133,10 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
     communicationFunction: "",
     communicationSignal: "",
     projectName: documentTitle,
-    peopleList: getPeopleNames(),
+    peopleList: buildPeopleList(commConfig?.personName),
+    peopleEmailMap: getPeopleEmailMap(),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
     analyses,
     feedbacks,
   }, event);

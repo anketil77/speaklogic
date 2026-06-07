@@ -160,6 +160,12 @@ const inputStyle: React.CSSProperties = {
   background: colors.white, outline: "none", boxSizing: "border-box",
 };
 
+// From Person is the account holder (Communication Config name) — locked read-only.
+const readonlyDisplayStyle: React.CSSProperties = {
+  ...inputStyle, display: "flex", alignItems: "center",
+  background: colors.grey96, color: colors.grey38, cursor: "default",
+};
+
 
 const selectStyle: React.CSSProperties = {
   ...inputStyle,
@@ -452,15 +458,10 @@ export default function ProvideFeedbackView() {
         {/* ── About Feedback tab ──────────────────────────────────────────── */}
         {activeTab === "feedback" && (
           <>
-            {/* From Person — pre-filled, editable */}
+            {/* From Person — account holder, locked read-only */}
             <div style={rowStyle}>
               <span style={labelStyle}>From Person</span>
-              <input
-                style={inputStyle}
-                value={form.fromPerson}
-                onChange={(e) => updateForm("fromPerson", e.target.value)}
-                placeholder="Enter sender name"
-              />
+              <div style={readonlyDisplayStyle}>{form.fromPerson}</div>
             </div>
 
             {/* To Person — select from people list or free-text */}

@@ -24,8 +24,10 @@ import { colors } from "@/styles/tokens";
 import type { ProjectFeedback, ProjectQuestion, ProjectCompensator, ProjectAnswer, AttachFileToProject } from "@/types/db";
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
-type VFTab = "feedback" | "questions" | "compensators" | "answers" | "files";
+type VFTab = "feedback" | "selection" | "questions" | "compensators" | "answers" | "files";
 
+// Base tabs (always shown). The "Selection" tab is inserted at position #2 at
+// runtime only when the feedback was created from a selection/paragraph apply.
 const VF_TABS: { value: VFTab; label: string }[] = [
   { value: "feedback", label: "Feedback" },
   { value: "questions", label: "Analysis Question" },
@@ -33,6 +35,8 @@ const VF_TABS: { value: VFTab; label: string }[] = [
   { value: "answers", label: "Answers" },
   { value: "files", label: "Attached Files" },
 ];
+
+const VF_SELECTION_TAB: { value: VFTab; label: string } = { value: "selection", label: "Selection" };
 
 // ─── Sub-tab column definitions ───────────────────────────────────────────────
 const Q_COLS: PanelTableCol<ProjectQuestion>[] = [
@@ -162,8 +166,16 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
   const answers = feedback.answers ?? [];
   const files = feedback.files ?? [];
 
+  // Selection tab appears only for selection/paragraph-applied feedback.
+  const hasSelection = !!(feedback.actualSelection || feedback.selectionType);
+  const visibleTabs = useMemo(
+    () => (hasSelection ? [VF_TABS[0], VF_SELECTION_TAB, ...VF_TABS.slice(1)] : VF_TABS),
+    [hasSelection],
+  );
+
   const tabCount: Record<VFTab, number> = {
     feedback: 0,
+    selection: 0,
     questions: questions.length,
     compensators: compensators.length,
     answers: answers.length,
@@ -345,7 +357,7 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
 
         {/* ── Tab bar ── */}
         <div style={{ height: 36, background: colors.white, display: "flex", alignItems: "flex-end", padding: "0 20px", borderBottom: `1px solid ${colors.grey88}`, flexShrink: 0 }}>
-          {VF_TABS.map(({ value, label }) => {
+          {visibleTabs.map(({ value, label }) => {
             const count = tabCount[value];
             const isActive = activeTab === value;
             return (
@@ -376,6 +388,26 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
               <VfFormRow label="Feedback Time"><input style={vfReadonlyInput} value={feedback.feedbackTime || ""} readOnly /></VfFormRow>
               <VfFormRow label="Feedback Application" alignTop>
                 <div dangerouslySetInnerHTML={{ __html: feedback.feedbackApplication || "" }} style={{ minHeight: 80, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey11, background: colors.grey96, lineHeight: "20px", overflowY: "auto" }} />
+              </VfFormRow>
+            </div>
+          )}
+
+          {activeTab === "selection" && (
+            <div style={{ overflowY: "auto", flex: 1, padding: "12px 20px", display: "flex", flexDirection: "column" }}>
+              <VfFormRow label="Selection Type"><input style={vfReadonlyInput} value={feedback.selectionType || feedback.source || ""} readOnly /></VfFormRow>
+              <VfFormRow label="From Person"><input style={vfReadonlyInput} value={feedback.fromPerson || ""} readOnly /></VfFormRow>
+              <VfFormRow label="To Person"><input style={vfReadonlyInput} value={feedback.toPerson || ""} readOnly /></VfFormRow>
+              <VfFormRow label="Actual Selection" alignTop>
+                {feedback.actualSelection ? (
+                  <div
+                    style={{ minHeight: 120, maxHeight: 260, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey38, background: colors.grey96, lineHeight: "20px", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                    dangerouslySetInnerHTML={{ __html: feedback.actualSelection }}
+                  />
+                ) : (
+                  <div style={{ minHeight: 120, maxHeight: 260, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey38, background: colors.grey96, lineHeight: "20px", overflowY: "auto" }}>
+                    <em>No selection captured.</em>
+                  </div>
+                )}
               </VfFormRow>
             </div>
           )}
