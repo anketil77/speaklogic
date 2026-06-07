@@ -2031,11 +2031,12 @@ async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.
     event
   );
   if (!meta) return;
-  const { text: selection, documentTitle, documentName, pageNumber } = meta;
+  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber } = meta;
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
   openProvideFeedbackDialog({
     selection,
+    selectionHtml,
     mode,
     source: getSource(),
     personName,

@@ -1,6 +1,6 @@
 // src/dialog/views/feedback/ProvideFeedbackView.tsx
 
-import React, { useRef, useState, useCallback, useEffect } from "react";
+import React, { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { Spinner, makeStyles } from "@fluentui/react-components";
 import { CheckmarkRegular } from "@fluentui/react-icons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
@@ -11,6 +11,7 @@ import { PanelTable, PanelTableCol } from "@/dialog/components/PanelTable";
 import { nowDate, nowTime } from "@/db/db";
 import { colors } from "@/styles/tokens";
 import type { SaveFeedbackPayload } from "@/types/db";
+import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
 
 const F = {
   borderInput: `1px solid #C7C7C7`,
@@ -143,7 +144,7 @@ const useStyles = makeStyles({
   footerHint: { flex: 1, fontSize: "10.3px", fontWeight: "400", color: colors.grey38, lineHeight: "15px" },
 });
 
-type TabValue = "feedback" | "questions" | "errors" | "compensators" | "answers" | "files";
+type TabValue = "feedback" | "selection" | "questions" | "errors" | "compensators" | "answers" | "files";
 
 const TABS: { value: TabValue; label: string }[] = [
   { value: "feedback", label: "About Feedback" },
@@ -153,6 +154,10 @@ const TABS: { value: TabValue; label: string }[] = [
   { value: "answers", label: "Answers" },
   { value: "files", label: "Attached Files" },
 ];
+
+// "Selection" tab is inserted at position #2 only when feedback is provided
+// from a selection/paragraph (i.e. raw selected text is present).
+const SELECTION_TAB: { value: TabValue; label: string } = { value: "selection", label: "Selection" };
 
 const inputStyle: React.CSSProperties = {
   width: "100%", height: "32px", border: "1px solid #C7C7C7", borderRadius: "4px",
@@ -255,6 +260,17 @@ export default function ProvideFeedbackView() {
 
   const analysisData = initData?.analysisData;
 
+  // Selection tab + formatted selection (only when feedback is from a selection/paragraph).
+  const hasSelection = !!initData?.selection;
+  const selectionHtml = useMemo(
+    () => (initData?.selectionHtml ? sanitizeWordHtml(initData.selectionHtml) : ""),
+    [initData?.selectionHtml],
+  );
+  const visibleTabs = useMemo(
+    () => (hasSelection ? [TABS[0], SELECTION_TAB, ...TABS.slice(1)] : TABS),
+    [hasSelection],
+  );
+
   // Pre-fill from init data on first load
   useEffect(() => {
     if (!initData) return;
@@ -311,7 +327,9 @@ export default function ProvideFeedbackView() {
         feedbackSubject: form.feedbackSubject,
         internalFeedbackName: `Text selected from ${initData.source} on ${nowDate()}`,
         feedbackType: "Provided",
-        actualSelection: initData.selection,
+        // Persist the formatted (HTML) selection so View Feedback keeps the
+        // original Word formatting; fall back to plain text when no HTML.
+        actualSelection: selectionHtml || initData.selection,
         selectionType: initData.source,
         actualErrorSubstituted: "",
         actualCompensatorReplaced: "",
@@ -328,7 +346,7 @@ export default function ProvideFeedbackView() {
 
     sendMessage({ action: "SAVE_FEEDBACK", payload: { ...payload, toPersonEmail: form.toPersonEmail.trim(), files: analysisData?.files ?? [] } });
     // Host will save and respond with SAVED (+ mailtoUrl). Dialog stays open until user clicks Close.
-  }, [form, initData, analysisData, sendMessage]);
+  }, [form, initData, analysisData, selectionHtml, sendMessage]);
 
   if (!initData) {
     return (
@@ -430,7 +448,7 @@ export default function ProvideFeedbackView() {
 
       {/* ── Tab bar ───────────────────────────────────────────────────────── */}
       <div className={styles.tabBar}>
-        {TABS.map(({ value, label }) => {
+        {visibleTabs.map(({ value, label }) => {
           const isActive = activeTab === value;
           return (
             <button
@@ -453,7 +471,7 @@ export default function ProvideFeedbackView() {
       )}
 
       {/* ── Body ──────────────────────────────────────────────────────────── */}
-      <div className={styles.body} style={activeTab !== "feedback" ? { padding: 0 } : undefined}>
+      <div className={styles.body} style={activeTab !== "feedback" && activeTab !== "selection" ? { padding: 0 } : undefined}>
 
         {/* ── About Feedback tab ──────────────────────────────────────────── */}
         {activeTab === "feedback" && (
@@ -544,6 +562,37 @@ export default function ProvideFeedbackView() {
                   placeholder="Enter the feedback to be provided..."
                 />
               </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Selection tab — read-only (selection/paragraph feedback) ─────── */}
+        {activeTab === "selection" && (
+          <>
+            <div style={rowStyle}>
+              <span style={labelStyle}>Selection Type</span>
+              <div style={readonlyDisplayStyle}>{initData?.source}</div>
+            </div>
+            <div style={rowStyle}>
+              <span style={labelStyle}>From Person</span>
+              <div style={readonlyDisplayStyle}>{form.fromPerson}</div>
+            </div>
+            <div style={rowStyle}>
+              <span style={labelStyle}>To Person</span>
+              <div style={readonlyDisplayStyle}>{form.toPerson}</div>
+            </div>
+            <div style={rowTopStyle}>
+              <span style={labelTopStyle}>Actual Selection</span>
+              {selectionHtml ? (
+                <div
+                  style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", wordBreak: "break-word", lineHeight: "18px" }}
+                  dangerouslySetInnerHTML={{ __html: selectionHtml }}
+                />
+              ) : (
+                <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: "18px" }}>
+                  {initData?.selection || <em>No selection captured.</em>}
+                </div>
+              )}
             </div>
           </>
         )}
