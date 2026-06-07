@@ -104,16 +104,19 @@ function DialogApp() {
   }, []);
 
   const closeDialog = useCallback(() => {
-    dbg("DIALOG", "closeDialog called — attempting closeContainer");
+    dbg("DIALOG", "closeDialog — messageParent CLOSE (primary)");
+    // messageParent("CLOSE") is the PRIMARY close path — it reaches the host, which calls
+    // dialog.close() + event.completed(). This is the ONLY path that releases Word's event
+    // state in a displayDialogAsync dialog. It must run first.
+    // closeContainer() is a task-pane API: on Word Desktop it silently does nothing inside a
+    // displayDialogAsync dialog, and on Word Online it tears down the iframe synchronously —
+    // if it runs first it can prevent messageParent from ever reaching the host, so
+    // event.completed() never fires and Word editing locks up. Only use it as a fallback.
     try {
-      Office.context.ui.closeContainer();
+      Office.context.ui.messageParent(JSON.stringify({ action: "CLOSE" }));
     } catch (err) {
-      dbg("DIALOG", "closeContainer threw — falling back to messageParent CLOSE", String(err));
-      try {
-        Office.context.ui.messageParent(JSON.stringify({ action: "CLOSE" }));
-      } catch {
-        // ignore
-      }
+      dbg("DIALOG", "messageParent CLOSE threw — falling back to closeContainer", String(err));
+      try { Office.context.ui.closeContainer(); } catch { }
     }
   }, []);
 

@@ -202,19 +202,29 @@ function estimateMessageDialogPct(text: string): number {
   return Math.min(Math.max(Math.ceil((dialogPx / ref) * 100), 22), 60);
 }
 
+// Returns a wrapper around event.completed() that only fires once, regardless of
+// how many times it is called. Needed because dialog.close() can trigger
+// DialogEventReceived in some Office builds, causing a second event.completed()
+// call that corrupts Word's event state and freezes text editing.
+function makeEventCompleter(event: Office.AddinCommands.Event): () => void {
+  let done = false;
+  return () => { if (!done) { done = true; event.completed(); } };
+}
+
 function showNoSelectionMessage(
   title: string,
   text: string,
   event: Office.AddinCommands.Event
 ): void {
   const heightPct = estimateMessageDialogPct(text);
+  const complete = makeEventCompleter(event);
   Office.context.ui.displayDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=message&title=${encodeURIComponent(title)}&text=${encodeURIComponent(text)}`,
     { height: heightPct, width: 26, displayInIframe: true },
     (result) => {
       if (result.status === Office.AsyncResultStatus.Failed) {
         // Simple fallback — do NOT call handleDialogOpenError here (would recurse).
-        event.completed();
+        complete();
         return;
       }
       const dialog = result.value;
@@ -222,14 +232,14 @@ function showNoSelectionMessage(
         if (!("message" in args)) return;
         const msg = JSON.parse((args as { message: string }).message) as { action: string };
         if (msg.action === "CLOSE") {
-          dialog.close();
-          event.completed();
+          try { dialog.close(); } catch { }
+          complete();
         }
       });
       dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
         // 12006 = user closed via X; 12002/12003 = nav errors — all paths must complete the event.
         void (evt as { error: number }).error;
-        event.completed();
+        complete();
       });
     }
   );
@@ -339,6 +349,28 @@ async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
 }
 
 async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; selectionHtml: string; documentTitle: string; documentName: string; pageNumber: string }> {
+  // Word for the web: a Word.run batch leaves the document locked (read-only until page refresh)
+  // when a dialog is opened in the same ribbon command. event.completed() fires and the dialog
+  // closes, but editing never re-enables. Confirmed by isolation: dialogs that never call
+  // Word.run (e.g. About) do not freeze; every selection-based dialog does. The legacy
+  // getSelectedDataAsync API does not take that lock, so on the web we read the selection
+  // through it instead. Trade-off on web: no paragraph-from-cursor (a real selection is required,
+  // same as selection mode), no document title, no page number. Desktop keeps Word.run (no freeze
+  // there) for full fidelity including paragraph-from-cursor and page number.
+  if (Office.context.platform === Office.PlatformType.OfficeOnline) {
+    const read = (coercion: Office.CoercionType) =>
+      new Promise<string>((resolve) => {
+        Office.context.document.getSelectedDataAsync(coercion, (r) =>
+          resolve(r.status === Office.AsyncResultStatus.Failed ? "" : ((r.value as string) ?? ""))
+        );
+      });
+    const text = (await read(Office.CoercionType.Text)).replace(/ /g, " ").trim();
+    const selectionHtml = text ? await read(Office.CoercionType.Html) : "";
+    const url = (Office.context.document as { url?: string }).url ?? "";
+    const documentName = url ? (url.split("/").pop()?.split("\\").pop() ?? "") : "";
+    return { text, selectionHtml, documentTitle: "", documentName, pageNumber: "" };
+  }
+
   try {
     return await Word.run(async (context) => {
       let text = "";
@@ -486,6 +518,8 @@ async function openAnalyzeDialog(
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const meta = await fetchSelectionOrNotify(
     mode,
+    // C# AddinModule.cs: selection handler → "Text Selection Message" (1547);
+    // paragraph handler → "Paragraph Selection Message" (1398).
     mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
     "In order to analyze an entity, that entity must exist.  In order " +
     "to perform an analysis to an entity, that entity must be identified. " +
@@ -530,6 +564,7 @@ async function openAnalyzeDialog(
       }
       dbg("HOST", "analyze dialog opened successfully");
       const dialog = result.value;
+      const complete = makeEventCompleter(event);
 
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -691,8 +726,8 @@ async function openAnalyzeDialog(
               dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: opened ? "" : mailtoUrl } as HostMessage));
               // Do NOT close here — wait for the dialog to send CLOSE after the user clicks.
             } else {
-              dialog.close();
-              event.completed();
+              try { dialog.close(); } catch { }
+              complete();
             }
             break;
           }
@@ -715,8 +750,8 @@ async function openAnalyzeDialog(
           }
           case "CLOSE":
             dbg("HOST", "CLOSE received — closing dialog, completing event");
-            dialog.close();
-            event.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           default:
             dbg("HOST", "unknown action received", { action: (m as { action: string }).action });
@@ -727,7 +762,7 @@ async function openAnalyzeDialog(
       dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
         const code = (evt as { error?: number }).error;
         dbg("HOST", "DialogEventReceived (dialog closed by user or error)", { code });
-        event.completed();
+        complete();
       });
     }
   );
@@ -787,9 +822,10 @@ function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(addInEvent);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
         void (evt as { error: number }).error;
-        addInEvent.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -829,12 +865,12 @@ function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
           }
           case "OPEN_MAILTO":
             openMailtoUrl((m as { action: string; url: string }).url);
-            dialog.close();
-            addInEvent.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           case "CLOSE":
-            dialog.close();
-            addInEvent.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           default:
             break;
@@ -870,9 +906,10 @@ function openViewDialog(
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(event);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
         void (evt as { error: number }).error;
-        event.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -881,8 +918,8 @@ function openViewDialog(
           dialog.messageChild(JSON.stringify(hostMsg));
         }
         if (m.action === "CLOSE") {
-          dialog.close();
-          event.completed();
+          try { dialog.close(); } catch { }
+          complete();
         }
       });
     }
@@ -903,14 +940,15 @@ function openAboutDialog(addInEvent: Office.AddinCommands.Event, attempt = 0): v
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(addInEvent);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        addInEvent.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as { action: string };
         if (m.action === "CLOSE") {
-          dialog.close();
-          addInEvent.completed();
+          try { dialog.close(); } catch { }
+          complete();
         }
       });
     }
@@ -931,8 +969,9 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(event);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        event.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -969,8 +1008,8 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           dialog.messageChild(JSON.stringify(hostMsg));
         }
         if (m.action === "CLOSE") {
-          dialog.close();
-          event.completed();
+          try { dialog.close(); } catch { }
+          complete();
         }
         if (m.action === "NAVIGATE_TO_APPLY") {
           const navM = m as { action: string; analysisId: number };
@@ -1058,8 +1097,9 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(event);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        event.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -1148,8 +1188,8 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         }
         if (m.action === "CLOSE") {
-          dialog.close();
-          event.completed();
+          try { dialog.close(); } catch { }
+          complete();
         }
       });
     }
@@ -1170,8 +1210,9 @@ function openRetainedHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(event);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        event.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -1212,8 +1253,8 @@ function openRetainedHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         }
         if (m.action === "CLOSE") {
-          dialog.close();
-          event.completed();
+          try { dialog.close(); } catch { }
+          complete();
         }
       });
     }
@@ -1234,8 +1275,9 @@ function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(event);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        event.completed();
+        complete();
       });
       // Builds a fresh INIT payload from the DB. Re-sent after every principle
       // save/delete so the inline list portals stay in sync (mirrors C#, where
@@ -1353,8 +1395,8 @@ function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
           } catch (err) { replyError(dialog, `Save failed: ${String(err)}`); }
         }
         if (m.action === "CLOSE") {
-          dialog.close();
-          event.completed();
+          try { dialog.close(); } catch { }
+          complete();
         }
       });
     }
@@ -1397,10 +1439,12 @@ async function openCreateArticleDialog(event: Office.AddinCommands.Event): Promi
         return;
       }
       const pickerDialog = result.value;
+      const complete = makeEventCompleter(event);
+      let transitioning = false;
 
       pickerDialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        // User closed the picker via the native OS X
-        event.completed();
+        // Only complete if the picker is truly being dismissed (not handing off to the next dialog).
+        if (!transitioning) complete();
       });
 
       pickerDialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
@@ -1408,17 +1452,19 @@ async function openCreateArticleDialog(event: Office.AddinCommands.Event): Promi
 
         if (m.action === "BLANK_SELECTED") {
           // Blank — go straight to the article form
+          transitioning = true;
           pickerDialog.close();
           openArticleFormDialog(event, personName, personEmail);
 
         } else if (m.action === "TEMPLATE_SELECTED") {
           // Use Template — close picker, open the template picker step
+          transitioning = true;
           pickerDialog.close();
           openTemplatePickerDialog(event, personName, personEmail);
 
         } else if (m.action === "CLOSE") {
           pickerDialog.close();
-          event.completed();
+          complete();
         }
       });
     }
@@ -1448,9 +1494,11 @@ function openTemplatePickerDialog(
         return;
       }
       const tplDialog = result.value;
+      const complete = makeEventCompleter(event);
+      let transitioning = false;
 
       tplDialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        event.completed();
+        if (!transitioning) complete();
       });
 
       tplDialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
@@ -1459,19 +1507,21 @@ function openTemplatePickerDialog(
         switch (m.action) {
           case "TEMPLATE_CONFIRMED":
             // User picked a template — close picker, open article wizard
+            transitioning = true;
             tplDialog.close();
             openArticleWizardDialog(event, personName, personEmail, m.templateName, m.category);
             break;
 
           case "BACK":
             // Go back to entry picker (close template picker, reopen entry picker)
+            transitioning = true;
             tplDialog.close();
             openCreateArticleDialog(event);
             break;
 
           case "CLOSE":
             tplDialog.close();
-            event.completed();
+            complete();
             break;
 
           default:
@@ -1526,9 +1576,11 @@ function openArticleWizardDialog(
       }
 
       const wzDialog = result.value;
+      const complete = makeEventCompleter(event);
+      let transitioning = false;
 
       wzDialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        event.completed();
+        if (!transitioning) complete();
       });
 
       wzDialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
@@ -1550,13 +1602,14 @@ function openArticleWizardDialog(
           }
 
           case "BACK_TO_PICKER":
+            transitioning = true;
             wzDialog.close();
             openTemplatePickerDialog(event, personName, personEmail);
             break;
 
           case "CLOSE":
             wzDialog.close();
-            event.completed();
+            complete();
             break;
 
           default:
@@ -1600,8 +1653,9 @@ function openArticleFormDialog(
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(event);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        event.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -1617,13 +1671,13 @@ function openArticleFormDialog(
               dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
               break;
             }
-            dialog.close();
-            event.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           }
           case "CLOSE":
-            dialog.close();
-            event.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           default:
             break;
@@ -1661,8 +1715,9 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(event);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        event.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -1676,8 +1731,8 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
             break;
           }
           case "CLOSE":
-            dialog.close();
-            event.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           default:
             break;
@@ -1715,8 +1770,9 @@ async function openListSelectionDialog(event: Office.AddinCommands.Event): Promi
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(event);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        event.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -1730,8 +1786,8 @@ async function openListSelectionDialog(event: Office.AddinCommands.Event): Promi
             break;
           }
           case "CLOSE":
-            dialog.close();
-            event.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           default:
             break;
@@ -1764,7 +1820,8 @@ async function openListIdentifiedPrincipleDialog(event: Office.AddinCommands.Eve
     (result) => {
       if (result.status === Office.AsyncResultStatus.Failed) { handleDialogOpenError(result.error, event); return; }
       const dialog = result.value;
-      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { event.completed(); });
+      const complete = makeEventCompleter(event);
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { complete(); });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
         if (m.action === "READY") {
@@ -1778,7 +1835,7 @@ async function openListIdentifiedPrincipleDialog(event: Office.AddinCommands.Eve
           try { openIdentifiedPrincipleReport((m as { action: string; principle: import("@/types/db").PrincipleInSelection }).principle); }
           catch { /* non-critical */ }
         } else if (m.action === "CLOSE") {
-          dialog.close(); event.completed();
+          try { dialog.close(); } catch { } complete();
         }
       });
     }
@@ -1808,7 +1865,8 @@ async function openListInterpretedPrincipleDialog(event: Office.AddinCommands.Ev
     (result) => {
       if (result.status === Office.AsyncResultStatus.Failed) { handleDialogOpenError(result.error, event); return; }
       const dialog = result.value;
-      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { event.completed(); });
+      const complete = makeEventCompleter(event);
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { complete(); });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
         if (m.action === "READY") {
@@ -1828,7 +1886,7 @@ async function openListInterpretedPrincipleDialog(event: Office.AddinCommands.Ev
         } else if (m.action === "REMOVE_ATTACHED_FILE") {
           removeAttachedFile((m as { action: string; id: number }).id);
         } else if (m.action === "CLOSE") {
-          dialog.close(); event.completed();
+          try { dialog.close(); } catch { } complete();
         }
       });
     }
@@ -1858,7 +1916,8 @@ async function openListSelectionRelatedPrincipleDialog(event: Office.AddinComman
     (result) => {
       if (result.status === Office.AsyncResultStatus.Failed) { handleDialogOpenError(result.error, event); return; }
       const dialog = result.value;
-      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { event.completed(); });
+      const complete = makeEventCompleter(event);
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { complete(); });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
         if (m.action === "READY") {
@@ -1874,7 +1933,7 @@ async function openListSelectionRelatedPrincipleDialog(event: Office.AddinComman
             openRelatedPrincipleReport(relation);
           } catch { /* non-critical — report window blocked or failed */ }
         } else if (m.action === "CLOSE") {
-          dialog.close(); event.completed();
+          try { dialog.close(); } catch { } complete();
         }
       });
     }
@@ -1895,9 +1954,10 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(addInEvent);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
         void (evt as { error: number }).error;
-        addInEvent.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -1938,12 +1998,12 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
           }
           case "OPEN_MAILTO":
             openMailtoUrl((m as { action: string; url: string }).url);
-            dialog.close();
-            addInEvent.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           case "CLOSE":
-            dialog.close();
-            addInEvent.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           default:
             break;
@@ -1957,7 +2017,7 @@ async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const meta = await fetchSelectionOrNotify(
     mode,
-    mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
+    "Text Selection Message",
     "The feedback entity is an entity that enables us to make an adjustment to " +
     "to another entity where the other entity contains error.  In this case, " +
     "the feedback entity enables us to correct error in the other entity.  In " +
@@ -2006,9 +2066,10 @@ function openApplyDialog(initPayload: DialogInitPayload, addInEvent: Office.Addi
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(addInEvent);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
         void (evt as { error: number }).error;
-        addInEvent.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -2022,12 +2083,12 @@ function openApplyDialog(initPayload: DialogInitPayload, addInEvent: Office.Addi
             } catch (err) {
               dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
             }
-            dialog.close();
-            addInEvent.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           case "CLOSE":
-            dialog.close();
-            addInEvent.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           default:
             break;
@@ -2041,7 +2102,7 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const meta = await fetchSelectionOrNotify(
     mode,
-    mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
+    "Text Selection Message",
     "In order to apply an entity as feedback, that entity must exist. " +
     "If an entity does not exist, then that entity cannot be applied as " +
     "feedback.  In order for me to apply a paragraph or a selected text " +
@@ -2086,9 +2147,10 @@ function openSelectionConfigDialog(addInEvent: Office.AddinCommands.Event): void
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(addInEvent);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
         void (evt as { error: number }).error;
-        addInEvent.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -2100,8 +2162,8 @@ function openSelectionConfigDialog(addInEvent: Office.AddinCommands.Event): void
             } } as HostMessage));
             break;
           case "CLOSE":
-            dialog.close();
-            addInEvent.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           default:
             break;
@@ -2125,9 +2187,10 @@ function openFlagDialog(initPayload: DialogInitPayload, addInEvent: Office.Addin
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(addInEvent);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
         void (evt as { error: number }).error;
-        addInEvent.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -2147,8 +2210,8 @@ function openFlagDialog(initPayload: DialogInitPayload, addInEvent: Office.Addin
             break;
           }
           case "CLOSE":
-            dialog.close();
-            addInEvent.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           default:
             break;
@@ -2162,7 +2225,7 @@ async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.Addin
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const meta = await fetchSelectionOrNotify(
     mode,
-    mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
+    "Text Selection Message",
     "In order to flag an entity for analysis, that entity must exist. " +
     "In order to flag an entity for analysis, that entity must be identified. " +
     "It is not possible to flag an entity for analysis if that entity is not " +
@@ -2225,8 +2288,9 @@ async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Even
         return;
       }
       const dialog = result.value;
+      const complete = makeEventCompleter(addInEvent);
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        addInEvent.completed();
+        complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -2275,12 +2339,12 @@ async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Even
           }
           case "OPEN_MAILTO":
             openMailtoUrl((m as { action: string; url: string }).url);
-            dialog.close();
-            addInEvent.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           case "CLOSE":
-            dialog.close();
-            addInEvent.completed();
+            try { dialog.close(); } catch { }
+            complete();
             break;
           default:
             break;
@@ -2381,8 +2445,9 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
           return;
         }
         const dialog = result.value;
+        const complete = makeEventCompleter(event);
         dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-          event.completed();
+          complete();
         });
         dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
           const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -2393,13 +2458,13 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
             case "SAVE_COMMUNICATION_CONFIG":
               try {
                 saveCommunicationConfig(m.payload as SaveCommunicationConfigPayload);
-                dialog.close();
-                event.completed();
+                try { dialog.close(); } catch { }
+                complete();
               } catch (err) { replyError(dialog, `Failed to save configuration: ${String(err)}`); }
               break;
             case "CLOSE":
-              dialog.close();
-              event.completed();
+              try { dialog.close(); } catch { }
+              complete();
               break;
             default:
               break;
