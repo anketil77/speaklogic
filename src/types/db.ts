@@ -622,6 +622,12 @@ export interface AnalysisDataForApply {
   correctedItems: Array<Omit<ProjectCorrectedItem, "id" | "analysisId">>;
 }
 
+export interface ContactPerson {
+  id: number;
+  personName: string;
+  emailAddress: string;
+}
+
 export interface DialogInitPayload {
   selection: string;
   selectionHtml?: string;
@@ -656,6 +662,7 @@ export interface DialogInitPayload {
   wizardCategory?: string;
   /** Passed when editing an existing article from the list view. */
   editArticleData?: Article;
+  contacts?: ContactPerson[];
 }
 
 export interface SaveFeedbackPayload {
@@ -745,7 +752,10 @@ export type DialogAction =
   | { action: "LIST_FEEDBACK_APPLIED" }
   | { action: "LIST_FEEDBACK_PROVIDED" }
   | { action: "BACK_TO_FEEDBACK_HISTORY" }
-  | { action: "OPEN_MAILTO"; url: string };
+  | { action: "OPEN_MAILTO"; url: string }
+  | { action: "ADD_CONTACT"; personName: string; emailAddress: string }
+  | { action: "UPDATE_CONTACT"; id: number; personName: string; emailAddress: string }
+  | { action: "DELETE_CONTACT"; id: number };
 
 export interface SaveRelatedSelectionPayload {
   record: Omit<SelectionWithPrinciple, "id">;

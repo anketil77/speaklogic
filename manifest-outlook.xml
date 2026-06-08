@@ -207,6 +207,12 @@
 
               <Group id="grpAbout_OL">
                 <Label resid="grpAbout.Label"/>
+                <Control xsi:type="Button" id="contacts_OL_v10_btn">
+                  <Label resid="people.Label"/>
+                  <Supertip><Title resid="people.Label"/><Description resid="people.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="people.Icon16"/><bt:Image size="32" resid="people.Icon32"/><bt:Image size="80" resid="people.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>openPeople</FunctionName></Action>
+                </Control>
                 <Control xsi:type="Menu" id="speakLogicInfoMenu_OL_v10">
                   <Label resid="speakLogicInfoMenu.Label"/>
                   <Supertip><Title resid="speakLogicInfoMenu.Label"/><Description resid="speakLogicInfoMenu.Tooltip"/></Supertip>
@@ -306,6 +312,9 @@
         <bt:Image id="communicationConfig.Icon16" DefaultValue="https://localhost:3000/assets/btn-comm-config-16.png"/>
         <bt:Image id="communicationConfig.Icon32" DefaultValue="https://localhost:3000/assets/btn-comm-config-32.png"/>
         <bt:Image id="communicationConfig.Icon80" DefaultValue="https://localhost:3000/assets/btn-comm-config-80.png"/>
+        <bt:Image id="people.Icon16" DefaultValue="https://localhost:3000/assets/btn-people-16.png"/>
+        <bt:Image id="people.Icon32" DefaultValue="https://localhost:3000/assets/btn-people-32.png"/>
+        <bt:Image id="people.Icon80" DefaultValue="https://localhost:3000/assets/btn-people-80.png"/>
         <bt:Image id="requestSLFeedback.Icon16" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-16.png"/>
         <bt:Image id="requestSLFeedback.Icon32" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-32.png"/>
         <bt:Image id="requestSLFeedback.Icon80" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-80.png"/>
@@ -356,6 +365,7 @@
         <bt:String id="listIntPrinciple.Label" DefaultValue="List Interpreted Principle"/>
         <bt:String id="listRelPrinciple.Label" DefaultValue="List Selection Related with Principle"/>
         <bt:String id="communicationConfig.Label" DefaultValue="Communication Config"/>
+        <bt:String id="people.Label" DefaultValue="Contacts"/>
         <bt:String id="requestSLFeedback.Label" DefaultValue="Request SL Feedback"/>
         <bt:String id="help.Label" DefaultValue="Help"/>
         <bt:String id="about.Label" DefaultValue="About"/>
@@ -386,6 +396,7 @@
         <bt:String id="listIntPrinciple.Tooltip" DefaultValue="View all interpreted principles"/>
         <bt:String id="listRelPrinciple.Tooltip" DefaultValue="View all selections related to a principle"/>
         <bt:String id="communicationConfig.Tooltip" DefaultValue="Configure your name and email for analysis and feedback"/>
+        <bt:String id="people.Tooltip" DefaultValue="Manage your contacts for feedback and analysis"/>
         <bt:String id="requestSLFeedback.Tooltip" DefaultValue="Send feedback to the Speak Logic team"/>
         <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
         <bt:String id="about.Tooltip" DefaultValue="About Speak Logic"/>
@@ -536,6 +547,12 @@
 
                 <Group id="grpAbout_OL_v11">
                   <Label resid="grpAbout.Label.v11"/>
+                  <Control xsi:type="Button" id="contacts_OL_v11_btn">
+                    <Label resid="people.Label.v11"/>
+                    <Supertip><Title resid="people.Label.v11"/><Description resid="people.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="people.Icon16.v11"/><bt:Image size="32" resid="people.Icon32.v11"/><bt:Image size="80" resid="people.Icon80.v11"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>openPeople</FunctionName></Action>
+                  </Control>
                   <Control xsi:type="Menu" id="speakLogicInfoMenu_OL_v11">
                     <Label resid="speakLogicInfoMenu.Label.v11"/>
                     <Supertip><Title resid="speakLogicInfoMenu.Label.v11"/><Description resid="speakLogicInfoMenu.Tooltip.v11"/></Supertip>
@@ -684,6 +701,12 @@
 
                 <Group id="grpAbout_OLC">
                   <Label resid="grpAbout.Label.v11"/>
+                  <Control xsi:type="Button" id="contacts_OLC_v11_btn">
+                    <Label resid="people.Label.v11"/>
+                    <Supertip><Title resid="people.Label.v11"/><Description resid="people.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="people.Icon16.v11"/><bt:Image size="32" resid="people.Icon32.v11"/><bt:Image size="80" resid="people.Icon80.v11"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>openPeople</FunctionName></Action>
+                  </Control>
                   <Control xsi:type="Menu" id="speakLogicInfoMenu_OLC_v11">
                     <Label resid="speakLogicInfoMenu.Label.v11"/>
                     <Supertip><Title resid="speakLogicInfoMenu.Label.v11"/><Description resid="speakLogicInfoMenu.Tooltip.v11"/></Supertip>
@@ -777,6 +800,9 @@
           <bt:Image id="communicationConfig.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-16.png"/>
           <bt:Image id="communicationConfig.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-32.png"/>
           <bt:Image id="communicationConfig.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-comm-config-80.png"/>
+          <bt:Image id="people.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-people-16.png"/>
+          <bt:Image id="people.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-people-32.png"/>
+          <bt:Image id="people.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-people-80.png"/>
           <bt:Image id="requestSLFeedback.Icon16.v11" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-16.png"/>
           <bt:Image id="requestSLFeedback.Icon32.v11" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-32.png"/>
           <bt:Image id="requestSLFeedback.Icon80.v11" DefaultValue="https://localhost:3000/assets/btn-req-sl-fb-80.png"/>
@@ -829,6 +855,7 @@
           <bt:String id="listIntPrinciple.Label.v11" DefaultValue="List Interpreted Principle"/>
           <bt:String id="listRelPrinciple.Label.v11" DefaultValue="List Selection Related with Principle"/>
           <bt:String id="communicationConfig.Label.v11" DefaultValue="Communication Config"/>
+          <bt:String id="people.Label.v11" DefaultValue="Contacts"/>
           <bt:String id="requestSLFeedback.Label.v11" DefaultValue="Request SL Feedback"/>
           <bt:String id="help.Label.v11" DefaultValue="Help"/>
           <bt:String id="about.Label.v11" DefaultValue="About"/>
@@ -858,6 +885,7 @@
           <bt:String id="listIntPrinciple.Tooltip.v11" DefaultValue="View all interpreted principles"/>
           <bt:String id="listRelPrinciple.Tooltip.v11" DefaultValue="View all selections related to a principle"/>
           <bt:String id="communicationConfig.Tooltip.v11" DefaultValue="Configure your name and email for analysis and feedback"/>
+          <bt:String id="people.Tooltip.v11" DefaultValue="Manage your contacts for feedback and analysis"/>
           <bt:String id="requestSLFeedback.Tooltip.v11" DefaultValue="Send feedback to the Speak Logic team"/>
           <bt:String id="help.Tooltip.v11" DefaultValue="View help documentation"/>
           <bt:String id="about.Tooltip.v11" DefaultValue="About Speak Logic"/>

@@ -10,7 +10,7 @@ import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses,
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
-import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
+import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail, getAllPeople, updatePersonById, deletePersonById } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { saveArticle, updateArticle, publishArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById } from "@/db/queries/article";
 import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
@@ -140,6 +140,7 @@ function registerHandlers(): void {
   });
   Office.actions.associate("about", (event) => openAboutDialog(event));
   Office.actions.associate("communicationConfig", (event) => openCommunicationConfigDialog(event));
+  Office.actions.associate("openPeople", (event) => openPeopleDialog(event));
   Office.actions.associate("createArticle", (event) =>
     void openCreateArticleDialog(event)
   );
@@ -2713,6 +2714,80 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
                 try { dialog.close(); } catch { }
                 complete();
               } catch (err) { replyError(dialog, `Failed to save configuration: ${String(err)}`); }
+              break;
+            case "CLOSE":
+              try { dialog.close(); } catch { }
+              complete();
+              break;
+            default:
+              break;
+          }
+        });
+      }
+    );
+  }).catch((err: unknown) => {
+    showNoSelectionMessage("Database Error", String(err), event);
+  });
+}
+
+function openPeopleDialog(event: Office.AddinCommands.Event): void {
+  ensureDb().then(() => {
+    const buildPayload = (): DialogInitPayload => ({
+      selection: "",
+      mode: "selection",
+      source: getSource(),
+      personName: "",
+      personEmail: "",
+      applicationName: "",
+      communicationFunction: "",
+      communicationSignal: "",
+      projectName: "",
+      peopleList: [],
+      contacts: getAllPeople(),
+    });
+
+    const TARGET_H_PX = 520;
+    const TARGET_W_PX = 460;
+    const screenH = window.screen?.availHeight || 900;
+    const screenW = window.screen?.availWidth  || 1440;
+    const h = Math.min(80, Math.max(30, Math.round((TARGET_H_PX / (screenH * 0.93)) * 100) + 4));
+    const w = Math.min(80, Math.max(22, Math.round((TARGET_W_PX / (screenW * 0.95)) * 100)));
+
+    Office.context.ui.displayDialogAsync(
+      `${DIALOG_BASE}/dialog.html?view=people`,
+      { height: h, width: w, displayInIframe: true },
+      (result) => {
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          handleDialogOpenError(result.error, event);
+          return;
+        }
+        const dialog = result.value;
+        const complete = makeEventCompleter(event);
+        dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { complete(); });
+        dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+          const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+          const sendInit = () => dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          switch (m.action) {
+            case "READY":
+              sendInit();
+              break;
+            case "ADD_CONTACT":
+              try {
+                upsertPersonWithEmail(m.personName, m.emailAddress);
+                sendInit();
+              } catch (err) { replyError(dialog, `Failed to add contact: ${String(err)}`); }
+              break;
+            case "UPDATE_CONTACT":
+              try {
+                updatePersonById(m.id, m.personName, m.emailAddress);
+                sendInit();
+              } catch (err) { replyError(dialog, `Failed to update contact: ${String(err)}`); }
+              break;
+            case "DELETE_CONTACT":
+              try {
+                deletePersonById(m.id);
+                sendInit();
+              } catch (err) { replyError(dialog, `Failed to delete contact: ${String(err)}`); }
               break;
             case "CLOSE":
               try { dialog.close(); } catch { }

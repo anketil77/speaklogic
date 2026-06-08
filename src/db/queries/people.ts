@@ -1,6 +1,7 @@
 // src/db/queries/people.ts
 
 import { getDb, persistDb } from "@/db/db";
+import type { ContactPerson } from "@/types/db";
 
 export function getPeopleEmailMap(): Record<string, string> {
   try {
@@ -45,6 +46,47 @@ export function upsertPersonName(name: string): void {
     persistDb();
   } catch {
     // non-critical — analysis already saved
+  }
+}
+
+export function getAllPeople(): ContactPerson[] {
+  try {
+    const db = getDb();
+    const result = db.exec(
+      "SELECT id, personName, emailAddress FROM PeopleInProject WHERE personName IS NOT NULL AND personName != '' ORDER BY personName"
+    );
+    if (!result.length) return [];
+    return result[0].values.map((row) => ({
+      id: Number(row[0]),
+      personName: String(row[1]),
+      emailAddress: row[2] ? String(row[2]) : "",
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function updatePersonById(id: number, name: string, email: string): void {
+  if (!name.trim()) return;
+  try {
+    const db = getDb();
+    db.run(
+      "UPDATE PeopleInProject SET personName = ?, emailAddress = ? WHERE id = ?",
+      [name.trim(), email.trim(), id]
+    );
+    persistDb();
+  } catch {
+    // non-critical
+  }
+}
+
+export function deletePersonById(id: number): void {
+  try {
+    const db = getDb();
+    db.run("DELETE FROM PeopleInProject WHERE id = ?", [id]);
+    persistDb();
+  } catch {
+    // non-critical
   }
 }
 

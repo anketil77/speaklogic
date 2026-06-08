@@ -47,6 +47,7 @@ const SelectionHistoryView = lazy(() => import("@/dialog/views/SelectionHistoryV
 const ListIdentifiedPrincipleView = lazy(() => import("@/dialog/views/ListIdentifiedPrincipleView"));
 const ListInterpretedPrincipleView = lazy(() => import("@/dialog/views/ListInterpretedPrincipleView"));
 const ListSelectionRelatedPrincipleView = lazy(() => import("@/dialog/views/ListSelectionRelatedPrincipleView"));
+const PeopleView = lazy(() => import("@/dialog/views/PeopleView"));
 import type { DialogInitPayload, HostMessage } from "@/types/db";
 import { dbg } from "@/debug/log";
 
@@ -193,6 +194,8 @@ function DialogApp() {
         return <ListArticlesView />;
       case "article-wizard":
         return <ArticleWizardView />;
+      case "people":
+        return <PeopleView />;
       case "about":
         return <AboutView />;
       case "help":
