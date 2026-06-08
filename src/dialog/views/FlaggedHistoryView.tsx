@@ -93,7 +93,7 @@ const COLUMNS: PanelTableCol<FlagEntityForAnalysis>[] = [
 ];
 
 export default function FlaggedHistoryView() {
-  const { initData, sendMessage, closeDialog } = useDialogComm();
+  const { initData, sendMessage, submitSave, closeDialog } = useDialogComm();
 
   const allRows = useMemo(
     () => (initData?.flaggedEntities ?? []) as FlagEntityForAnalysis[],
@@ -778,7 +778,7 @@ export default function FlaggedHistoryView() {
         <InterpretePrincipleDialog
           principle={interpretPrinciple}
           defaultPerson={initData?.personName}
-          sendMessage={sendMessage}
+          sendMessage={submitSave}
           onClose={() => setInterpretPrinciple(null)}
           onListIdentified={() => { setInterpretPrinciple(null); setShowIdentifiedList(true); }}
           onListInterpreted={() => { setInterpretPrinciple(null); setShowInterpretedList(true); }}
@@ -797,7 +797,7 @@ export default function FlaggedHistoryView() {
       {relateFlag && (
         <RelateSelectionWithPrincipleDialog
           flag={relateFlag}
-          sendMessage={sendMessage}
+          sendMessage={submitSave}
           onClose={() => setRelateFlag(null)}
           onListIdentified={() => { setRelateFlag(null); setShowIdentifiedList(true); }}
           onListInterpreted={() => { setRelateFlag(null); setShowInterpretedList(true); }}
@@ -807,7 +807,7 @@ export default function FlaggedHistoryView() {
       {identifyFlag && (
         <IdentifyPrincipleInSelectionDialog
           flag={identifyFlag}
-          sendMessage={sendMessage}
+          sendMessage={submitSave}
           onClose={() => setIdentifyFlag(null)}
           onListIdentified={() => { setIdentifyFlag(null); setShowIdentifiedList(true); }}
           onListInterpreted={() => { setIdentifyFlag(null); setShowInterpretedList(true); }}

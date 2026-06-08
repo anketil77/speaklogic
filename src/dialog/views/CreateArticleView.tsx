@@ -11,7 +11,7 @@ import {
 import { ArticleEditorPanel } from "@/dialog/views/createarticle/ArticleEditorPanel";
 
 export default function CreateArticleView() {
-  const { sendMessage } = useDialogComm();
+  const { sendMessage, submitSave, saving } = useDialogComm();
 
   // ── Form state ──────────────────────────────────────────────────────────────
   const [title, setTitle]             = useState("");
@@ -89,7 +89,7 @@ export default function CreateArticleView() {
         }
       }
       setError("");
-      sendMessage({
+      submitSave({
         action: "SAVE_ARTICLE",
         payload: {
           articleTitle: title.trim(),
@@ -101,7 +101,7 @@ export default function CreateArticleView() {
         },
       });
     },
-    [title, category, articleBasisReference, givenSetOn, sendMessage, isContentEmpty],
+    [title, category, articleBasisReference, givenSetOn, submitSave, isContentEmpty],
   );
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -521,6 +521,7 @@ export default function CreateArticleView() {
         {/* Save as draft — keep inline */}
         <button
           onClick={() => handleSave(1)}
+          disabled={saving}
           onMouseEnter={() => setDraftHover(true)}
           onMouseLeave={() => setDraftHover(false)}
           style={{
@@ -537,13 +538,14 @@ export default function CreateArticleView() {
             fontSize: 10.8,
             lineHeight: "13px",
             color: "#1B1B1B",
-            cursor: "pointer",
+            cursor: saving ? "default" : "pointer",
             fontFamily: "inherit",
+            opacity: saving ? 0.7 : 1,
           }}
         >
           Save as draft
         </button>
-        <PrimaryBtn label="Save Article" onClick={() => handleSave(0)} />
+        <PrimaryBtn label={saving ? "Saving…" : "Save Article"} onClick={() => handleSave(0)} disabled={saving} />
       </FooterBar>
 
       {/* ── Category picker portal ── */}

@@ -291,7 +291,7 @@ function RemoveOverlay({ message, onYes, onNo }: { message: string; onYes: () =>
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ApplyView() {
   const styles = useStyles();
-  const { initData, sendMessage, closeDialog } = useDialogComm();
+  const { initData, sendMessage, submitSave, saving, closeDialog } = useDialogComm();
   const editorRef = useRef<HTMLDivElement>(null);
   const lastSelectionRef = useRef<string>("");
   const [activeTab, setActiveTab] = useState<TabValue>("feedback");
@@ -605,9 +605,9 @@ export default function ApplyView() {
   const confirmSave = useCallback(() => {
     if (pendingPayload) {
       dbg("APPLY", "confirmSave — sending SAVE_FEEDBACK");
-      sendMessage({ action: "SAVE_FEEDBACK", payload: pendingPayload });
+      submitSave({ action: "SAVE_FEEDBACK", payload: pendingPayload });
     }
-  }, [pendingPayload, sendMessage]);
+  }, [pendingPayload, submitSave]);
 
   if (!initData) {
     return (
@@ -938,8 +938,8 @@ export default function ApplyView() {
               <button style={{ ...btnStyle("cancel"), fontSize: "12px" }} onClick={() => { setShowConfirm(false); setPendingPayload(null); }}>
                 No — Continue Editing
               </button>
-              <button style={{ ...btnStyle("apply"), fontSize: "12px" }} onClick={confirmSave}>
-                Yes — Save Feedback
+              <button disabled={saving} style={{ ...btnStyle("apply"), fontSize: "12px", ...(saving ? { background: "#C5C5C5", cursor: "default" } : {}) }} onClick={confirmSave}>
+                {saving ? "Saving…" : "Yes — Save Feedback"}
               </button>
             </div>
           </div>

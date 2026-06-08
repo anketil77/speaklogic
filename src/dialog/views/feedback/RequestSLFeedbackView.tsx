@@ -215,7 +215,7 @@ const SIGNAL_OPTIONS = [
 
 export default function RequestSLFeedbackView() {
   const styles = useStyles();
-  const { initData, sendMessage, closeDialog, mailtoUrl } = useDialogComm();
+  const { initData, submitSave, saving, closeDialog, mailtoUrl } = useDialogComm();
   const editorRef = useRef<HTMLDivElement>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [footerBtnHover, setFooterBtnHover] = useState(false);
@@ -277,8 +277,8 @@ export default function RequestSLFeedbackView() {
       files: attachedFiles.length > 0 ? attachedFiles : undefined,
     };
 
-    sendMessage({ action: "SAVE_REQUEST_SL_FEEDBACK", payload });
-  }, [form, attachedFiles, initData, sendMessage]);
+    submitSave({ action: "SAVE_REQUEST_SL_FEEDBACK", payload });
+  }, [form, attachedFiles, initData, submitSave]);
 
   if (!initData) {
     return (
@@ -333,9 +333,11 @@ export default function RequestSLFeedbackView() {
         <button
           className={styles.applyMainBtn}
           onClick={save}
+          disabled={saving}
+          style={saving ? { opacity: 0.7, cursor: "default" } : undefined}
         >
           <CheckmarkRegular style={{ fontSize: "13px", color: colors.white }} />
-          <span className={styles.applyMainBtnText}>Request SL Feedback</span>
+          <span className={styles.applyMainBtnText}>{saving ? "Saving…" : "Request SL Feedback"}</span>
         </button>
 
         <div className={styles.cmdSep} />
@@ -484,12 +486,13 @@ export default function RequestSLFeedbackView() {
         <span className={styles.footerHint}>Fill in all required fields, then click Request SL Feedback to save and send.</span>
         <button style={btnStyle("cancel")} onClick={closeDialog}>Cancel</button>
         <button
-          style={{ ...btnStyle("apply"), background: footerBtnHover ? "#106EBE" : colors.azure42 }}
+          disabled={saving}
+          style={{ ...btnStyle("apply"), background: saving ? "#C5C5C5" : footerBtnHover ? "#106EBE" : colors.azure42, cursor: saving ? "default" : "pointer" }}
           onMouseEnter={() => setFooterBtnHover(true)}
           onMouseLeave={() => setFooterBtnHover(false)}
           onClick={save}
         >
-          Request SL Feedback
+          {saving ? "Saving…" : "Request SL Feedback"}
         </button>
       </div>
 

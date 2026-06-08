@@ -262,7 +262,7 @@ const ALL_TABS: { value: TabValue; label: string }[] = [
 
 export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
   const styles = useStyles();
-  const { initData, sendMessage, closeDialog, retainSaved } = useDialogComm();
+  const { initData, sendMessage, submitSave, saving, closeDialog, retainSaved } = useDialogComm();
   const editorRef = useRef<HTMLDivElement>(null);
   const lastAnalysisSelectionRef = useRef<string>("");
   const cmdBarRef = useRef<HTMLDivElement>(null);
@@ -467,7 +467,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
       }
       setValidationError(null);
 
-      sendMessage({
+      submitSave({
         action: "SAVE_ANALYSIS",
         payload: {
           analysis: {
@@ -506,7 +506,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         } satisfies SaveAnalysisPayload,
       });
     },
-    [form, panels.questions, panels.answers, panels.errors, panels.compensators, panels.problems, panels.files, initData, sendMessage]
+    [form, panels.questions, panels.answers, panels.errors, panels.compensators, panels.problems, panels.files, initData, submitSave]
   );
 
   const tabCount = useMemo(
@@ -728,13 +728,14 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
           Cancel
         </button>
 
-        <SaveSplitButton onSave={save} />
+        <SaveSplitButton onSave={save} saving={saving} />
       </div>
 
+      {/* submitSave (not sendMessage): the sub-dialog's only message is a SAVE — route it through the double-submit guard. */}
       <AnalyzeSubDialogs
         panels={panels}
         applicationName={initData?.applicationName}
-        sendMessage={sendMessage}
+        sendMessage={submitSave}
         onAddError={(text) => applyEuaHighlight(text, "#FF0000")}
         onAddCompensator={() => applyAnalysisHighlight()}
       />

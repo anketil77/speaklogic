@@ -8,7 +8,7 @@
 
 /* global Office */
 
-import React, { useState, useEffect, useCallback, Suspense, lazy } from "react";
+import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { FluentProvider, Spinner, webLightTheme } from "@fluentui/react-components";
 import { ErrorBoundary } from "@/dialog/components/ErrorBoundary";
@@ -56,7 +56,19 @@ function DialogApp() {
   const [initData, setInitData] = useState<DialogInitPayload | null>(null);
   const [mailtoUrl, setMailtoUrl] = useState<string | null>(null);
   const [retainSaved, setRetainSaved] = useState(false);
+  // Double-submit guard shared by every save-capable view. savingRef blocks
+  // re-entrant sends synchronously (state updates are async); `saving` drives
+  // the disabled/"Saving…" UI. Reset when the host responds (or a 20s safety net).
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mode = (params.get("mode") ?? "selection") as "selection" | "paragraph";
+
+  const resetSaving = useCallback(() => {
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+    savingRef.current = false;
+    setSaving(false);
+  }, []);
 
   useEffect(() => {
     Office.onReady(() => {
@@ -78,16 +90,20 @@ function DialogApp() {
             dbg("DIALOG", "NAVIGATE received — switching view", { view: msg.view });
             setInitData(msg.payload);   // swap payload before switching view
             setCurrentView(msg.view);
+            resetSaving();              // new view → allow its own save
           } else if (msg.type === "SAVED") {
             dbg("DIALOG", "SAVED received — showing success state", { hasMailto: !!msg.mailtoUrl });
             setMailtoUrl(msg.mailtoUrl);
+            resetSaving();
           } else if (msg.type === "COMPOSE_OPENING") {
             dbg("DIALOG", "COMPOSE_OPENING received — host confirmed OPEN_MAILTO and is closing dialog");
           } else if (msg.type === "RETAIN_SAVED") {
             dbg("DIALOG", "RETAIN_SAVED received — showing retain success state");
             setRetainSaved(true);
+            resetSaving();
           } else if (msg.type === "ERROR") {
             dbg("DIALOG", "ERROR received from host", { message: (msg as { type: string; message: string }).message });
+            resetSaving();             // let the user retry after a host error
           }
         }
       );
@@ -102,6 +118,22 @@ function DialogApp() {
     dbg("DIALOG", "sendMessage (messageParent)", { action: (action as { action?: string }).action });
     Office.context.ui.messageParent(JSON.stringify(action));
   }, []);
+
+  // Save-action wrapper: ignores repeat clicks while a save is in flight, so a
+  // slow host round-trip (esp. Word on the web) can't create duplicate records.
+  // Stays locked until the host replies (SAVED/RETAIN_SAVED/NAVIGATE/ERROR),
+  // the dialog closes, or the 20s safety timeout fires.
+  const submitSave = useCallback((action: object) => {
+    if (savingRef.current) {
+      dbg("DIALOG", "submitSave ignored — save already in flight", { action: (action as { action?: string }).action });
+      return;
+    }
+    savingRef.current = true;
+    setSaving(true);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => { resetSaving(); }, 20000);
+    Office.context.ui.messageParent(JSON.stringify(action));
+  }, [resetSaving]);
 
   const closeDialog = useCallback(() => {
     dbg("DIALOG", "closeDialog — messageParent CLOSE (primary)");
@@ -198,7 +230,7 @@ function DialogApp() {
   };
 
   return (
-    <DialogCommContext.Provider value={{ initData, sendMessage, closeDialog, mailtoUrl, retainSaved }}>
+    <DialogCommContext.Provider value={{ initData, sendMessage, submitSave, saving, closeDialog, mailtoUrl, retainSaved }}>
       <ErrorBoundary>
         <FluentProvider
           theme={webLightTheme}

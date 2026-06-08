@@ -4,6 +4,8 @@ type SaveAction = "RetainAnalysisAsNeed" | "ProvideFeedbackWithAnalysis" | "Appl
 
 interface SaveSplitButtonProps {
   onSave: (action: SaveAction) => void;
+  /** When true, a save is in flight: buttons disable and the label shows "Saving…". */
+  saving?: boolean;
 }
 
 const ITEMS: { label: string; action: SaveAction }[] = [
@@ -15,7 +17,7 @@ const ITEMS: { label: string; action: SaveAction }[] = [
 const BG_DEFAULT = "#0078D4";
 const BG_HOVER   = "#106EBE";
 
-export function SaveSplitButton({ onSave }: SaveSplitButtonProps) {
+export function SaveSplitButton({ onSave, saving = false }: SaveSplitButtonProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +52,7 @@ export function SaveSplitButton({ onSave }: SaveSplitButtonProps) {
             <button
               key={action}
               role="menuitem"
+              disabled={saving}
               onClick={() => { setOpen(false); onSave(action); }}
               style={{ display: "block", width: "100%", padding: "9px 15px", background: "none", border: "none", textAlign: "left", fontSize: "12.3px", color: "#1B1B1B", cursor: "pointer", fontFamily: "inherit" }}
               onMouseEnter={e => (e.currentTarget.style.background = "#F5F5F5")}
@@ -61,20 +64,22 @@ export function SaveSplitButton({ onSave }: SaveSplitButtonProps) {
         </div>
       )}
 
-      <div style={{ display: "flex", height: "32px", borderRadius: 4, overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "32px", borderRadius: 4, overflow: "hidden", opacity: saving ? 0.7 : 1 }}>
         <button
-          style={{ padding: "0 16px", background: BG_DEFAULT, border: "none", color: "#FFFFFF", fontSize: "12.7px", fontWeight: 700, fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap" }}
+          disabled={saving}
+          style={{ padding: "0 16px", background: BG_DEFAULT, border: "none", color: "#FFFFFF", fontSize: "12.7px", fontWeight: 700, fontFamily: "inherit", cursor: saving ? "default" : "pointer", whiteSpace: "nowrap" }}
           onClick={() => onSave("RetainAnalysisAsNeed")}
-          onMouseEnter={e => (e.currentTarget.style.background = BG_HOVER)}
+          onMouseEnter={e => { if (!saving) e.currentTarget.style.background = BG_HOVER; }}
           onMouseLeave={e => (e.currentTarget.style.background = BG_DEFAULT)}
         >
-          Save
+          {saving ? "Saving…" : "Save"}
         </button>
         <div style={{ width: 1, background: "rgba(255,255,255,0.35)", alignSelf: "stretch", margin: "7px 0" }} />
         <button
-          style={{ width: 26, background: BG_DEFAULT, border: "none", color: "#FFFFFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, fontSize: "10px" }}
+          disabled={saving}
+          style={{ width: 26, background: BG_DEFAULT, border: "none", color: "#FFFFFF", cursor: saving ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, fontSize: "10px" }}
           onClick={() => setOpen(o => !o)}
-          onMouseEnter={e => (e.currentTarget.style.background = BG_HOVER)}
+          onMouseEnter={e => { if (!saving) e.currentTarget.style.background = BG_HOVER; }}
           onMouseLeave={e => (e.currentTarget.style.background = BG_DEFAULT)}
           aria-haspopup="menu"
           aria-expanded={open}

@@ -93,7 +93,7 @@ function FlagPropertyIcon() {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function FlagView() {
-  const { initData, sendMessage, closeDialog } = useDialogComm();
+  const { initData, submitSave, saving, closeDialog } = useDialogComm();
 
   const [entityName, setEntityName] = useState("");
   const [personFlagged, setPersonFlagged] = useState("");
@@ -137,9 +137,9 @@ export default function FlagView() {
       wasEntityAnalyzed: "No",
     };
 
-    sendMessage({ action: "SAVE_FLAG", payload });
+    submitSave({ action: "SAVE_FLAG", payload });
     setSaved(true);
-  }, [personFlagged, entityName, initData, flagDate, flagTime, sendMessage]);
+  }, [personFlagged, entityName, initData, flagDate, flagTime, submitSave]);
 
   if (!initData) {
     return (
@@ -301,7 +301,7 @@ export default function FlagView() {
       {/* FOOTER — h: 57px */}
       <FooterBar>
         <DismissBtn label="Cancel" onClick={closeDialog} />
-        <PrimaryBtn label="Apply" onClick={save} />
+        <PrimaryBtn label={saving ? "Saving…" : "Apply"} onClick={save} disabled={saving} />
       </FooterBar>
 
     </div>

@@ -242,7 +242,7 @@ const PFV_FILE_COLS: PanelTableCol<string[]>[] = [
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ProvideFeedbackView() {
   const styles = useStyles();
-  const { initData, sendMessage, closeDialog, mailtoUrl } = useDialogComm();
+  const { initData, submitSave, saving, closeDialog, mailtoUrl } = useDialogComm();
   const editorRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabValue>("feedback");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -344,9 +344,9 @@ export default function ProvideFeedbackView() {
       },
     };
 
-    sendMessage({ action: "SAVE_FEEDBACK", payload: { ...payload, toPersonEmail: form.toPersonEmail.trim(), files: analysisData?.files ?? [] } });
+    submitSave({ action: "SAVE_FEEDBACK", payload: { ...payload, toPersonEmail: form.toPersonEmail.trim(), files: analysisData?.files ?? [] } });
     // Host will save and respond with SAVED (+ mailtoUrl). Dialog stays open until user clicks Close.
-  }, [form, initData, analysisData, selectionHtml, sendMessage]);
+  }, [form, initData, analysisData, selectionHtml, submitSave]);
 
   if (!initData) {
     return (
@@ -401,9 +401,9 @@ export default function ProvideFeedbackView() {
       {/* ── Command bar ───────────────────────────────────────────────────── */}
       <div className={styles.commandBar}>
         {/* Primary action button */}
-        <button className={styles.applyMainBtn} onClick={save}>
+        <button className={styles.applyMainBtn} onClick={save} disabled={saving} style={saving ? { opacity: 0.7, cursor: "default" } : undefined}>
           <CheckmarkRegular style={{ fontSize: "13px", color: colors.white }} />
-          <span className={styles.applyMainBtnText}>Provide Feedback</span>
+          <span className={styles.applyMainBtnText}>{saving ? "Saving…" : "Provide Feedback"}</span>
         </button>
 
         <div className={styles.cmdSep} />
@@ -648,12 +648,13 @@ export default function ProvideFeedbackView() {
         <span className={styles.footerHint}>Fill in all required fields, then click Provide Feedback to save and send.</span>
         <button style={btnStyle("cancel")} onClick={closeDialog}>Cancel</button>
         <button
-          style={{ ...btnStyle("apply"), background: footerBtnHover ? "#106EBE" : colors.azure42 }}
+          disabled={saving}
+          style={{ ...btnStyle("apply"), background: saving ? "#C5C5C5" : footerBtnHover ? "#106EBE" : colors.azure42, cursor: saving ? "default" : "pointer" }}
           onMouseEnter={() => setFooterBtnHover(true)}
           onMouseLeave={() => setFooterBtnHover(false)}
           onClick={save}
         >
-          Provide Feedback
+          {saving ? "Saving…" : "Provide Feedback"}
         </button>
       </div>
     </div>

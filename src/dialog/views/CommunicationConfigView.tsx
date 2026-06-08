@@ -33,7 +33,7 @@ const labelStyle: React.CSSProperties = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function CommunicationConfigView() {
-  const { initData, sendMessage, closeDialog } = useDialogComm();
+  const { initData, submitSave, saving, closeDialog } = useDialogComm();
   const [personName, setPersonName] = useState("");
   const [personEmail, setPersonEmail] = useState("");
 
@@ -50,8 +50,8 @@ export default function CommunicationConfigView() {
       personName: personName.trim(),
       personEmail: personEmail.trim(),
     };
-    sendMessage({ action: "SAVE_COMMUNICATION_CONFIG", payload });
-  }, [personName, personEmail, sendMessage]);
+    submitSave({ action: "SAVE_COMMUNICATION_CONFIG", payload });
+  }, [personName, personEmail, submitSave]);
 
   if (!initData) {
     return (
@@ -109,7 +109,7 @@ export default function CommunicationConfigView() {
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <FooterBar>
         <DismissBtn label="Cancel" onClick={closeDialog} />
-        <PrimaryBtn label="Apply" onClick={save} />
+        <PrimaryBtn label={saving ? "Saving…" : "Apply"} onClick={save} disabled={saving} />
       </FooterBar>
 
     </div>

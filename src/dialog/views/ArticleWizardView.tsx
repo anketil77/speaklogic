@@ -67,7 +67,7 @@ function WizardHeader({ title }: { title: string }) {
 // ─── Main view ───────────────────────────────────────────────────────────────
 
 export default function ArticleWizardView() {
-  const { initData, sendMessage } = useDialogComm();
+  const { initData, sendMessage, submitSave } = useDialogComm();
 
   const [stepIdx, setStepIdx] = useState(0);
   const [data, dispatch]      = useReducer(wizardDataReducer, {
@@ -131,7 +131,7 @@ export default function ArticleWizardView() {
         productURL:                 data.productURL,
         reviewerName:               data.reviewerName,
       };
-      sendMessage({ action: "SAVE_ARTICLE_WIZARD", payload });
+      submitSave({ action: "SAVE_ARTICLE_WIZARD", payload });
       setStepIdx(doneIdx);
       return;
     }
@@ -140,7 +140,7 @@ export default function ArticleWizardView() {
     if (currentId !== "done") {
       setStepIdx((i) => i + 1);
     }
-  }, [stepIdx, steps, data, initData, sendMessage]);
+  }, [stepIdx, steps, data, initData, submitSave]);
 
   const handleBack = useCallback(() => {
     if (stepIdx === 0) {
