@@ -27,7 +27,8 @@ import {
   getCommSignalRequests,
   deleteCommSignalRequest,
 } from "@/db/queries/feedback";
-import { saveArticle, saveArticleWizard, getAllArticles, deleteArticle, publishArticle } from "@/db/queries/article";
+import { saveArticle, updateArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById, publishArticle } from "@/db/queries/article";
+import { saveProblemSolution } from "@/db/queries/problem";
 import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
 import { deleteFlag, getAllFlaggedSelections, saveFlag, getAllSelectionHistories, deleteSelectionHistory } from "@/db/queries/flag";
 import {
@@ -333,9 +334,10 @@ export function OutlookTaskPane() {
           }
           if (payload.analysis.whatToDoWithAnalysis === "ApplyAnalysisAsFeedback") {
             const { personName: pn, personEmail: pe } = getUserIdentity();
+            const cc = getCommunicationConfig();
             const applyAnalyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
             const applyFeedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
-            dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: { selection: payload.analysis.entityUnderAnalysis, mode: payload.analysis.selectionType === "Selection" ? "selection" : "paragraph", source: payload.analysis.source, personName: pn, personEmail: pe, applicationName: payload.analysis.applicationName, communicationFunction: payload.analysis.communicationFunction, communicationSignal: payload.analysis.communicationSignal, projectName: payload.analysis.projectName, peopleList: [], analysisData: { id: savedId, entityUnderAnalysis: payload.analysis.entityUnderAnalysis, analysisSubject: payload.analysis.analysisSubject ?? "", actualAnalysis: payload.analysis.actualAnalysis, fromPerson: payload.analysis.fromPerson ?? "", errors: payload.errors, compensators: payload.compensators, questions: payload.questions, answers: payload.answers, files: payload.files, correctedItems: [] }, analyses: applyAnalyses, feedbacks: applyFeedbacks } } as HostMessage));
+            dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: { selection: payload.analysis.entityUnderAnalysis, mode: payload.analysis.selectionType === "Selection" ? "selection" : "paragraph", source: payload.analysis.source, personName: pn, personEmail: pe, applicationName: payload.analysis.applicationName, communicationFunction: payload.analysis.communicationFunction, communicationSignal: payload.analysis.communicationSignal, projectName: payload.analysis.projectName, peopleList: [], communicationPersonName: cc?.personName ?? "", communicationPersonEmail: cc?.personEmail ?? "", analysisData: { id: savedId, entityUnderAnalysis: payload.analysis.entityUnderAnalysis, analysisSubject: payload.analysis.analysisSubject ?? "", actualAnalysis: payload.analysis.actualAnalysis, fromPerson: payload.analysis.fromPerson ?? "", errors: payload.errors, compensators: payload.compensators, questions: payload.questions, answers: payload.answers, files: payload.files, correctedItems: [] }, analyses: applyAnalyses, feedbacks: applyFeedbacks } } as HostMessage));
           } else if (payload.analysis.whatToDoWithAnalysis === "ProvideFeedbackWithAnalysis") {
             const { personName: pn, personEmail: pe } = getUserIdentity();
             dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "provide-feedback", payload: { selection: payload.analysis.entityUnderAnalysis, mode: payload.analysis.selectionType === "Selection" ? "selection" : "paragraph", source: payload.analysis.source, personName: pn, personEmail: pe, applicationName: payload.analysis.applicationName, communicationFunction: payload.analysis.communicationFunction, communicationSignal: payload.analysis.communicationSignal, projectName: payload.analysis.projectName, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), analysisData: { id: savedId, entityUnderAnalysis: payload.analysis.entityUnderAnalysis, analysisSubject: payload.analysis.analysisSubject ?? "", actualAnalysis: payload.analysis.actualAnalysis, fromPerson: payload.analysis.fromPerson ?? "", errors: payload.errors, compensators: payload.compensators, questions: payload.questions, answers: payload.answers, files: payload.files, correctedItems: [] } } } as HostMessage));
@@ -357,6 +359,10 @@ export function OutlookTaskPane() {
           const mailtoUrl = buildMailtoUrl(p);
           if (mailtoUrl) { dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage)); }
           else { dialog.close(); dialogRef.current = null; }
+        } else if (action.action === "SAVE_PROBLEM_SOLUTION") {
+          const p = action.payload as import("@/types/db").SaveProblemSolutionPayload;
+          try { saveProblemSolution({ actualProblem: p.actualProblem, feedbackApplied: p.feedbackApplied, errorCorrected: p.errorCorrected, compensatorReplaced: p.compensatorReplaced, additionalExplanation: p.additionalExplanation, files: p.files }); }
+          catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: `Failed to save problem solution: ${String(err)}` } as HostMessage)); }
         }
       }
     );
@@ -373,8 +379,8 @@ export function OutlookTaskPane() {
     const initPayload: DialogInitPayload = {
       selection: text, mode, source: getSource(), personName, personEmail,
       applicationName: subject, communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [],
-      communicationPersonName: commConfig?.personName || personName,
-      communicationPersonEmail: commConfig?.personEmail || personEmail,
+      communicationPersonName: commConfig?.personName ?? "",
+      communicationPersonEmail: commConfig?.personEmail ?? "",
     };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=flag&mode=${mode}`,
@@ -406,9 +412,10 @@ export function OutlookTaskPane() {
     if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
+    const subject = await readSubject();
     const analyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
     const feedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
-    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "", analyses, feedbacks };
+    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: subject, communicationFunction: "", communicationSignal: "", projectName: subject, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "", analyses, feedbacks };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=apply`,
       DIALOG_SIZE,
@@ -430,7 +437,8 @@ export function OutlookTaskPane() {
     if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
-    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
+    const subject = await readSubject();
+    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: subject, communicationFunction: "", communicationSignal: "", projectName: subject, peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=provide-feedback`,
       DIALOG_SIZE,
@@ -440,6 +448,7 @@ export function OutlookTaskPane() {
           const p = action.payload as SaveFeedbackPayload;
           try { saveFeedback(p); }
           catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); return; }
+          try { saveFeedbackHistory({ selectionAction: "Provided as Feedback", entityName: plainText(p.feedback.actualSelection) || plainText(p.feedback.feedbackApplication), actualSelection: p.feedback.feedbackApplication, selectionType: p.feedback.selectionType, source: p.feedback.source, applicationName: p.feedback.applicationName, communicationFunction: p.feedback.communicationFunction, communicationSignal: p.feedback.communicationSignal, projectName: p.feedback.projectName, personName: p.feedback.personName, personEmail: p.feedback.personEmail }); } catch { /* non-critical */ }
           dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: buildMailtoUrl(p) } as HostMessage));
         }
       }
@@ -453,7 +462,8 @@ export function OutlookTaskPane() {
     if (!text) { setStatus({ msg: "No text found in the email body.", ok: false }); return; }
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
-    const initPayload: DialogInitPayload = { selection: text, mode: "paragraph", source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
+    const subject = await readSubject();
+    const initPayload: DialogInitPayload = { selection: text, mode: "paragraph", source: getSource(), personName, personEmail, applicationName: subject, communicationFunction: "", communicationSignal: "", projectName: "", peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=request-feedback`,
       DIALOG_SIZE,
@@ -465,6 +475,7 @@ export function OutlookTaskPane() {
             saveCommSignalInfo({ fromPerson: p.fromPerson ?? "", toPerson: (p as { toPerson?: string }).toPerson ?? "", toPersonEmail: (p as { toPersonEmail?: string }).toPersonEmail ?? "", applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignalType: (p as { communicationSignalType?: string }).communicationSignalType ?? "", communicationSubject: p.communicationSubject ?? "", actualCommunication: p.actualCommunication ?? "", actualSelection: "", selectionType: "Request Feedback", entitySelected: "", files: (p as { files?: AttachFileToProject[] }).files ?? [] });
             const email = (p as { toPersonEmail?: string }).toPersonEmail ?? "";
             if (email) upsertPersonWithEmail((p as { toPerson?: string }).toPerson ?? "", email);
+            try { saveFeedbackHistory({ selectionAction: "Requested Feedback With", entityName: p.fromPerson ?? "", actualSelection: p.applicationName ?? "", selectionType: "Request Feedback", source: getSource(), applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignal: (p as { communicationSignalType?: string }).communicationSignalType ?? "", projectName: "", personName: p.fromPerson ?? "", personEmail: "" }); } catch { /* non-critical */ }
           } catch (err) { setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false }); }
           dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: buildRequestMailtoUrl(p) } as HostMessage));
         }
@@ -536,9 +547,18 @@ export function OutlookTaskPane() {
           const analysis = getAnalysisById(analysisId);
           if (!analysis) return;
           const { personName: pn, personEmail: pe } = getUserIdentity();
+          const cc = getCommunicationConfig();
           const allAnalyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
           const allFeedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
-          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: { selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "", mode: analysis.selectionType === "Paragraph" ? "paragraph" : "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: getPeopleNames(), analyses: allAnalyses, feedbacks: allFeedbacks } } as HostMessage));
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: { selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "", mode: analysis.selectionType === "Paragraph" ? "paragraph" : "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: analysis.applicationName ?? "", communicationFunction: analysis.communicationFunction ?? "", communicationSignal: analysis.communicationSignal ?? "", projectName: analysis.projectName ?? "", peopleList: getPeopleNames(), communicationPersonName: cc?.personName ?? "", communicationPersonEmail: cc?.personEmail ?? "", analyses: allAnalyses, feedbacks: allFeedbacks } } as HostMessage));
+        }
+        if (action.action === "NAVIGATE_TO_PROVIDE") {
+          const { analysisId } = action as { action: string; analysisId: number };
+          const analysis = getAnalysisById(analysisId);
+          if (!analysis) return;
+          const { personName: pn, personEmail: pe } = getUserIdentity();
+          const cc = getCommunicationConfig();
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "provide-feedback", payload: { selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: analysis.applicationName ?? "", communicationFunction: analysis.communicationFunction ?? "", communicationSignal: analysis.communicationSignal ?? "", projectName: analysis.projectName ?? "", peopleList: buildPeopleList(cc?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: cc?.personName ?? "", communicationPersonEmail: cc?.personEmail ?? "" } } as HostMessage));
         }
         if (action.action === "SAVE_FEEDBACK") {
           try { saveFeedback(action.payload as SaveFeedbackPayload); }
@@ -742,6 +762,19 @@ export function OutlookTaskPane() {
             deletePublisher(dp.id);
             dlg.messageChild(JSON.stringify({ type: "INIT", payload: rebuildPayload() }));
           } catch (err) { setStatus({ msg: `Delete publisher failed: ${String(err)}`, ok: false }); }
+        } else if (action.action === "EDIT_ARTICLE") {
+          const ea = action as { action: string; id: number };
+          const article = getArticleById(ea.id);
+          if (!article) { setStatus({ msg: "Article not found.", ok: false }); return; }
+          const editPayload: DialogInitPayload = { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], editArticleData: article };
+          dlg.messageChild(JSON.stringify({ type: "NAVIGATE", view: "create-article", payload: editPayload } as HostMessage));
+        } else if (action.action === "SAVE_ARTICLE") {
+          const p = action.payload as import("@/types/db").SaveArticlePayload;
+          try {
+            if (p.id !== undefined) { updateArticle(p.id, p); }
+            else { saveArticle({ ...p, personName, personEmail, source: getSource() }); }
+          } catch (err) { dlg.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); return; }
+          dlg.messageChild(JSON.stringify({ type: "NAVIGATE", view: "list-articles", payload: rebuildPayload() } as HostMessage));
         }
       }
     );
@@ -916,6 +949,7 @@ export function OutlookTaskPane() {
           const p = action.payload as SaveRequestSLFeedbackPayload;
           try {
             saveCommSignalInfo({ fromPerson: p.fromPerson ?? "", toPerson: "Speak Logic", toPersonEmail: "support@speaklogic.org", applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignalType: (p as { communicationSignalType?: string }).communicationSignalType ?? "", communicationSubject: p.communicationSubject ?? "", actualCommunication: p.actualCommunication ?? "", actualSelection: "", selectionType: "Speak Logic Request", entitySelected: `Speak Logic feedback request on ${formatDisplayDate(nowDate())}`, files: (p as { files?: AttachFileToProject[] }).files ?? [] });
+            try { saveFeedbackHistory({ selectionAction: "Requested Feedback From Speak Logic", entityName: p.fromPerson ?? "", actualSelection: p.applicationName ?? "", selectionType: "Speak Logic Request", source: getSource(), applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignal: "", projectName: "", personName: p.fromPerson ?? "", personEmail: "" }); } catch { /* non-critical */ }
           } catch (err) { setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false }); }
           dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: buildRequestSLMailtoUrl(p) } as HostMessage));
         }

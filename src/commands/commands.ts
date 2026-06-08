@@ -112,6 +112,9 @@ function registerHandlers(): void {
   Office.actions.associate("listFeedback", (event) =>
     openFeedbackHistoryDialog(event)
   );
+  Office.actions.associate("listFeedbackRequested", (event) =>
+    openFeedbackHistoryDialog(event)
+  );
   Office.actions.associate("listRetained", (event) =>
     openRetainedHistoryDialog(event)
   );
@@ -140,13 +143,13 @@ function registerHandlers(): void {
   });
   Office.actions.associate("about", (event) => openAboutDialog(event));
   Office.actions.associate("communicationConfig", (event) => openCommunicationConfigDialog(event));
-  Office.actions.associate("openPeople", (event) => openPeopleDialog(event));
   Office.actions.associate("createArticle", (event) =>
     void openCreateArticleDialog(event)
   );
   Office.actions.associate("listArticles", (event) =>
     void openListArticlesDialog(event)
   );
+  Office.actions.associate("openPeople", (event) => openPeopleDialog(event));
 }
 
 // 12007: dialog already open — user can still see it; complete silently.
@@ -625,6 +628,8 @@ async function openAnalyzeDialog(
                 communicationSignal: payload.analysis.communicationSignal,
                 projectName: payload.analysis.projectName,
                 peopleList: [],
+                communicationPersonName: commConfig?.personName ?? "",
+                communicationPersonEmail: commConfig?.personEmail ?? "",
                 analysisData: {
                   id: savedId,
                   entityUnderAnalysis: payload.analysis.entityUnderAnalysis,
@@ -1041,6 +1046,7 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             if (!f.analysisId) return f;
             return { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
           });
+          const navCommConfig = getCommunicationConfig();
           const applyPayload: DialogInitPayload = {
             selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "",
             mode: analysis.selectionType === "Paragraph" ? "paragraph" : "selection",
@@ -1052,6 +1058,8 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             communicationSignal: analysis.communicationSignal ?? "",
             projectName: analysis.projectName ?? "",
             peopleList: getPeopleNames(),
+            communicationPersonName: navCommConfig?.personName ?? "",
+            communicationPersonEmail: navCommConfig?.personEmail ?? "",
             analyses: allAnalyses,
             feedbacks: allFeedbacks,
             analysisData: {
@@ -2732,9 +2740,9 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
 
 function openPeopleDialog(event: Office.AddinCommands.Event): void {
   ensureDb().then(() => {
-    const buildPayload = (): DialogInitPayload => ({
+    const buildPayload = () => ({
       selection: "",
-      mode: "selection",
+      mode: "selection" as const,
       source: getSource(),
       personName: "",
       personEmail: "",
@@ -2749,7 +2757,7 @@ function openPeopleDialog(event: Office.AddinCommands.Event): void {
     const TARGET_H_PX = 520;
     const TARGET_W_PX = 460;
     const screenH = window.screen?.availHeight || 900;
-    const screenW = window.screen?.availWidth  || 1440;
+    const screenW = window.screen?.availWidth || 1440;
     const h = Math.min(80, Math.max(30, Math.round((TARGET_H_PX / (screenH * 0.93)) * 100) + 4));
     const w = Math.min(80, Math.max(22, Math.round((TARGET_W_PX / (screenW * 0.95)) * 100)));
 
@@ -2765,27 +2773,27 @@ function openPeopleDialog(event: Office.AddinCommands.Event): void {
         const complete = makeEventCompleter(event);
         dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { complete(); });
         dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
-          const m = JSON.parse((msg as { message: string }).message) as DialogAction;
-          const sendInit = () => dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          const m = JSON.parse((msg as { message: string }).message) as { action: string; id?: number; personName?: string; emailAddress?: string };
+          const sendInit = () => dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() }));
           switch (m.action) {
             case "READY":
               sendInit();
               break;
             case "ADD_CONTACT":
               try {
-                upsertPersonWithEmail(m.personName, m.emailAddress);
+                upsertPersonWithEmail(m.personName ?? "", m.emailAddress ?? "");
                 sendInit();
               } catch (err) { replyError(dialog, `Failed to add contact: ${String(err)}`); }
               break;
             case "UPDATE_CONTACT":
               try {
-                updatePersonById(m.id, m.personName, m.emailAddress);
+                updatePersonById(m.id ?? 0, m.personName ?? "", m.emailAddress ?? "");
                 sendInit();
               } catch (err) { replyError(dialog, `Failed to update contact: ${String(err)}`); }
               break;
             case "DELETE_CONTACT":
               try {
-                deletePersonById(m.id);
+                deletePersonById(m.id ?? 0);
                 sendInit();
               } catch (err) { replyError(dialog, `Failed to delete contact: ${String(err)}`); }
               break;
