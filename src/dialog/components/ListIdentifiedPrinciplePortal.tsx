@@ -57,6 +57,9 @@ interface ListIdentifiedPrinciplePortalProps {
   onView?: (principle: PrincipleInSelection) => void;
   /** Open the Interpret dialog for a principle (C# InterpretePrinciple). */
   onInterpret?: (principle: PrincipleInSelection) => void;
+  /** When opened as its own `?view=` route (no parent view behind it), fills the
+   *  whole dialog with no scrim instead of floating as a centered overlay card. */
+  standalone?: boolean;
 }
 
 export function ListIdentifiedPrinciplePortal({
@@ -65,6 +68,7 @@ export function ListIdentifiedPrinciplePortal({
   onClose,
   onView,
   onInterpret,
+  standalone = false,
 }: ListIdentifiedPrinciplePortalProps) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -114,26 +118,41 @@ export function ListIdentifiedPrinciplePortal({
 
   return ReactDOM.createPortal(
     <>
-      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.18)", zIndex: 199 }} onClick={onClose} />
+      {!standalone && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.18)", zIndex: 199 }} onClick={onClose} />
+      )}
       <div
-        style={{
-          position: "fixed",
-          left: `calc(50% + ${pos.x}px)`,
-          top: `calc(50% + ${pos.y}px)`,
-          transform: "translate(-50%, -50%)",
-          zIndex: 200,
-          background: colors.white,
-          borderRadius: 8,
-          boxShadow: "0px 8px 32px rgba(0,0,0,0.14), 0px 2px 8px rgba(0,0,0,0.06)",
-          width: 860,
-          height: 540,
-          maxWidth: "96vw",
-          maxHeight: "90vh",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          fontFamily: "'Inter', 'Segoe UI', sans-serif",
-        }}
+        style={
+          standalone
+            ? {
+                position: "fixed",
+                inset: 0,
+                zIndex: 200,
+                background: colors.white,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                fontFamily: "'Inter', 'Segoe UI', sans-serif",
+              }
+            : {
+                position: "fixed",
+                left: `calc(50% + ${pos.x}px)`,
+                top: `calc(50% + ${pos.y}px)`,
+                transform: "translate(-50%, -50%)",
+                zIndex: 200,
+                background: colors.white,
+                borderRadius: 8,
+                boxShadow: "0px 8px 32px rgba(0,0,0,0.14), 0px 2px 8px rgba(0,0,0,0.06)",
+                width: 860,
+                height: 540,
+                maxWidth: "96vw",
+                maxHeight: "90vh",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                fontFamily: "'Inter', 'Segoe UI', sans-serif",
+              }
+        }
       >
         <div
           onMouseDown={onHeaderMouseDown}
@@ -150,14 +169,16 @@ export function ListIdentifiedPrinciplePortal({
               View and manage identified principles.
             </div>
           </div>
-          <button
-            className="sl-close-btn"
-            onClick={onClose}
-            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", flexShrink: 0, padding: 0 }}
-            title="Close"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1L13 13M13 1L1 13" stroke="#616161" strokeWidth="1.5" strokeLinecap="round" /></svg>
-          </button>
+          {!standalone && (
+            <button
+              className="sl-close-btn"
+              onClick={onClose}
+              style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", flexShrink: 0, padding: 0 }}
+              title="Close"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1L13 13M13 1L1 13" stroke="#616161" strokeWidth="1.5" strokeLinecap="round" /></svg>
+            </button>
+          )}
         </div>
 
         <div style={{ height: 44, minHeight: 44, background: colors.grey96, display: "flex", alignItems: "center", padding: "0 12px", gap: 8, boxSizing: "border-box" }}>

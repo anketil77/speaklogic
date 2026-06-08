@@ -11,6 +11,7 @@ export default function ListInterpretedPrincipleView() {
       filesByInterpretationId={initData.filesByInterpretationId ?? {}}
       sendMessage={sendMessage}
       onClose={() => sendMessage({ action: "CLOSE" })}
+      standalone
     />
   );
 }

@@ -2067,6 +2067,19 @@ async function openListIdentifiedPrincipleDialog(event: Office.AddinCommands.Eve
         } else if (m.action === "REPORT_IDENTIFIED_PRINCIPLE") {
           try { openIdentifiedPrincipleReport((m as { action: string; principle: import("@/types/db").PrincipleInSelection }).principle); }
           catch { /* non-critical */ }
+        } else if (m.action === "ADD_ATTACHED_FILE") {
+          const { file } = m as { action: string; file: import("@/types/db").AttachFileToProject };
+          const newId = addAttachedFile(file as Omit<import("@/types/db").AttachFileToProject, "id">);
+          dialog.messageChild(JSON.stringify({ type: "FILE_ADDED", id: newId }));
+        } else if (m.action === "REMOVE_ATTACHED_FILE") {
+          removeAttachedFile((m as { action: string; id: number }).id);
+        } else if (m.action === "SAVE_INTERPRETATION") {
+          // Interpret is reachable from this list (Identified → Interpret hinge).
+          try {
+            const { payload } = m as { action: string; payload: SaveInterpretationPayload };
+            const newId = saveInterpretation(payload.record);
+            for (const file of payload.files) addAttachedFile({ ...file, principleInterpretationId: newId });
+          } catch (err) { replyError(dialog, `Save failed: ${String(err)}`); }
         } else if (m.action === "CLOSE") {
           try { dialog.close(); } catch { } complete();
         }
