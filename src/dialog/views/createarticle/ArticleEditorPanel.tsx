@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
+import { ResizeHandles } from "@/dialog/components/ResizeHandles";
 
 // ── Paragraph style options ───────────────────────────────────────────────────
 const PARA_STYLES = [
@@ -204,8 +205,14 @@ export function ArticleEditorPanel({
   const imgInputRef = useRef<HTMLInputElement>(null);
   const savedRange  = useRef<Range | null>(null);
 
-  // drag — starts centred
-  const { pos, onHeaderMouseDown } = useDraggable({ initialX: 0, initialY: 0 });
+  // drag + resize — starts centred, clamped to the real viewport
+  const initW = Math.min(520, Math.round(window.innerWidth  * 0.96));
+  const initH = Math.min(354, Math.round(window.innerHeight * 0.92));
+  const { pos, setPos, onHeaderMouseDown } = useDraggable({
+    initialX: Math.max(0, Math.round((window.innerWidth  - initW) / 2)),
+    initialY: Math.max(0, Math.round((window.innerHeight - initH) / 2)),
+  });
+  const [size, setSize] = useState({ width: initW, height: initH });
 
   // format active states
   const [bold,   setBold]   = useState(false);
@@ -394,14 +401,14 @@ export function ArticleEditorPanel({
         style={{ position: "fixed", inset: 0, zIndex: 199, background: "rgba(0,0,0,0.18)" }}
       />
 
-      {/* ── Panel: 520×354px ────────────────────────────────────────────── */}
+      {/* ── Panel: resizable, draggable ─────────────────────────────── */}
       <div
         style={{
           position: "fixed",
-          left: `calc(50vw - 260px + ${pos.x}px)`,
-          top:  `calc(50vh - 177px + ${pos.y}px)`,
+          left: pos.x,
+          top:  pos.y,
           zIndex: 200,
-          width: 520, height: 354,
+          width: size.width, height: size.height,
           background: "#FFFFFF",
           boxShadow: "0px 8px 32px rgba(0,0,0,0.14), 0px 2px 8px rgba(0,0,0,0.06)",
           borderRadius: 8,
@@ -412,14 +419,14 @@ export function ArticleEditorPanel({
         }}
       >
 
-        {/* ══ div.editor-hdr — 520×47px ═══════════════════════════════════ */}
+        {/* ══ div.editor-hdr ═══════════════════════════════════════════ */}
         <div
           onMouseDown={onHeaderMouseDown}
           style={{
             display: "flex", flexDirection: "row", alignItems: "center",
             justifyContent: "space-between",
             padding: "10px 14px",
-            width: 520, height: 47,
+            width: "100%", height: 47,
             boxSizing: "border-box",
             cursor: "move", flexShrink: 0, userSelect: "none",
           }}
@@ -486,16 +493,16 @@ export function ArticleEditorPanel({
           </button>
         </div>
 
-        {/* ══ div.editor-area — 520×241px ══════════════════════════════════ */}
+        {/* ══ div.editor-area — grows to fill remaining height ══════════ */}
         <div
           onClick={() => editorRef.current?.focus()}
           style={{
             display: "flex", flexDirection: "column", alignItems: "flex-start",
             padding: "14px 16px 0px",
-            width: 520, height: 241,
-            boxSizing: "border-box", flexShrink: 0,
+            width: "100%", flex: 1,
+            boxSizing: "border-box",
             position: "relative", cursor: "text", order: 1,
-            overflow: "hidden",
+            overflow: "auto",
           }}
         >
           {/* span.editor-ph — placeholder */}
@@ -503,13 +510,13 @@ export function ArticleEditorPanel({
             <span
               style={{
                 display: "flex", flexDirection: "column", alignItems: "flex-start",
-                padding: "1px 0px 2px", width: 488, height: 17,
+                padding: "1px 0px 2px", width: "calc(100% - 32px)", height: 17,
                 pointerEvents: "none", userSelect: "none",
                 position: "absolute", left: 16, top: 14,
               }}
             >
               <span style={{
-                width: 488, height: 14,
+                width: "100%", height: 14,
                 fontFamily: "'Inter',sans-serif", fontStyle: "normal",
                 fontWeight: 400, fontSize: 11.8, lineHeight: "14px",
                 display: "flex", alignItems: "center", color: "#ADADAD",
@@ -545,7 +552,7 @@ export function ArticleEditorPanel({
             display: "flex", alignItems: "center", gap: 6,
             padding: "4px 14px", background: "#F5F5F5",
             borderTop: "1px solid #E0E0E0",
-            width: 520, boxSizing: "border-box", flexShrink: 0,
+            width: "100%", boxSizing: "border-box", flexShrink: 0,
           }}>
             <span style={{ fontSize: 10, color: "#616161", flexShrink: 0, fontWeight: 700 }}>URL</span>
             <input
@@ -564,20 +571,20 @@ export function ArticleEditorPanel({
           </div>
         )}
 
-        {/* ══ div.ftbar — 520×66px, border-top ════════════════════════════ */}
+        {/* ══ div.ftbar — border-top, fixed 66px height ════════════════ */}
         <div style={{
           boxSizing: "border-box", display: "flex", flexDirection: "column",
           alignItems: "flex-start", padding: 0,
-          width: 520, height: 66,
+          width: "100%", height: 66,
           borderTop: "1px solid #E0E0E0",
           flexShrink: 0, order: 2,
         }}>
 
-          {/* ── Row 1 — 520×33px, #F5F5F5 ──────────────────────────────── */}
+          {/* ── Row 1 — 33px, #F5F5F5 ──────────────────────────────────── */}
           <div style={{
             display: "flex", flexDirection: "row", alignItems: "center",
             padding: "3px 8px", gap: 1,
-            width: 520, height: 33,
+            width: "100%", height: 33,
             background: "#F5F5F5", boxSizing: "border-box",
             flexShrink: 0, order: 0, alignSelf: "stretch",
           }}>
@@ -678,11 +685,11 @@ export function ArticleEditorPanel({
             )}
           </div>
 
-          {/* ── Row 2 — 520×32px, #F5F5F5 ──────────────────────────────── */}
+          {/* ── Row 2 — 32px, #F5F5F5 ──────────────────────────────────── */}
           <div style={{
             display: "flex", flexDirection: "row", alignItems: "center",
             padding: "3px 8px", gap: 1,
-            width: 520, height: 32,
+            width: "100%", height: 32,
             background: "#F5F5F5", boxSizing: "border-box",
             flexShrink: 0, order: 1, alignSelf: "stretch",
           }}>
@@ -775,6 +782,17 @@ export function ArticleEditorPanel({
             )}
           </div>
         </div>
+        {/* ── 8-way resize handles ──────────────────────────────────────── */}
+        <ResizeHandles
+          pos={pos}
+          setPos={setPos}
+          size={size}
+          setSize={setSize}
+          minWidth={400}
+          minHeight={260}
+          maxWidth={Math.round(window.innerWidth  * 0.99)}
+          maxHeight={Math.round(window.innerHeight * 0.98)}
+        />
       </div>
 
       {/* Hidden image file input */}
