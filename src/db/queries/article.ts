@@ -66,6 +66,42 @@ export function getArticleById(id: number): Article | null {
   return obj as unknown as Article;
 }
 
+export function updateArticle(
+  id: number,
+  payload: Pick<SaveArticlePayload, "articleTitle" | "articleContent" | "category" | "articleBasisReference" | "isProviderUseGivenSetOfInfo" | "isDraft">
+): void {
+  const db = getDb();
+  db.run(
+    `UPDATE Article SET
+      articleTitle = ?,
+      articleContent = ?,
+      category = ?,
+      articleBasisReference = ?,
+      isProviderUseGivenSetOfInfo = ?,
+      isDraft = ?
+     WHERE id = ?`,
+    [
+      payload.articleTitle,
+      payload.articleContent,
+      payload.category,
+      payload.articleBasisReference,
+      payload.isProviderUseGivenSetOfInfo,
+      payload.isDraft,
+      id,
+    ]
+  );
+  persistDb();
+}
+
+export function publishArticle(id: number, publishers: string[]): void {
+  const db = getDb();
+  db.run(
+    `UPDATE Article SET isPublished = 1, publishedTo = ? WHERE id = ?`,
+    [JSON.stringify(publishers), id]
+  );
+  persistDb();
+}
+
 export function deleteArticle(id: number): void {
   const db = getDb();
   db.run(`DELETE FROM Article WHERE id = ?`, [id]);

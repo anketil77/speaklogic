@@ -12,7 +12,7 @@ import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
-import { saveArticle, saveArticleWizard, getAllArticles, deleteArticle } from "@/db/queries/article";
+import { saveArticle, updateArticle, publishArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById } from "@/db/queries/article";
 import { saveProblemSolution } from "@/db/queries/problem";
 import { dbg, clearLog } from "@/debug/log";
 import { openInterpretedPrincipleReport, openIdentifiedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
@@ -1681,7 +1681,11 @@ function openArticleFormDialog(
           case "SAVE_ARTICLE": {
             const p = m.payload as SaveArticlePayload;
             try {
-              saveArticle({ ...p, personName, personEmail, source: getSource() });
+              if (p.id !== undefined) {
+                updateArticle(p.id, p);
+              } else {
+                saveArticle({ ...p, personName, personEmail, source: getSource() });
+              }
             } catch (err) {
               dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
               break;
@@ -1731,8 +1735,10 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
       }
       const dialog = result.value;
       const complete = makeEventCompleter(event);
+      let transitioning = false;
+
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        complete();
+        if (!transitioning) complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -1745,8 +1751,96 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
             catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
             break;
           }
+          case "EDIT_ARTICLE": {
+            const article = getArticleById((m as { action: string; id: number }).id);
+            if (!article) break;
+            transitioning = true;
+            try { dialog.close(); } catch { }
+            openEditArticleDialog(event, personName, personEmail, article);
+            break;
+          }
+          case "PUBLISH_ARTICLE": {
+            const pm = m as { action: string; id: number; publishers: string[] };
+            try {
+              publishArticle(pm.id, pm.publishers);
+              initPayload.articles = getAllArticles();
+              dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            } catch (err) {
+              replyError(dialog, `Publish failed: ${String(err)}`);
+            }
+            break;
+          }
           case "CLOSE":
             try { dialog.close(); } catch { }
+            complete();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+function openEditArticleDialog(
+  event: Office.AddinCommands.Event,
+  personName: string,
+  personEmail: string,
+  article: import("@/types/db").Article,
+  attempt = 0,
+): void {
+  const editPayload: DialogInitPayload = {
+    selection: "",
+    mode: "selection",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: [],
+    editArticleData: article,
+  };
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=create-article`,
+    { ...CREATE_ARTICLE_DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openEditArticleDialog(event, personName, personEmail, article, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const d = result.value;
+      const complete = makeEventCompleter(event);
+      d.addEventHandler(Office.EventType.DialogEventReceived, () => { complete(); });
+      d.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m2 = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m2.action) {
+          case "READY":
+            d.messageChild(JSON.stringify({ type: "INIT", payload: editPayload } as HostMessage));
+            break;
+          case "SAVE_ARTICLE": {
+            const p = m2.payload as SaveArticlePayload;
+            try {
+              if (p.id !== undefined) {
+                updateArticle(p.id, p);
+              } else {
+                saveArticle({ ...p, personName, personEmail, source: getSource() });
+              }
+            } catch (err) {
+              d.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+              break;
+            }
+            try { d.close(); } catch { }
+            complete();
+            break;
+          }
+          case "CLOSE":
+            try { d.close(); } catch { }
             complete();
             break;
           default:

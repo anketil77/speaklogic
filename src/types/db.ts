@@ -224,9 +224,12 @@ export interface Article {
   additionalInformation?: string;
   productURL?: string;
   reviewerName?: string;
+  isPublished?: 0 | 1;
+  publishedTo?: string;
 }
 
 export interface SaveArticlePayload {
+  id?: number;
   articleTitle: string;
   articleContent: string;
   category: string;
@@ -644,6 +647,8 @@ export interface DialogInitPayload {
   /** Passed when opening the article wizard after template selection. */
   templateName?: string;
   wizardCategory?: string;
+  /** Passed when editing an existing article from the list view. */
+  editArticleData?: Article;
 }
 
 export interface SaveFeedbackPayload {
@@ -723,6 +728,8 @@ export type DialogAction =
   | { action: "BACK" }
   | { action: "BACK_TO_PICKER" }
   | { action: "DELETE_ARTICLE"; id: number }
+  | { action: "EDIT_ARTICLE"; id: number }
+  | { action: "PUBLISH_ARTICLE"; id: number; publishers: string[] }
   | { action: "DELETE_COMM_SIGNAL_REQUEST"; id: number }
   | { action: "DELETE_SELECTION_HISTORY"; id: number }
   | { action: "LIST_FEEDBACK_REQUESTED" }

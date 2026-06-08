@@ -211,7 +211,9 @@ CREATE TABLE IF NOT EXISTS Article (
   isSolvedProblem INTEGER DEFAULT 0,
   additionalInformation TEXT DEFAULT '',
   productURL TEXT DEFAULT '',
-  reviewerName TEXT DEFAULT ''
+  reviewerName TEXT DEFAULT '',
+  isPublished INTEGER DEFAULT 0,
+  publishedTo TEXT DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS AttachFileToProject (
