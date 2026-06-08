@@ -2626,7 +2626,7 @@ function buildRequestSLMailtoUrl(p: SaveRequestSLFeedbackPayload): string {
   return `mailto:support@speaklogic.org?subject=${subject}&body=${body}`;
 }
 
-function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void {
+function openCommunicationConfigDialog(event: Office.AddinCommands.Event, attempt = 0): void {
   ensureDb().then(() => {
     const commConfig = getCommunicationConfig();
 
@@ -2705,6 +2705,10 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
       { height: commConfigHeight, width: commConfigWidth, displayInIframe: true },
       (result) => {
         if (result.status === Office.AsyncResultStatus.Failed) {
+          if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+            setTimeout(() => openCommunicationConfigDialog(event, attempt + 1), 300);
+            return;
+          }
           handleDialogOpenError(result.error, event);
           return;
         }

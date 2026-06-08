@@ -87,9 +87,17 @@ export default function PeopleView() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
+  const myName = initData?.communicationPersonName ?? "";
+  const myEmail = initData?.communicationPersonEmail ?? "";
+
   useEffect(() => {
-    if (initData?.contacts) setContacts(initData.contacts);
-  }, [initData?.contacts]);
+    if (initData?.contacts) {
+      const filtered = myName
+        ? initData.contacts.filter((c) => c.personName !== myName)
+        : initData.contacts;
+      setContacts(filtered);
+    }
+  }, [initData?.contacts, myName]);
 
   useEffect(() => {
     if (form.mode !== "idle") setTimeout(() => nameInputRef.current?.focus(), 60);
@@ -185,6 +193,48 @@ export default function PeopleView() {
       {/* ── Body ────────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 10px" }}>
 
+        {/* ── You card ────────────────────────────────────────────────────── */}
+        <div style={{
+          border: `1px solid ${colors.grey88}`, borderRadius: "8px",
+          overflow: "hidden", marginBottom: "18px",
+        }}>
+          <div style={{
+            background: colors.grey96, borderBottom: `1px solid ${colors.grey88}`,
+            padding: "6px 14px", display: "flex", alignItems: "center", gap: "6px",
+          }}>
+            <span style={{ fontSize: "10.6px", fontWeight: "700", color: colors.grey38, textTransform: "uppercase", letterSpacing: "0.5px" }}>You</span>
+          </div>
+          <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+              {myName ? (
+                <>
+                  <span style={{ fontSize: "12.4px", fontWeight: "700", color: colors.grey11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{myName}</span>
+                  <span style={{ fontSize: "11.2px", color: myEmail ? colors.grey38 : colors.grey74, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{myEmail || "No email set"}</span>
+                </>
+              ) : (
+                <span style={{ fontSize: "11.6px", color: colors.grey38, fontStyle: "italic" }}>Not configured — set your identity in Communication Configuration.</span>
+              )}
+            </div>
+            <button
+              onClick={() => sendMessage({ action: "OPEN_COMM_CONFIG" })}
+              style={{
+                flexShrink: 0, height: "26px", padding: "0 10px",
+                border: `1px solid ${colors.grey78}`, borderRadius: "4px",
+                background: colors.white, color: colors.grey38,
+                fontSize: "11px", fontFamily: "inherit", cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Edit →
+            </button>
+          </div>
+        </div>
+
+        {/* ── Other contacts label ─────────────────────────────────────────── */}
+        <div style={{ fontSize: "10.6px", fontWeight: "700", color: colors.grey38, textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "10px" }}>
+          Other Contacts
+        </div>
+
         {/* ── Premium add/edit form card ───────────────────────────────────── */}
         {form.mode !== "idle" && (
           <div style={{
@@ -271,8 +321,8 @@ export default function PeopleView() {
             <div style={{ marginBottom: "6px", opacity: 0.45 }}>
               <PersonIcon />
             </div>
-            No contacts yet.<br />
-            <span style={{ color: colors.grey38 }}>Click <strong style={{ color: colors.grey11 }}>+ Add</strong> to create your first contact.</span>
+            No other contacts yet.<br />
+            <span style={{ color: colors.grey38 }}>Click <strong style={{ color: colors.grey11 }}>+ Add</strong> to add someone.</span>
           </div>
         ) : contacts.length > 0 ? (
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
