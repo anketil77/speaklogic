@@ -172,15 +172,19 @@
                 </Control>
               </Group>
 
-              <Group id="grpAbout">
-                <Label resid="grpAbout.Label"/>
-                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+              <Group id="grpContacts">
+                <Label resid="people.Label"/>
+                <Icon><bt:Image size="16" resid="people.Icon16"/><bt:Image size="32" resid="people.Icon32"/><bt:Image size="80" resid="people.Icon80"/></Icon>
                 <Control xsi:type="Button" id="contacts_btn">
                   <Label resid="people.Label"/>
                   <Supertip><Title resid="people.Label"/><Description resid="people.Tooltip"/></Supertip>
                   <Icon><bt:Image size="16" resid="people.Icon16"/><bt:Image size="32" resid="people.Icon32"/><bt:Image size="80" resid="people.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>openPeople</FunctionName></Action>
                 </Control>
+              </Group>
+              <Group id="grpAbout">
+                <Label resid="grpAbout.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Menu" id="speakLogicInfoMenu">
                   <Label resid="speakLogicInfoMenu.Label"/>
                   <Supertip><Title resid="speakLogicInfoMenu.Label"/><Description resid="speakLogicInfoMenu.Tooltip"/></Supertip>
@@ -390,15 +394,19 @@
                 </Control>
               </Group>
 
-              <Group id="grpAbout_PPT">
-                <Label resid="grpAbout.Label"/>
-                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+              <Group id="grpContacts_PPT">
+                <Label resid="people.Label"/>
+                <Icon><bt:Image size="16" resid="people.Icon16"/><bt:Image size="32" resid="people.Icon32"/><bt:Image size="80" resid="people.Icon80"/></Icon>
                 <Control xsi:type="Button" id="contacts_PPT_btn">
                   <Label resid="people.Label"/>
                   <Supertip><Title resid="people.Label"/><Description resid="people.Tooltip"/></Supertip>
                   <Icon><bt:Image size="16" resid="people.Icon16"/><bt:Image size="32" resid="people.Icon32"/><bt:Image size="80" resid="people.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>openPeople</FunctionName></Action>
                 </Control>
+              </Group>
+              <Group id="grpAbout_PPT">
+                <Label resid="grpAbout.Label"/>
+                <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                 <Control xsi:type="Menu" id="speakLogicInfoMenu_PPT">
                   <Label resid="speakLogicInfoMenu.Label"/>
                   <Supertip><Title resid="speakLogicInfoMenu.Label"/><Description resid="speakLogicInfoMenu.Tooltip"/></Supertip>
@@ -816,15 +824,19 @@
                   </Control>
                 </Group>
 
-                <Group id="grpAbout_OL">
-                  <Label resid="grpAbout.Label"/>
-                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Group id="grpContacts_OL">
+                  <Label resid="people.Label"/>
+                  <Icon><bt:Image size="16" resid="people.Icon16"/><bt:Image size="32" resid="people.Icon32"/><bt:Image size="80" resid="people.Icon80"/></Icon>
                   <Control xsi:type="Button" id="contacts_OL_btn">
                     <Label resid="people.Label"/>
                     <Supertip><Title resid="people.Label"/><Description resid="people.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="people.Icon16"/><bt:Image size="32" resid="people.Icon32"/><bt:Image size="80" resid="people.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>openPeople</FunctionName></Action>
                   </Control>
+                </Group>
+                <Group id="grpAbout_OL">
+                  <Label resid="grpAbout.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Menu" id="speakLogicInfoMenu_OL">
                     <Label resid="speakLogicInfoMenu.Label"/>
                     <Supertip><Title resid="speakLogicInfoMenu.Label"/><Description resid="speakLogicInfoMenu.Tooltip"/></Supertip>
@@ -983,15 +995,19 @@
                   </Control>
                 </Group>
 
-                <Group id="grpAbout_OLC">
-                  <Label resid="grpAbout.Label"/>
-                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
+                <Group id="grpContacts_OLC">
+                  <Label resid="people.Label"/>
+                  <Icon><bt:Image size="16" resid="people.Icon16"/><bt:Image size="32" resid="people.Icon32"/><bt:Image size="80" resid="people.Icon80"/></Icon>
                   <Control xsi:type="Button" id="contacts_OLC_btn">
                     <Label resid="people.Label"/>
                     <Supertip><Title resid="people.Label"/><Description resid="people.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="people.Icon16"/><bt:Image size="32" resid="people.Icon32"/><bt:Image size="80" resid="people.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>openPeople</FunctionName></Action>
                   </Control>
+                </Group>
+                <Group id="grpAbout_OLC">
+                  <Label resid="grpAbout.Label"/>
+                  <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Control xsi:type="Menu" id="speakLogicInfoMenu_OLC">
                     <Label resid="speakLogicInfoMenu.Label"/>
                     <Supertip><Title resid="speakLogicInfoMenu.Label"/><Description resid="speakLogicInfoMenu.Tooltip"/></Supertip>
