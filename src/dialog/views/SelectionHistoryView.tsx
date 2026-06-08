@@ -2,9 +2,17 @@
 // Read-only list of FlaggedEntityHistory records (selection audit trail). No toolbar.
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { ViewSelectionDialog } from "@/dialog/components/ViewSelectionDialog";
+import { ListIdentifiedPrinciplePortal } from "@/dialog/components/ListIdentifiedPrinciplePortal";
+import { ListInterpretedPrinciplePortal } from "@/dialog/components/ListInterpretedPrinciplePortal";
+import { ListSelectionRelatedPrinciplePortal } from "@/dialog/components/ListSelectionRelatedPrinciplePortal";
+import { RelateSelectionWithPrincipleDialog } from "@/dialog/components/RelateSelectionWithPrincipleDialog";
+import { IdentifyPrincipleInSelectionDialog } from "@/dialog/components/IdentifyPrincipleInSelectionDialog";
+import { InterpretePrincipleDialog } from "@/dialog/components/InterpretePrincipleDialog";
+import { ViewPrincipleDetailDialog } from "@/dialog/components/ViewPrincipleDetailDialog";
 import {
   SelectionHistoryHeaderIcon,
   SmallCaretDownIcon,
@@ -64,7 +72,7 @@ const MSG_PROVIDE =
 const COLUMNS: PanelTableCol<FlaggedEntityHistory>[] = [
   { header: "Entity Name",      width: "25%", render: (r) => r.entityName || "—",                      truncate: true },
   { header: "Selection Type",   width: "20%", render: (r) => SOURCE_LABEL[r.source] ?? r.source ?? "—", truncate: true },
-  { header: "Date Flagged",     width: "18%", render: (r) => r.flaggedDate || "—",                      truncate: true },
+  { header: "Date Flagged",     width: "18%", render: (r) => formatDisplayDate(r.flaggedDate) || "—",                      truncate: true },
   { header: "Time Flagged",     width: "17%", render: (r) => r.flaggedTime || "—",                      truncate: true },
   { header: "Selection Action", width: "20%", render: (r) => r.selectionAction || "—",                  truncate: true },
 ];
@@ -94,10 +102,36 @@ function historyToFlagEntity(h: FlaggedEntityHistory): FlagEntityForAnalysis {
 }
 
 export default function SelectionHistoryView() {
-  const { initData, sendMessage, closeDialog } = useDialogComm();
+  const { initData, sendMessage, submitSave, closeDialog } = useDialogComm();
 
   const allRows = useMemo(
     () => (initData?.selectionHistories ?? []) as FlaggedEntityHistory[],
+    [initData]
+  );
+
+  // ── Principle subsystem data (same pre-load pattern as FlaggedHistoryView) ──
+  const principleInterpretations = useMemo(
+    () => (initData?.principleInterpretations ?? []) as import("@/types/db").PrincipleInterpretation[],
+    [initData]
+  );
+  const filesByInterpretationId = useMemo(
+    () => (initData?.filesByInterpretationId ?? {}) as Record<number, import("@/types/db").AttachFileToProject[]>,
+    [initData]
+  );
+  const principlesInSelection = useMemo(
+    () => (initData?.principlesInSelection ?? []) as import("@/types/db").PrincipleInSelection[],
+    [initData]
+  );
+  const filesByPrincipleInSelectionId = useMemo(
+    () => (initData?.filesByPrincipleInSelectionId ?? {}) as Record<number, import("@/types/db").AttachFileToProject[]>,
+    [initData]
+  );
+  const selectionsWithPrinciple = useMemo(
+    () => (initData?.selectionsWithPrinciple ?? []) as import("@/types/db").SelectionWithPrinciple[],
+    [initData]
+  );
+  const filesBySelectionWithPrincipleId = useMemo(
+    () => (initData?.filesBySelectionWithPrincipleId ?? {}) as Record<number, import("@/types/db").AttachFileToProject[]>,
     [initData]
   );
 
@@ -108,6 +142,15 @@ export default function SelectionHistoryView() {
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [viewSelection, setViewSelection] = useState<FlagEntityForAnalysis | null>(null);
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
+  // Principle subsystem state (mirrors FlaggedHistoryView)
+  const [showIdentifiedList, setShowIdentifiedList] = useState(false);
+  const [showInterpretedList, setShowInterpretedList] = useState(false);
+  const [showRelatedList, setShowRelatedList] = useState(false);
+  const [relateFlag, setRelateFlag] = useState<FlagEntityForAnalysis | null>(null);
+  const [identifyFlag, setIdentifyFlag] = useState<FlagEntityForAnalysis | null>(null);
+  const [interpretPrinciple, setInterpretPrinciple] = useState<import("@/types/db").PrincipleInSelection | null>(null);
+  const [viewIdentified, setViewIdentified] = useState<import("@/types/db").PrincipleInSelection | null>(null);
+  const [viewRelated, setViewRelated] = useState<import("@/types/db").SelectionWithPrinciple | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
 
   const displayRows = useMemo(
@@ -538,6 +581,104 @@ export default function SelectionHistoryView() {
           onProvideFeedback={() => { setViewSelection(null); showInfo("Provide Feedback Message", MSG_PROVIDE); }}
           onApplyFeedback={() => { setViewSelection(null); showInfo("Apply Feedback Message", MSG_APPLY); }}
           onRequestFeedback={() => { setViewSelection(null); showInfo("Provide Feedback Message", MSG_PROVIDE); }}
+          onIdentifyPrinciple={() => { setIdentifyFlag(viewSelection); setViewSelection(null); }}
+          onRelateWithPrinciple={() => { setRelateFlag(viewSelection); setViewSelection(null); }}
+          onListIdentified={() => { setViewSelection(null); setShowIdentifiedList(true); }}
+          onListInterpreted={() => { setViewSelection(null); setShowInterpretedList(true); }}
+          onListRelated={() => { setViewSelection(null); setShowRelatedList(true); }}
+        />
+      )}
+
+      {showIdentifiedList && (
+        <ListIdentifiedPrinciplePortal
+          principles={principlesInSelection}
+          sendMessage={sendMessage}
+          onClose={() => setShowIdentifiedList(false)}
+          onInterpret={(p) => setInterpretPrinciple(p)}
+          onView={(p) => setViewIdentified(p)}
+        />
+      )}
+
+      {viewIdentified && (
+        <ViewPrincipleDetailDialog
+          title="View Identified Principle"
+          subtitle="View details of the identified principle."
+          aboutSelection={viewIdentified.actualSelection}
+          actualPrinciple={viewIdentified.actualPrinciple}
+          principleName={viewIdentified.principleName}
+          setDerivedFrom={viewIdentified.setDerivedFrom}
+          principleDescription={viewIdentified.principleDescription}
+          communicationPrinciple={viewIdentified.communicationPrinciple}
+          commPrincipleDescription={viewIdentified.commPrincipleDescription}
+          files={viewIdentified.id !== undefined ? filesByPrincipleInSelectionId[viewIdentified.id] : []}
+          onClose={() => setViewIdentified(null)}
+        />
+      )}
+
+      {showRelatedList && (
+        <ListSelectionRelatedPrinciplePortal
+          relations={selectionsWithPrinciple}
+          sendMessage={sendMessage}
+          onClose={() => setShowRelatedList(false)}
+          onView={(r) => setViewRelated(r)}
+        />
+      )}
+
+      {viewRelated && (
+        <ViewPrincipleDetailDialog
+          title="View Related Principle"
+          subtitle="View details of the selection related to a principle."
+          aboutSelection={viewRelated.actualSelection}
+          actualPrinciple={viewRelated.actualPrinciple}
+          principleName={viewRelated.principleName}
+          setDerivedFrom={viewRelated.setDerivedFrom}
+          principleDescription={viewRelated.principleDescription}
+          communicationPrinciple={viewRelated.communicationPrinciple}
+          commPrincipleDescription={viewRelated.commPrincipleDescription}
+          actualRelationship={viewRelated.actualRelationship}
+          relationshipDescription={viewRelated.relationshipDescription}
+          files={viewRelated.id !== undefined ? filesBySelectionWithPrincipleId[viewRelated.id] : []}
+          onClose={() => setViewRelated(null)}
+        />
+      )}
+
+      {interpretPrinciple && (
+        <InterpretePrincipleDialog
+          principle={interpretPrinciple}
+          defaultPerson={initData?.personName}
+          sendMessage={submitSave}
+          onClose={() => setInterpretPrinciple(null)}
+          onListIdentified={() => { setInterpretPrinciple(null); setShowIdentifiedList(true); }}
+          onListInterpreted={() => { setInterpretPrinciple(null); setShowInterpretedList(true); }}
+        />
+      )}
+
+      {showInterpretedList && (
+        <ListInterpretedPrinciplePortal
+          interpretations={principleInterpretations}
+          filesByInterpretationId={filesByInterpretationId}
+          sendMessage={sendMessage}
+          onClose={() => setShowInterpretedList(false)}
+        />
+      )}
+
+      {relateFlag && (
+        <RelateSelectionWithPrincipleDialog
+          flag={relateFlag}
+          sendMessage={submitSave}
+          onClose={() => setRelateFlag(null)}
+          onListIdentified={() => { setRelateFlag(null); setShowIdentifiedList(true); }}
+          onListInterpreted={() => { setRelateFlag(null); setShowInterpretedList(true); }}
+        />
+      )}
+
+      {identifyFlag && (
+        <IdentifyPrincipleInSelectionDialog
+          flag={identifyFlag}
+          sendMessage={submitSave}
+          onClose={() => setIdentifyFlag(null)}
+          onListIdentified={() => { setIdentifyFlag(null); setShowIdentifiedList(true); }}
+          onListInterpreted={() => { setIdentifyFlag(null); setShowInterpretedList(true); }}
         />
       )}
     </div>

@@ -8,7 +8,7 @@ import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import { IdentifyProblemStarIcon, CloseIcon, ViewListAnalysisIcon, ViewListFeedbackIcon } from "@/dialog/components/Icons";
-import { nowDate, nowTime } from "@/db/db";
+import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import type { ProjectProblem } from "@/types/db";
 
 type ProblemDraft = Omit<ProjectProblem, "id" | "analysisId">;
@@ -356,7 +356,7 @@ export function ProblemIdentificationDialog({ itemCount, existingErrors, onAdd, 
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <FormRow label="Problem Date">
-              <input style={readonlyInputStyle} value={problemDate} readOnly />
+              <input style={readonlyInputStyle} value={formatDisplayDate(problemDate)} readOnly />
             </FormRow>
             <FormRow label="Problem Time">
               <input style={readonlyInputStyle} value={problemTime} readOnly />

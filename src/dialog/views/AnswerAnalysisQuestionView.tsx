@@ -9,7 +9,7 @@ import { RichEditor } from "@/dialog/components/RichEditor";
 import { AnswerIcon } from "@/dialog/components/Icons";
 import { FormRow, CmdSep } from "@/dialog/components/FormRow";
 import { inputStyle, readonlyInputStyle } from "@/dialog/styles/formStyles";
-import { nowDate, nowTime } from "@/db/db";
+import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import type { ProjectAnswer } from "@/types/db";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -287,7 +287,7 @@ export default function AnswerAnalysisQuestionView() {
           >
             Answer Date
           </div>
-          <input style={{ ...readonlyInputStyle, flex: 1 }} value={answerDate} readOnly />
+          <input style={{ ...readonlyInputStyle, flex: 1 }} value={formatDisplayDate(answerDate)} readOnly />
           <div
             style={{
               width: 100,

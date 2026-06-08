@@ -2,6 +2,7 @@
 // Read-only list of all ProjectAnalysis records. No toolbar.
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
@@ -142,7 +143,7 @@ export default function AnalysisHistoryView() {
       {
         header: "Analysis Date",
         width: "24%",
-        render: (a) => a.analysisDate || "—",
+        render: (a) => formatDisplayDate(a.analysisDate) || "—",
         truncate: true,
       },
       {

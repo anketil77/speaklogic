@@ -2,6 +2,7 @@
 // Read-only list of analyses saved with WhatToDoWithAnalysis = 'RetainAnalysisAsNeed'. No toolbar.
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
@@ -74,7 +75,7 @@ const DATA_COLUMNS: PanelTableCol<ProjectAnalysis>[] = [
   {
     header: "Analysis Date",
     width: "22%",
-    render: (a) => a.analysisDate || "—",
+    render: (a) => formatDisplayDate(a.analysisDate) || "—",
     truncate: true,
   },
   {

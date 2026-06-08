@@ -89,3 +89,25 @@ export function nowDate(): string {
 export function nowTime(): string {
   return new Date().toTimeString().slice(0, 8);
 }
+
+/**
+ * Format any stored date string into USA display format MM-DD-YYYY (e.g. "06-05-2026").
+ * Storage stays ISO (YYYY-MM-DD) so date columns still sort correctly — this is a
+ * display-only converter. Handles legacy values too: ISO, m/d/yyyy (FlagView /
+ * toLocaleDateString), and already-dashed MM-DD-YYYY. Unknown/empty values pass through
+ * unchanged so callers can still do `formatDisplayDate(x) || "—"`.
+ */
+export function formatDisplayDate(d?: string | null): string {
+  if (!d) return d ?? "";
+  const s = d.trim();
+  // ISO: YYYY-MM-DD (optionally followed by time)
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+  if (m) return `${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}-${m[1]}`;
+  // Slash: m/d/yyyy (en-US locale / FlagView legacy)
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s);
+  if (m) return `${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}-${m[3]}`;
+  // Already dashed M-D-YYYY → normalize zero-padding
+  m = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(s);
+  if (m) return `${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}-${m[3]}`;
+  return s;
+}

@@ -8,7 +8,7 @@ import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { HamburgerIcon, PfFeedbackListIcon, PfAnalysisListIcon, PfFileInfoIcon } from "@/dialog/components/Icons";
 import { PanelTable, PanelTableCol } from "@/dialog/components/PanelTable";
-import { nowDate, nowTime } from "@/db/db";
+import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import { colors } from "@/styles/tokens";
 import type { SaveFeedbackPayload } from "@/types/db";
 import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
@@ -236,7 +236,7 @@ const PFV_FILE_COLS: PanelTableCol<string[]>[] = [
   { header: "#", width: "8%", render: (r) => r[0] },
   { header: "File Name", width: "50%", render: (r) => r[1], truncate: true },
   { header: "Type", width: "20%", render: (r) => r[2], truncate: true },
-  { header: "Date", width: "22%", render: (r) => r[3], truncate: true },
+  { header: "Date", width: "22%", render: (r) => formatDisplayDate(r[3]), truncate: true },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -325,7 +325,7 @@ export default function ProvideFeedbackView() {
         fromPerson: form.fromPerson,
         toPerson: form.toPerson,
         feedbackSubject: form.feedbackSubject,
-        internalFeedbackName: `Text selected from ${initData.source} on ${nowDate()}`,
+        internalFeedbackName: `Text selected from ${initData.source} on ${formatDisplayDate(nowDate())}`,
         feedbackType: "Provided",
         // Persist the formatted (HTML) selection so View Feedback keeps the
         // original Word formatting; fall back to plain text when no HTML.

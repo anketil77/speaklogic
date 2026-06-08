@@ -3,6 +3,7 @@
 // C# original: IdentifyPrincipleInSelection.cs
 
 import React, { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
@@ -50,7 +51,7 @@ const SET_DERIVED_OPTIONS = [
 const FILE_COLUMNS: PanelTableCol<AttachFileToProject>[] = [
   { header: "File Name", width: "28%", render: (f) => f.fileName || "—", truncate: true },
   { header: "File Type", width: "15%", render: (f) => f.fileType || "—" },
-  { header: "File Date", width: "17%", render: (f) => f.fileDate || "—" },
+  { header: "File Date", width: "17%", render: (f) => formatDisplayDate(f.fileDate) || "—" },
   { header: "File Time", width: "15%", render: (f) => f.fileTime || "—" },
   { header: "File Size", width: "15%", render: (f) => f.fileSize || "—" },
 ];
@@ -571,7 +572,7 @@ export function IdentifyPrincipleInSelectionDialog({
                       ["File Name", viewFileInfo.fileName],
                       ["File Type", viewFileInfo.fileType],
                       ["File Size", viewFileInfo.fileSize],
-                      ["File Date", viewFileInfo.fileDate],
+                      ["File Date", formatDisplayDate(viewFileInfo.fileDate)],
                       ["File Time", viewFileInfo.fileTime],
                       ["Description", viewFileInfo.fileDescription],
                     ] as [string, string][]

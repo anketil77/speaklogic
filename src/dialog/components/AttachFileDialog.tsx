@@ -1,6 +1,7 @@
 // src/dialog/components/AttachFileDialog.tsx
 
 import React, { useRef, useState, useCallback } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
@@ -82,7 +83,7 @@ export function AttachFileDialog({ onAdd, onClose }: AttachFileDialogProps) {
       fileDirectory: "",
       fileType: ext ? `${ext.toUpperCase()} File` : file.type || "Unknown",
       fileSize: `${file.size} Bytes`,
-      fileDate: modDate.toLocaleDateString(),
+      fileDate: `${modDate.getFullYear()}-${String(modDate.getMonth() + 1).padStart(2, "0")}-${String(modDate.getDate()).padStart(2, "0")}`,
       fileTime: modDate.toLocaleTimeString(),
       fileDescription: "",
       fullFileName: file.name,
@@ -306,7 +307,7 @@ export function AttachFileDialog({ onAdd, onClose }: AttachFileDialogProps) {
           {fieldRow("Directory", readOnlyInput(fields.fileDirectory))}
           {fieldRow("File Type", readOnlyInput(fields.fileType))}
           {fieldRow("File Size", readOnlyInput(fields.fileSize))}
-          {fieldRow("File Date", readOnlyInput(fields.fileDate))}
+          {fieldRow("File Date", readOnlyInput(formatDisplayDate(fields.fileDate)))}
           {fieldRow("File Time", readOnlyInput(fields.fileTime))}
 
           {/* File Description */}

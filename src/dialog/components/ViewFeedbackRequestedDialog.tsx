@@ -3,6 +3,7 @@
 // Matches C# ViewFeedbackRequested.cs — no editing, no save, close only.
 
 import React, { useCallback } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
@@ -177,7 +178,7 @@ export function ViewFeedbackRequestedDialog({ request, onClose }: Props) {
           <FieldRow label="Communication Function" value={request.communicationFunction} />
           <FieldRow label="Communication Signal"   value={request.communicationSignalType} />
           <FieldRow label="Feedback Subject"       value={request.communicationSubject} />
-          <FieldRow label="Feedback Date"          value={request.communicationDate} />
+          <FieldRow label="Feedback Date"          value={formatDisplayDate(request.communicationDate)} />
           <FieldRow label="Feedback Time"          value={request.communicationTime} />
 
           {/* Rich text fields */}

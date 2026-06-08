@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { PanelContextMenu, PanelMenuEntry } from "@/dialog/components/PanelContextMenu";
 import { PanelTable, PanelTableCol } from "@/dialog/components/PanelTable";
 import type { ProjectAnswer } from "@/types/db";
+import { formatDisplayDate } from "@/db/db";
 
 type AnswerDraft = Omit<ProjectAnswer, "id" | "analysisId" | "questionId">;
 
@@ -20,7 +21,7 @@ const COLUMNS: PanelTableCol<AnswerDraft>[] = [
   { header: "Actual Question", width: "25%", render: (item) => item.actualQuestion, truncate: true },
   { header: "Actual Answer", width: "25%", render: (item) => item.actualAnswer, truncate: true },
   { header: "Information Answer Point To", width: "25%", render: (item) => item.informationAnswerPointTo, truncate: true },
-  { header: "Answer Date", width: "15%", render: (item) => <span style={{ color: "#999" }}>{item.answerDate || "—"}</span> },
+  { header: "Answer Date", width: "15%", render: (item) => <span style={{ color: "#999" }}>{formatDisplayDate(item.answerDate) || "—"}</span> },
 ];
 
 interface AnswerPanelProps {

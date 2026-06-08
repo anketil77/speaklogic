@@ -8,7 +8,7 @@ import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import { ErrorIcon, CloseIcon, ViewListAnalysisIcon, ViewListFeedbackIcon } from "@/dialog/components/Icons";
-import { nowDate, nowTime } from "@/db/db";
+import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import type { ProjectError } from "@/types/db";
 
 type ErrorDraft = Omit<ProjectError, "id" | "analysisId">;
@@ -268,7 +268,7 @@ export function ErrorIdentificationDialog({ itemCount, onAdd, onClose, prefilled
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <FormRow label="Error Date">
-            <input style={readonlyInputStyle} value={errorDate} readOnly />
+            <input style={readonlyInputStyle} value={formatDisplayDate(errorDate)} readOnly />
           </FormRow>
           <FormRow label="Error Time">
             <input style={readonlyInputStyle} value={errorTime} readOnly />

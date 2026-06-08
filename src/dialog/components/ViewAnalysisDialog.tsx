@@ -2,6 +2,7 @@
 // Portal dialog: View Selected Analysis — matches C# ViewAnalysis.cs design
 
 import React, { useState, useCallback, useMemo } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { createPortal } from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
@@ -371,7 +372,7 @@ function TabContent({
               </div>
               <input
                 style={{ ...readonlyInput, flex: 1 }}
-                value={analysis.analysisDate || "—"}
+                value={formatDisplayDate(analysis.analysisDate) || "—"}
                 readOnly
               />
               <div
@@ -423,7 +424,7 @@ function TabContent({
     const rows = (analysis.questions ?? []).map((q) => [
       q.entityQuestionPointTo ?? "",
       q.actualQuestion?.replace(/<[^>]+>/g, "") ?? "",
-      q.questionDate ?? "",
+      formatDisplayDate(q.questionDate) ?? "",
       q.questionTime ?? "",
     ]);
     return (
@@ -447,7 +448,7 @@ function TabContent({
       e.actualError ?? "",
       e.fromActualCommunication ?? "",
       e.entityErrorPointTo ?? "",
-      e.errorDate ?? "",
+      formatDisplayDate(e.errorDate) ?? "",
     ]);
     return (
       <div style={{ flex: 1, overflowY: "auto" }}>
@@ -470,7 +471,7 @@ function TabContent({
       c.actualCompensator ?? "",
       c.actualErrorReplaced ?? "",
       c.inActualCommunication ?? "",
-      c.compensatorDate ?? "",
+      formatDisplayDate(c.compensatorDate) ?? "",
     ]);
     return (
       <div style={{ flex: 1, overflowY: "auto" }}>
@@ -492,7 +493,7 @@ function TabContent({
     const rows = (analysis.answers ?? []).map((a) => [
       a.actualQuestion?.replace(/<[^>]+>/g, "") ?? "",
       a.actualAnswer?.replace(/<[^>]+>/g, "") ?? "",
-      a.answerDate ?? "",
+      formatDisplayDate(a.answerDate) ?? "",
     ]);
     return (
       <div style={{ flex: 1, overflowY: "auto" }}>
@@ -514,7 +515,7 @@ function TabContent({
     const rows = (analysis.files ?? []).map((f) => [
       f.fileName ?? "",
       f.fileType ?? "",
-      f.fileDate ?? "",
+      formatDisplayDate(f.fileDate) ?? "",
       f.fileSize ?? "",
     ]);
     return (

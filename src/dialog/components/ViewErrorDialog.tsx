@@ -1,6 +1,7 @@
 // src/dialog/components/ViewErrorDialog.tsx
 
 import React, { useState, useCallback } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
@@ -186,7 +187,7 @@ export function ViewErrorDialog({ error, onClose, zIndexBase = 200 }: ViewErrorD
 
         <div style={{ display: "flex", alignItems: "center" }}>
           <div style={{ width: LABEL_W, minWidth: LABEL_W, fontSize: "11.8px", fontWeight: 700, color: C.grey11, flexShrink: 0 }}>Error Date</div>
-          <input style={{ ...readonlyInput, flex: 1 }} value={error.errorDate || "—"} readOnly />
+          <input style={{ ...readonlyInput, flex: 1 }} value={formatDisplayDate(error.errorDate) || "—"} readOnly />
           <div style={{ width: 80, minWidth: 80, fontSize: "11.8px", fontWeight: 700, color: C.grey11, textAlign: "right", paddingRight: 12, flexShrink: 0 }}>Error Time</div>
           <input style={{ ...readonlyInput, width: 120, flex: "0 0 120px" }} value={error.errorTime || "—"} readOnly />
         </div>

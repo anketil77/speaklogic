@@ -8,7 +8,7 @@ import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import { CompensatorIcon, CloseIcon, ViewListAnalysisIcon, ViewListFeedbackIcon } from "@/dialog/components/Icons";
-import { nowDate, nowTime } from "@/db/db";
+import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import type { ProjectCompensator } from "@/types/db";
 
 type CompensatorDraft = Omit<ProjectCompensator, "id" | "analysisId">;
@@ -312,7 +312,7 @@ export function CompensatorIdentificationDialog({
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <FormRow label="Compensator Date">
-            <input style={readonlyInputStyle} value={compensatorDate} readOnly />
+            <input style={readonlyInputStyle} value={formatDisplayDate(compensatorDate)} readOnly />
           </FormRow>
           <FormRow label="Compensator Time">
             <input style={readonlyInputStyle} value={compensatorTime} readOnly />

@@ -4,12 +4,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { Spinner } from "@fluentui/react-components";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
+import { nowDate, formatDisplayDate } from "@/db/db";
 import type { FlagEntityForAnalysis } from "@/types/db";
 
-function localDate(): string {
-  const d = new Date();
-  return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
-}
 function localTime(): string {
   const d = new Date();
   const h = d.getHours(), m = d.getMinutes();
@@ -97,7 +94,7 @@ export default function FlagView() {
 
   const [entityName, setEntityName] = useState("");
   const [personFlagged, setPersonFlagged] = useState("");
-  const [flagDate] = useState(() => localDate());
+  const [flagDate] = useState(() => nowDate());
   const [flagTime] = useState(() => localTime());
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -244,7 +241,7 @@ export default function FlagView() {
 
         <div style={fieldRow}>
           <span style={fieldLabel}>Date Flagged</span>
-          <div style={{ ...fieldInput, display: "flex", alignItems: "center", pointerEvents: "none" }}>{flagDate}</div>
+          <div style={{ ...fieldInput, display: "flex", alignItems: "center", pointerEvents: "none" }}>{formatDisplayDate(flagDate)}</div>
         </div>
 
         <div style={fieldRow}>

@@ -2,6 +2,7 @@
 // Read-only list of all FlagEntityForAnalysis records. No RichTextToolbar.
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
@@ -69,7 +70,7 @@ const COLUMNS: PanelTableCol<FlagEntityForAnalysis>[] = [
   {
     header: "Date Flagged",
     width: "18%",
-    render: (f) => f.flagDate || "—",
+    render: (f) => formatDisplayDate(f.flagDate) || "—",
     truncate: true,
   },
   {

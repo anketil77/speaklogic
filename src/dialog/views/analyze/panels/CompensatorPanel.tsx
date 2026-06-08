@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { PanelContextMenu, PanelMenuEntry } from "@/dialog/components/PanelContextMenu";
 import { PanelTable, PanelTableCol } from "@/dialog/components/PanelTable";
 import type { ProjectCompensator } from "@/types/db";
+import { formatDisplayDate } from "@/db/db";
 
 type CompensatorDraft = Omit<ProjectCompensator, "id" | "analysisId">;
 
@@ -15,7 +16,7 @@ const COLUMNS: PanelTableCol<CompensatorDraft>[] = [
   { header: "Compensator #", width: "14%", render: (_, idx) => idx + 1 },
   { header: "Actual Compensator", width: "30%", render: (item) => item.actualCompensator, truncate: true },
   { header: "Error Replaced", width: "30%", render: (item) => item.actualErrorReplaced, truncate: true },
-  { header: "Compensator Date", width: "26%", render: (item) => <span style={{ color: "#999" }}>{item.compensatorDate || "—"}</span> },
+  { header: "Compensator Date", width: "26%", render: (item) => <span style={{ color: "#999" }}>{formatDisplayDate(item.compensatorDate) || "—"}</span> },
 ];
 
 interface CompensatorPanelProps {

@@ -13,6 +13,7 @@ import type {
   SelectionWithPrinciple,
   CommSignalInfo,
 } from "@/types/db";
+import { formatDisplayDate } from "@/db/db";
 
 const GREEN = "#42b634";
 
@@ -132,7 +133,7 @@ function buildErrorSection(errors: ProjectError[]): string {
         fieldRow("Error Number", esc(String(e.errorNumber ?? i + 1))),
         fieldRow("From Actual Comm/App", esc(e.actualError)),
         fieldRow("Entity Error Point to", esc(e.entityErrorPointTo)),
-        fieldRow("Error Date", esc(e.errorDate)),
+        fieldRow("Error Date", esc(formatDisplayDate(e.errorDate))),
         fieldRow("Error Time", esc(e.errorTime)),
         blockField("Error Description", esc(stripHtml(e.errorDescription))),
       ].join("")
@@ -151,7 +152,7 @@ function buildCompensatorSection(comps: ProjectCompensator[]): string {
         fieldRow("Compensator Number", esc(String(c.compensatorNumber ?? i + 1))),
         fieldRow("Actual Compensator", esc(c.actualErrorReplaced)),
         fieldRow("In Actual App/Comm", esc(c.inActualCommunication)),
-        fieldRow("Compensator Date", esc(c.compensatorDate)),
+        fieldRow("Compensator Date", esc(formatDisplayDate(c.compensatorDate))),
         fieldRow("Compensator Time", esc(c.compensatorTime)),
         blockField("Compensator Description", esc(stripHtml(c.compensatorDescription))),
       ].join("")
@@ -201,7 +202,7 @@ function buildProblemSection(problems: ProjectProblem[]): string {
       [
         fieldRow("Problem Number", esc(String(p.problemNumber ?? i + 1))),
         fieldRow("Problem Name", esc(p.problemName)),
-        fieldRow("Problem Date", esc(p.problemDate)),
+        fieldRow("Problem Date", esc(formatDisplayDate(p.problemDate))),
         fieldRow("Problem Time", esc(p.problemTime)),
         blockField("Problem Description", esc(stripHtml(p.problemDescription))),
       ].join("")
@@ -216,7 +217,7 @@ export function openAnalysisReport(a: ProjectAnalysis): void {
   const paraRows = [
     fieldRow("From Person", esc(a.fromPerson)),
     fieldRow("Communication Signal", "Red"),
-    fieldRow("Communication Date", esc(a.analysisDate)),
+    fieldRow("Communication Date", esc(formatDisplayDate(a.analysisDate))),
     fieldRow("Communication Time", esc(a.analysisTime)),
     fieldRow("Analysis Subject", esc(a.analysisSubject)),
     blockField("Actual Paragraph", esc(stripHtml(a.actualAnalysis))),
@@ -271,7 +272,7 @@ export function openFlaggedReport(flag: FlagEntityForAnalysis): void {
 function buildFeedbackAnalysisReport(fb: ProjectFeedback): string {
   const mainRows = [
     fieldRow("From Person", esc(fb.fromPerson)),
-    fieldRow("Feedback Date", esc(fb.feedbackDate)),
+    fieldRow("Feedback Date", esc(formatDisplayDate(fb.feedbackDate))),
     fieldRow("Feedback Time", esc(fb.feedbackTime)),
     fieldRow("Feedback Subject", esc(fb.feedbackSubject)),
     blockField("Feedback Application", esc(stripHtml(fb.feedbackApplication))),
@@ -301,7 +302,7 @@ function buildProvidedFeedbackReport(fb: ProjectFeedback): string {
     fieldRow("From Person", esc(fb.fromPerson)),
     fieldRow("To Person", esc(fb.toPerson)),
     fieldRow("Feedback Type", esc(fb.feedbackType)),
-    fieldRow("Feedback Date", esc(fb.feedbackDate)),
+    fieldRow("Feedback Date", esc(formatDisplayDate(fb.feedbackDate))),
     fieldRow("Feedback Time", esc(fb.feedbackTime)),
     blockField("Feedback Application", esc(stripHtml(fb.feedbackApplication))),
   ].join("");
@@ -323,7 +324,7 @@ function buildAppliedFeedbackReport(fb: ProjectFeedback): string {
     fieldRow("From Person", esc(fb.fromPerson)),
     fieldRow("To Person", esc(fb.toPerson)),
     fieldRow("Feedback Type", esc(fb.feedbackType)),
-    fieldRow("Feedback Date", esc(fb.feedbackDate)),
+    fieldRow("Feedback Date", esc(formatDisplayDate(fb.feedbackDate))),
     fieldRow("Feedback Time", esc(fb.feedbackTime)),
     blockField("Feedback Application", esc(stripHtml(fb.feedbackApplication))),
   ].join("");
@@ -414,7 +415,7 @@ export function openRequestFeedbackSelectionReport(req: CommSignalInfo): void {
   const rows = [
     fieldRow("From Person",            esc(req.fromPerson)),
     fieldRow("To Person",              esc(req.toPerson)),
-    fieldRow("Feedback Date",          esc(req.communicationDate)),
+    fieldRow("Feedback Date",          esc(formatDisplayDate(req.communicationDate))),
     fieldRow("Feedback Time",          esc(req.communicationTime)),
     fieldRow("Application Name",       esc(req.applicationName)),
     fieldRow("Communication Function", esc(req.communicationFunction)),
@@ -431,7 +432,7 @@ export function openRequestFeedbackReport(req: CommSignalInfo): void {
   const rows = [
     fieldRow("From Person",            esc(req.fromPerson)),
     fieldRow("To Person",              esc(req.toPerson)),
-    fieldRow("Feedback Date",          esc(req.communicationDate)),
+    fieldRow("Feedback Date",          esc(formatDisplayDate(req.communicationDate))),
     fieldRow("Feedback Time",          esc(req.communicationTime)),
     fieldRow("Application Name",       esc(req.applicationName)),
     fieldRow("Communication Function", esc(req.communicationFunction)),

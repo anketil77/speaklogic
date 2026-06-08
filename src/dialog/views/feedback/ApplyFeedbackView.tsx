@@ -32,7 +32,7 @@ import { ViewFeedbackDialog } from "@/dialog/components/ViewFeedbackDialog";
 import { CommandDropdown } from "@/dialog/components/CommandDropdown";
 import type { CmdDropdownDef } from "@/dialog/components/CommandDropdown";
 import { PanelTable, PanelTableCol } from "@/dialog/components/PanelTable";
-import { nowDate, nowTime } from "@/db/db";
+import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import { colors } from "@/styles/tokens";
 import { dbg } from "@/debug/log";
 import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
@@ -263,7 +263,7 @@ const AFV_FILE_COLS: PanelTableCol<string[]>[] = [
   { header: "#", width: "8%", render: (r) => r[0] },
   { header: "File Name", width: "50%", render: (r) => r[1], truncate: true },
   { header: "Type", width: "20%", render: (r) => r[2], truncate: true },
-  { header: "Date", width: "22%", render: (r) => r[3], truncate: true },
+  { header: "Date", width: "22%", render: (r) => formatDisplayDate(r[3]), truncate: true },
 ];
 const AFV_CI_COLS: PanelTableCol<string[]>[] = [
   { header: "#", width: "8%", render: (r) => r[0] },

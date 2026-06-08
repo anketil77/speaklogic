@@ -1,7 +1,7 @@
 /* global Office */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { initDb, nowDate } from "@/db/db";
+import { initDb, nowDate, formatDisplayDate } from "@/db/db";
 import { dbg } from "@/debug/log";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { getPeopleEmailMap, getPeopleNames, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
@@ -77,6 +77,12 @@ const ARTICLE_WIZARD_SIZE = { height: 53, width: 27 };
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function getSource(): "Outlook Mail" { return "Outlook Mail"; }
+
+// Strip HTML/entities to plain text for audit-row entity names (mirrors commands.ts).
+function plainText(html: string | undefined | null): string {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
+}
 
 function getUserIdentity(): { personName: string; personEmail: string } {
   try {
@@ -324,6 +330,10 @@ export function OutlookTaskPane() {
             dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
             return;
           }
+          // Audit trail — every analyzed selection/paragraph logs an "Analyzed" row (non-critical).
+          try {
+            saveFeedbackHistory({ selectionAction: "Analyzed", entityName: plainText(payload.analysis.entityUnderAnalysis), actualSelection: payload.analysis.entityUnderAnalysis, selectionType: payload.analysis.selectionType ?? "", source: payload.analysis.source, applicationName: payload.analysis.applicationName ?? "", communicationFunction: payload.analysis.communicationFunction ?? "", communicationSignal: payload.analysis.communicationSignal ?? "", projectName: payload.analysis.projectName ?? "", personName: payload.analysis.personName ?? "", personEmail: payload.analysis.personEmail ?? "" });
+          } catch { /* non-critical */ }
 
           if (payload.analysis.whatToDoWithAnalysis === "ApplyAnalysisAsFeedback") {
             const { personName: pn, personEmail: pe } = getUserIdentity();
@@ -334,13 +344,20 @@ export function OutlookTaskPane() {
             const { personName: pn, personEmail: pe } = getUserIdentity();
             dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "provide-feedback", payload: { selection: payload.analysis.entityUnderAnalysis, mode: payload.analysis.selectionType === "Selection" ? "selection" : "paragraph", source: payload.analysis.source, personName: pn, personEmail: pe, applicationName: payload.analysis.applicationName, communicationFunction: payload.analysis.communicationFunction, communicationSignal: payload.analysis.communicationSignal, projectName: payload.analysis.projectName, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), analysisData: { id: savedId, entityUnderAnalysis: payload.analysis.entityUnderAnalysis, analysisSubject: payload.analysis.analysisSubject ?? "", actualAnalysis: payload.analysis.actualAnalysis, fromPerson: payload.analysis.fromPerson ?? "", errors: payload.errors, compensators: payload.compensators, questions: payload.questions, answers: payload.answers, files: payload.files, correctedItems: [] } } } as HostMessage));
           } else {
-            saveFeedbackHistory({ selectionAction: "Retain as Needed", entityName: payload.analysis.entityUnderAnalysis, actualSelection: payload.analysis.entityUnderAnalysis, selectionType: payload.analysis.selectionType ?? "", source: payload.analysis.source, applicationName: payload.analysis.applicationName ?? "", communicationFunction: payload.analysis.communicationFunction ?? "", communicationSignal: payload.analysis.communicationSignal ?? "", projectName: payload.analysis.projectName ?? "", personName: payload.analysis.personName ?? "", personEmail: payload.analysis.personEmail ?? "" });
+            saveFeedbackHistory({ selectionAction: "Retain as Needed", entityName: plainText(payload.analysis.entityUnderAnalysis), actualSelection: payload.analysis.entityUnderAnalysis, selectionType: payload.analysis.selectionType ?? "", source: payload.analysis.source, applicationName: payload.analysis.applicationName ?? "", communicationFunction: payload.analysis.communicationFunction ?? "", communicationSignal: payload.analysis.communicationSignal ?? "", projectName: payload.analysis.projectName ?? "", personName: payload.analysis.personName ?? "", personEmail: payload.analysis.personEmail ?? "" });
             dialog.messageChild(JSON.stringify({ type: "RETAIN_SAVED" } as HostMessage));
           }
         } else if (action.action === "SAVE_FEEDBACK") {
           const p = action.payload as SaveFeedbackPayload;
           try { saveFeedback(p); }
           catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); return; }
+          // Audit trail — log the feedback disposition (non-critical).
+          if (p.feedback.feedbackType === "Provided" || p.feedback.feedbackType === "Applied") {
+            const f = p.feedback;
+            try {
+              saveFeedbackHistory({ selectionAction: f.feedbackType === "Applied" ? "Applied as Feedback" : "Provided as Feedback", entityName: f.internalFeedbackName || `Text selected from ${f.source} on ${f.feedbackDate}`, actualSelection: f.feedbackApplication, selectionType: f.selectionType, source: f.source, applicationName: f.applicationName, communicationFunction: f.communicationFunction, communicationSignal: f.communicationSignal, projectName: f.projectName, personName: f.personName, personEmail: f.personEmail });
+            } catch { /* non-critical */ }
+          }
           const mailtoUrl = buildMailtoUrl(p);
           if (mailtoUrl) { dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage)); }
           else { dialog.close(); dialogRef.current = null; }
@@ -883,7 +900,7 @@ export function OutlookTaskPane() {
         if (action.action === "SAVE_REQUEST_SL_FEEDBACK") {
           const p = action.payload as SaveRequestSLFeedbackPayload;
           try {
-            saveCommSignalInfo({ fromPerson: p.fromPerson ?? "", toPerson: "Speak Logic", toPersonEmail: "support@speaklogic.org", applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignalType: (p as { communicationSignalType?: string }).communicationSignalType ?? "", communicationSubject: p.communicationSubject ?? "", actualCommunication: p.actualCommunication ?? "", actualSelection: "", selectionType: "Speak Logic Request", entitySelected: `Speak Logic feedback request on ${nowDate()}`, files: (p as { files?: AttachFileToProject[] }).files ?? [] });
+            saveCommSignalInfo({ fromPerson: p.fromPerson ?? "", toPerson: "Speak Logic", toPersonEmail: "support@speaklogic.org", applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignalType: (p as { communicationSignalType?: string }).communicationSignalType ?? "", communicationSubject: p.communicationSubject ?? "", actualCommunication: p.actualCommunication ?? "", actualSelection: "", selectionType: "Speak Logic Request", entitySelected: `Speak Logic feedback request on ${formatDisplayDate(nowDate())}`, files: (p as { files?: AttachFileToProject[] }).files ?? [] });
           } catch (err) { setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false }); }
           dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: buildRequestSLMailtoUrl(p) } as HostMessage));
         }

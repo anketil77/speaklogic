@@ -1,6 +1,7 @@
 // src/dialog/components/ViewProblemDialog.tsx
 
 import React, { useState, useCallback } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
@@ -185,7 +186,7 @@ export function ViewProblemDialog({ problem, onClose }: ViewProblemDialogProps) 
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <FormRow label="Problem Date">
-              <input style={readonlyInput} value={problem.problemDate ?? ""} readOnly />
+              <input style={readonlyInput} value={formatDisplayDate(problem.problemDate) ?? ""} readOnly />
             </FormRow>
             <FormRow label="Problem Time">
               <input style={readonlyInput} value={problem.problemTime ?? ""} readOnly />

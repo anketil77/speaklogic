@@ -3,6 +3,7 @@
 // Gradient cover banner → featured image (extracted from content) → title → body → details.
 
 import React, { useCallback } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import { createPortal } from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
@@ -122,7 +123,7 @@ function WizardContent({ article }: { article: Article }) {
         <WizardSection title="Event">
           <WizardField label="Event Name"     value={article.eventName} />
           <WizardField label="Event Location" value={article.eventLocation} />
-          <WizardField label="Event Date"     value={[article.eventDate, article.eventTime].filter(Boolean).join("  ·  ")} />
+          <WizardField label="Event Date"     value={[formatDisplayDate(article.eventDate), article.eventTime].filter(Boolean).join("  ·  ")} />
         </WizardSection>
       )}
 
@@ -541,7 +542,7 @@ export function ViewArticleDialog({ article, onClose }: Props) {
                 </div>
                 {(article.articleDate || article.articleTime) ? (
                   <div style={{ fontSize: 12, color: "#9CA3AF", lineHeight: "16px", marginTop: 2 }}>
-                    {[article.articleDate, article.articleTime].filter(Boolean).join("  ·  ")}
+                    {[formatDisplayDate(article.articleDate), article.articleTime].filter(Boolean).join("  ·  ")}
                   </div>
                 ) : null}
               </div>

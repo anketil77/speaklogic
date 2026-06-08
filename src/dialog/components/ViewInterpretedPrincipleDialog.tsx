@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
@@ -26,7 +27,7 @@ const TABS: { id: TabId; label: string }[] = [
 const FILE_COLUMNS: PanelTableCol<AttachFileToProject>[] = [
   { header: "File Name", width: "28%", render: (f) => f.fileName || "—", truncate: true },
   { header: "File Type", width: "15%", render: (f) => f.fileType || "—" },
-  { header: "File Date", width: "17%", render: (f) => f.fileDate || "—" },
+  { header: "File Date", width: "17%", render: (f) => formatDisplayDate(f.fileDate) || "—" },
   { header: "File Time", width: "15%", render: (f) => f.fileTime || "—" },
   { header: "File Size", width: "15%", render: (f) => f.fileSize || "—" },
 ];
@@ -251,7 +252,7 @@ export function ViewInterpretedPrincipleDialog({ interpretation, initialFiles = 
                       <InfoRow label="File Name" value={viewFileInfo.fileName} />
                       <InfoRow label="File Type" value={viewFileInfo.fileType} />
                       <InfoRow label="File Size" value={viewFileInfo.fileSize} />
-                      <InfoRow label="File Date" value={viewFileInfo.fileDate} />
+                      <InfoRow label="File Date" value={formatDisplayDate(viewFileInfo.fileDate)} />
                       <InfoRow label="File Time" value={viewFileInfo.fileTime} />
                       <InfoRow label="Description" value={viewFileInfo.fileDescription} />
                     </div>

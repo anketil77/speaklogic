@@ -9,7 +9,7 @@ import { RichEditor } from "@/dialog/components/RichEditor";
 import { CompensatorIcon } from "@/dialog/components/Icons";
 import { FormRow, CmdSep } from "@/dialog/components/FormRow";
 import { inputStyle, readonlyInputStyle } from "@/dialog/styles/formStyles";
-import { nowDate, nowTime } from "@/db/db";
+import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import type { ProjectCompensator } from "@/types/db";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -359,7 +359,7 @@ export default function CompensatorView({ existingErrors = [] }: CompensatorView
           </div>
           <input
             style={{ ...readonlyInputStyle, flex: 1 }}
-            value={compensatorDate}
+            value={formatDisplayDate(compensatorDate)}
             readOnly
           />
           <div

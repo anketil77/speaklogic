@@ -1,6 +1,7 @@
 // src/dialog/components/ViewFeedbackDialog.tsx
 
 import React, { useState, useMemo, useCallback } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import { createPortal } from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
@@ -43,27 +44,27 @@ const Q_COLS: PanelTableCol<ProjectQuestion>[] = [
   { header: "Question Number", width: "16%", render: (q) => q.questionNumber, truncate: true },
   { header: "Actual Question", width: "38%", render: (q) => <span dangerouslySetInnerHTML={{ __html: q.actualQuestion }} />, truncate: true },
   { header: "Entity Question Point To", width: "30%", render: (q) => q.entityQuestionPointTo || "—", truncate: true },
-  { header: "Question Date", width: "16%", render: (q) => q.questionDate || "—", truncate: true },
+  { header: "Question Date", width: "16%", render: (q) => formatDisplayDate(q.questionDate) || "—", truncate: true },
 ];
 
 const C_COLS: PanelTableCol<ProjectCompensator>[] = [
   { header: "Compensator Number", width: "20%", render: (c) => c.compensatorNumber, truncate: true },
   { header: "Actual Compensator", width: "32%", render: (c) => c.actualCompensator || "—", truncate: true },
   { header: "Error Replaced", width: "30%", render: (c) => c.actualErrorReplaced || "—", truncate: true },
-  { header: "Compensator Date", width: "18%", render: (c) => c.compensatorDate || "—", truncate: true },
+  { header: "Compensator Date", width: "18%", render: (c) => formatDisplayDate(c.compensatorDate) || "—", truncate: true },
 ];
 
 const A_COLS: PanelTableCol<ProjectAnswer>[] = [
   { header: "Actual Answer", width: "32%", render: (a) => <span dangerouslySetInnerHTML={{ __html: a.actualAnswer }} />, truncate: true },
   { header: "Information Answer Point To", width: "28%", render: (a) => a.informationAnswerPointTo || "—", truncate: true },
   { header: "Entity Question Point To", width: "25%", render: (a) => a.entityQuestionPointTo || "—", truncate: true },
-  { header: "Answer Date", width: "15%", render: (a) => a.answerDate || "—", truncate: true },
+  { header: "Answer Date", width: "15%", render: (a) => formatDisplayDate(a.answerDate) || "—", truncate: true },
 ];
 
 const F_COLS: PanelTableCol<AttachFileToProject>[] = [
   { header: "File Name", width: "32%", render: (f) => f.fileName || "—", truncate: true },
   { header: "File Type", width: "18%", render: (f) => f.fileType || "—", truncate: true },
-  { header: "File Date", width: "18%", render: (f) => f.fileDate || "—", truncate: true },
+  { header: "File Date", width: "18%", render: (f) => formatDisplayDate(f.fileDate) || "—", truncate: true },
   { header: "File Time", width: "16%", render: (f) => f.fileTime || "—", truncate: true },
   { header: "File Size", width: "16%", render: (f) => f.fileSize || "—", truncate: true },
 ];
@@ -384,7 +385,7 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
               <VfFormRow label="From Person"><input style={vfReadonlyInput} value={feedback.fromPerson || ""} readOnly /></VfFormRow>
               <VfFormRow label="To Person"><input style={vfReadonlyInput} value={feedback.toPerson || ""} readOnly /></VfFormRow>
               <VfFormRow label="Feedback Type"><input style={vfReadonlyInput} value={feedback.feedbackType || ""} readOnly /></VfFormRow>
-              <VfFormRow label="Feedback Date"><input style={vfReadonlyInput} value={feedback.feedbackDate || ""} readOnly /></VfFormRow>
+              <VfFormRow label="Feedback Date"><input style={vfReadonlyInput} value={formatDisplayDate(feedback.feedbackDate) || ""} readOnly /></VfFormRow>
               <VfFormRow label="Feedback Time"><input style={vfReadonlyInput} value={feedback.feedbackTime || ""} readOnly /></VfFormRow>
               <VfFormRow label="Feedback Application" alignTop>
                 <div dangerouslySetInnerHTML={{ __html: feedback.feedbackApplication || "" }} style={{ minHeight: 80, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey11, background: colors.grey96, lineHeight: "20px", overflowY: "auto" }} />

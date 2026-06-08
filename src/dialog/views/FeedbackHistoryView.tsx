@@ -2,6 +2,7 @@
 // Read-only list of all ProjectFeedback records. No toolbar.
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
@@ -151,7 +152,7 @@ export default function FeedbackHistoryView() {
       {
         header: "Feedback Date",
         width: "14%",
-        render: (f) => f.feedbackDate || "—",
+        render: (f) => formatDisplayDate(f.feedbackDate) || "—",
         truncate: true,
       },
       {

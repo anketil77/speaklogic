@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { PanelContextMenu, PanelMenuEntry } from "@/dialog/components/PanelContextMenu";
 import { PanelTable, PanelTableCol } from "@/dialog/components/PanelTable";
 import type { ProjectError } from "@/types/db";
+import { formatDisplayDate } from "@/db/db";
 
 type ErrorDraft = Omit<ProjectError, "id" | "analysisId">;
 
@@ -18,7 +19,7 @@ const COLUMNS: PanelTableCol<ErrorDraft>[] = [
   { header: "Error #", width: "12%", render: (_, idx) => idx + 1 },
   { header: "Actual Error", width: "36%", render: (item) => item.actualError, truncate: true },
   { header: "From Actual Communication", width: "36%", render: (item) => item.fromActualCommunication, truncate: true },
-  { header: "Error Date", width: "16%", render: (item) => <span style={{ color: "#999" }}>{item.errorDate || "—"}</span> },
+  { header: "Error Date", width: "16%", render: (item) => <span style={{ color: "#999" }}>{formatDisplayDate(item.errorDate) || "—"}</span> },
 ];
 
 interface ErrorPanelProps {

@@ -3,6 +3,7 @@
 // Matches FeedbackHistoryView layout but as a self-contained portal.
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
@@ -36,7 +37,7 @@ const COLUMNS: PanelTableCol<ProjectFeedback>[] = [
   { header: "From Person", width: "15%", render: (f) => f.fromPerson || "—", truncate: true },
   { header: "To Person", width: "13%", render: (f) => f.toPerson || "—", truncate: true },
   { header: "Feedback Subject", width: "19%", render: (f) => f.feedbackSubject || "—", truncate: true },
-  { header: "Feedback Date", width: "14%", render: (f) => f.feedbackDate || "—", truncate: true },
+  { header: "Feedback Date", width: "14%", render: (f) => formatDisplayDate(f.feedbackDate) || "—", truncate: true },
   { header: "Application Name", width: "16%", render: (f) => f.applicationName || "—", truncate: true },
   { header: "Communication Function", width: "23%", render: (f) => f.communicationFunction || "—", truncate: true },
 ];

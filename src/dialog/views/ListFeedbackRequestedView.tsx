@@ -4,6 +4,7 @@
 // No toolbar (read-only list). No custom close button (native OS window chrome).
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { formatDisplayDate } from "@/db/db";
 import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
@@ -82,7 +83,7 @@ const DATA_COLUMNS: PanelTableCol<CommSignalInfo>[] = [
   {
     header: "Feedback Date",
     width: "17%",
-    render: (r) => r.communicationDate || "—",
+    render: (r) => formatDisplayDate(r.communicationDate) || "—",
     truncate: true,
   },
   {

@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { PanelContextMenu, PanelMenuEntry } from "@/dialog/components/PanelContextMenu";
 import { PanelTable, PanelTableCol } from "@/dialog/components/PanelTable";
 import type { AttachFileToProject } from "@/types/db";
+import { formatDisplayDate } from "@/db/db";
 
 type FileDraft = Omit<AttachFileToProject, "id" | "analysisId" | "feedbackId" | "flagId" | "articleId">;
 
@@ -10,7 +11,7 @@ const REMOVE_MSG = "Are you sure you want to remove this file from the analysis?
 const COLUMNS: PanelTableCol<FileDraft>[] = [
   { header: "File Name", width: "35%", render: (item) => item.fileName },
   { header: "File Type", width: "13%", render: (item) => item.fileType },
-  { header: "File Date", width: "18%", render: (item) => <span style={{ color: "#999" }}>{item.fileDate || "—"}</span> },
+  { header: "File Date", width: "18%", render: (item) => <span style={{ color: "#999" }}>{formatDisplayDate(item.fileDate) || "—"}</span> },
   { header: "File Time", width: "15%", render: (item) => <span style={{ color: "#999" }}>{item.fileTime || "—"}</span> },
   { header: "File Size", width: "19%", render: (item) => item.fileSize },
 ];

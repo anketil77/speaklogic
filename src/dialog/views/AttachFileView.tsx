@@ -6,6 +6,7 @@ import React, { useRef, useState, useCallback } from "react";
 import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { AttachFileIcon, FolderIcon } from "@/dialog/components/Icons";
 import type { AttachFileToProject } from "@/types/db";
+import { formatDisplayDate } from "@/db/db";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
@@ -125,7 +126,7 @@ export default function AttachFileView() {
       fileDirectory: "",
       fileType: picked.type || (lastDot > 0 ? picked.name.substring(lastDot + 1).toUpperCase() + " File" : "Unknown"),
       fileSize: picked.size + " Bytes",
-      fileDate: modDate.toLocaleDateString(),
+      fileDate: `${modDate.getFullYear()}-${String(modDate.getMonth() + 1).padStart(2, "0")}-${String(modDate.getDate()).padStart(2, "0")}`,
       fileTime: modDate.toLocaleTimeString(),
       fullFileName: picked.name,
     });
@@ -433,7 +434,7 @@ export default function AttachFileView() {
           >
             File Date
           </div>
-          <input style={{ ...readonlyInputStyle, flex: 1 }} placeholder="Auto-detected" value={file.fileDate} readOnly />
+          <input style={{ ...readonlyInputStyle, flex: 1 }} placeholder="Auto-detected" value={formatDisplayDate(file.fileDate)} readOnly />
           <div
             style={{
               width: 80,

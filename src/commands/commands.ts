@@ -5,7 +5,7 @@
 const DIALOG_BASE = window.location.origin;
 
 
-import { initDb, nowDate } from "@/db/db";
+import { initDb, nowDate, formatDisplayDate } from "@/db/db";
 import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory } from "@/db/queries/flag";
@@ -462,6 +462,21 @@ function buildEntityName(documentTitle: string, documentName: string, pageNumber
   }
 }
 
+// Strip HTML/entities to plain text for audit-row entity names. Paragraph-mode
+// entityUnderAnalysis is sanitized Word HTML; the SelectionHistory list must show
+// readable text, not raw `<div class="OutlineGroup" …>` markup.
+function plainText(html: string | undefined | null): string {
+  if (!html) return "";
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // Returns true if the compose window was opened; false if unavailable (caller should pass the
 // URL to the dialog instead so the user can click the link natively).
 function openMailtoUrl(url: string): boolean {
@@ -587,6 +602,24 @@ async function openAnalyzeDialog(
               replyError(dialog, `Failed to save analysis: ${String(err)}`);
               break;
             }
+            // Audit trail — every analyzed selection/paragraph logs an "Analyzed" row,
+            // independent of the disposition (Apply/Provide/Retain each log their own row too).
+            // Non-critical: analysis is already saved; catch so the disposition flow always continues.
+            try {
+              saveFeedbackHistory({
+                selectionAction: "Analyzed",
+                entityName: plainText(payload.analysis.entityUnderAnalysis),
+                actualSelection: payload.analysis.entityUnderAnalysis,
+                selectionType: payload.analysis.selectionType ?? "",
+                source: payload.analysis.source,
+                applicationName: payload.analysis.applicationName ?? "",
+                communicationFunction: payload.analysis.communicationFunction ?? "",
+                communicationSignal: payload.analysis.communicationSignal ?? "",
+                projectName: payload.analysis.projectName ?? "",
+                personName: payload.analysis.personName ?? "",
+                personEmail: payload.analysis.personEmail ?? "",
+              });
+            } catch (err) { dbg("HOST", "saveFeedbackHistory (analyzed) failed — non-critical", String(err)); }
             if (payload.analysis.whatToDoWithAnalysis === "ApplyAnalysisAsFeedback") {
               const { personName, personEmail } = getUserIdentity();
               const applyAnalyses = getAllAnalyses().map((a) => {
@@ -662,7 +695,7 @@ async function openAnalyzeDialog(
               try {
                 saveFeedbackHistory({
                   selectionAction: "Retain as Needed",
-                  entityName: payload.analysis.entityUnderAnalysis,
+                  entityName: plainText(payload.analysis.entityUnderAnalysis),
                   actualSelection: payload.analysis.entityUnderAnalysis,
                   selectionType: payload.analysis.selectionType ?? "",
                   source: payload.analysis.source,
@@ -696,11 +729,11 @@ async function openAnalyzeDialog(
             }
             // Audit trail — mirrors C# ProvideFeedbackSelection.cs lines 217-224
             // Non-critical: feedback is already saved; catch so SAVED still sends if audit write fails.
-            if (fbPayload.feedback.feedbackType === "Provided") {
+            if (fbPayload.feedback.feedbackType === "Provided" || fbPayload.feedback.feedbackType === "Applied") {
               const f = fbPayload.feedback;
               try {
                 saveFeedbackHistory({
-                  selectionAction: "Provided as Feedback",
+                  selectionAction: f.feedbackType === "Applied" ? "Applied as Feedback" : "Provided as Feedback",
                   entityName: f.internalFeedbackName || `Text selected from ${f.source} on ${f.feedbackDate}`,
                   actualSelection: f.feedbackApplication,
                   selectionType: f.selectionType,
@@ -712,7 +745,7 @@ async function openAnalyzeDialog(
                   personName: f.personName,
                   personEmail: f.personEmail,
                 });
-              } catch (err) { dbg("HOST", "saveFeedbackHistory (provide) failed — non-critical", String(err)); }
+              } catch (err) { dbg("HOST", "saveFeedbackHistory (feedback audit) failed — non-critical", String(err)); }
             }
             // For "Provided" feedback: send SAVED with a mailto URL back to the dialog
             // so the user can open it via a user-initiated click (window.open from dialog
@@ -835,7 +868,7 @@ function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
             break;
           case "SAVE_REQUEST_FEEDBACK": {
             const p = m.payload as SaveRequestFeedbackPayload;
-            const entityName = `Text selected from ${p.selectionType} on ${nowDate()}`;
+            const entityName = `Text selected from ${p.selectionType} on ${formatDisplayDate(nowDate())}`;
             try {
               saveCommSignalInfo({ ...p, entitySelected: entityName });
               saveFeedbackHistory({
@@ -1747,20 +1780,6 @@ async function openListSelectionDialog(event: Office.AddinCommands.Event): Promi
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const { personName, personEmail } = getUserIdentity();
 
-  const initPayload: DialogInitPayload = {
-    selection: "",
-    mode: "selection",
-    source: getSource(),
-    personName,
-    personEmail,
-    applicationName: "",
-    communicationFunction: "",
-    communicationSignal: "",
-    projectName: "",
-    peopleList: [],
-    selectionHistories: getAllSelectionHistories(),
-  };
-
   Office.context.ui.displayDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=selection-history`,
     { ...DIALOG_SIZE, displayInIframe: true },
@@ -1774,15 +1793,129 @@ async function openListSelectionDialog(event: Office.AddinCommands.Event): Promi
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
         complete();
       });
+
+      // Builds a fresh INIT payload from the DB. Re-sent after every principle
+      // save/delete so the inline list portals stay in sync (mirrors
+      // openFlaggedHistoryDialog — ViewSelectionDialog's Principle dropdown is
+      // reachable from this view too).
+      const sendInit = () => {
+        const selectionHistories = getAllSelectionHistories();
+
+        const principleInterpretations = getAllInterpretations();
+        const filesByInterpretationId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+        for (const pi of principleInterpretations) {
+          if (pi.id !== undefined) filesByInterpretationId[pi.id] = getFilesByPrincipleInterpretation(pi.id);
+        }
+
+        const principlesInSelection = getPrinciplesInSelection();
+        const filesByPrincipleInSelectionId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+        for (const p of principlesInSelection) {
+          if (p.id !== undefined) filesByPrincipleInSelectionId[p.id] = getFilesByPrincipleInSelection(p.id);
+        }
+
+        const selectionsWithPrinciple = getSelectionsWithPrinciple();
+        const filesBySelectionWithPrincipleId: Record<number, import("@/types/db").AttachFileToProject[]> = {};
+        for (const s of selectionsWithPrinciple) {
+          if (s.id !== undefined) filesBySelectionWithPrincipleId[s.id] = getFilesBySelectionWithPrinciple(s.id);
+        }
+
+        const initPayload: DialogInitPayload = {
+          selection: "",
+          mode: "selection",
+          source: getSource(),
+          personName,
+          personEmail,
+          applicationName: "",
+          communicationFunction: "",
+          communicationSignal: "",
+          projectName: "",
+          peopleList: [],
+          selectionHistories,
+          principleInterpretations,
+          filesByInterpretationId,
+          principlesInSelection,
+          filesByPrincipleInSelectionId,
+          selectionsWithPrinciple,
+          filesBySelectionWithPrincipleId,
+        };
+        dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+      };
+
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
         switch (m.action) {
           case "READY":
-            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            sendInit();
             break;
           case "DELETE_SELECTION_HISTORY": {
             try { deleteSelectionHistory((m as { action: string; id: number }).id); }
             catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+            break;
+          }
+          case "DELETE_INTERPRETED_PRINCIPLE": {
+            try { deleteInterpretation((m as { action: string; id: number }).id); sendInit(); }
+            catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+            break;
+          }
+          case "DELETE_PRINCIPLE": {
+            try { deletePrincipleInSelection((m as { action: string; id: number }).id); sendInit(); }
+            catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+            break;
+          }
+          case "DELETE_RELATED_SELECTION": {
+            try { deleteSelectionWithPrinciple((m as { action: string; id: number }).id); sendInit(); }
+            catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+            break;
+          }
+          case "REPORT_INTERPRETED_PRINCIPLE": {
+            try { openInterpretedPrincipleReport((m as { action: string; interpretation: import("@/types/db").PrincipleInterpretation }).interpretation); }
+            catch { /* non-critical */ }
+            break;
+          }
+          case "REPORT_IDENTIFIED_PRINCIPLE": {
+            try { openIdentifiedPrincipleReport((m as { action: string; principle: import("@/types/db").PrincipleInSelection }).principle); }
+            catch { /* non-critical */ }
+            break;
+          }
+          case "REPORT_RELATED_SELECTION": {
+            try { openRelatedPrincipleReport((m as { action: string; relation: import("@/types/db").SelectionWithPrinciple }).relation); }
+            catch { /* non-critical */ }
+            break;
+          }
+          case "ADD_ATTACHED_FILE": {
+            const { file } = m as { action: string; file: import("@/types/db").AttachFileToProject };
+            const newId = addAttachedFile(file as Omit<import("@/types/db").AttachFileToProject, "id">);
+            dialog.messageChild(JSON.stringify({ type: "FILE_ADDED", id: newId }));
+            break;
+          }
+          case "REMOVE_ATTACHED_FILE":
+            removeAttachedFile((m as { action: string; id: number }).id);
+            break;
+          case "SAVE_RELATED_SELECTION": {
+            try {
+              const { payload } = m as { action: string; payload: SaveRelatedSelectionPayload };
+              const newId = saveSelectionWithPrinciple(payload.record);
+              for (const file of payload.files) addAttachedFile({ ...file, selectionWithPrincipleId: newId });
+              sendInit();
+            } catch (err) { replyError(dialog, `Save failed: ${String(err)}`); }
+            break;
+          }
+          case "SAVE_PRINCIPLE_IN_SELECTION": {
+            try {
+              const { payload } = m as { action: string; payload: SavePrincipleInSelectionPayload };
+              const newId = savePrincipleInSelection(payload.record);
+              for (const file of payload.files) addAttachedFile({ ...file, principleInSelectionId: newId });
+              sendInit();
+            } catch (err) { replyError(dialog, `Save failed: ${String(err)}`); }
+            break;
+          }
+          case "SAVE_INTERPRETATION": {
+            try {
+              const { payload } = m as { action: string; payload: SaveInterpretationPayload };
+              const newId = saveInterpretation(payload.record);
+              for (const file of payload.files) addAttachedFile({ ...file, principleInterpretationId: newId });
+              sendInit();
+            } catch (err) { replyError(dialog, `Save failed: ${String(err)}`); }
             break;
           }
           case "CLOSE":
@@ -2318,12 +2451,12 @@ async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Even
                 actualCommunication: p.actualCommunication,
                 actualSelection: "",
                 selectionType: "Speak Logic Request",
-                entitySelected: `Speak Logic feedback request on ${nowDate()}`,
+                entitySelected: `Speak Logic feedback request on ${formatDisplayDate(nowDate())}`,
                 files: p.files,
               });
               saveFeedbackHistory({
                 selectionAction: "Requested Feedback From Speak Logic",
-                entityName: `Speak Logic feedback request on ${nowDate()}`,
+                entityName: `Speak Logic feedback request on ${formatDisplayDate(nowDate())}`,
                 actualSelection: "",
                 selectionType: "Web Contain",
                 source: initPayload.source,

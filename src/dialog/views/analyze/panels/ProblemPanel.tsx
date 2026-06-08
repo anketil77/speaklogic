@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { PanelContextMenu, PanelMenuEntry } from "@/dialog/components/PanelContextMenu";
 import { PanelTable, PanelTableCol } from "@/dialog/components/PanelTable";
 import type { ProjectProblem } from "@/types/db";
+import { formatDisplayDate } from "@/db/db";
 
 type ProblemDraft = Omit<ProjectProblem, "id" | "analysisId">;
 
@@ -21,7 +22,7 @@ const COLUMNS: PanelTableCol<ProblemDraft>[] = [
   { header: "From Actual Error", width: "26%", render: (item) => item.fromActualError, truncate: true },
   {
     header: "Problem Date", width: "20%",
-    render: (item) => <span style={{ color: item.problemDate ? "#222" : "#999" }}>{item.problemDate || "—"}</span>,
+    render: (item) => <span style={{ color: item.problemDate ? "#222" : "#999" }}>{formatDisplayDate(item.problemDate) || "—"}</span>,
   },
 ];
 
