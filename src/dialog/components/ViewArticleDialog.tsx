@@ -53,20 +53,24 @@ function BannerBtn({ label, onClick }: { label: string; onClick?: () => void }) 
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        height: 24,
-        paddingLeft: 10,
-        paddingRight: 10,
-        background: hover ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.16)",
-        color: "#fff",
-        border: "1px solid rgba(255,255,255,0.35)",
-        borderRadius: 4,
+        height: 26,
+        paddingLeft: 12,
+        paddingRight: 12,
+        background: "#fff",
+        color: hover ? "#003F73" : "#1a1a1a",
+        border: "none",
+        borderRadius: 20,
         cursor: "pointer",
-        fontSize: 11.2,
+        fontSize: 11.4,
         fontWeight: 600,
         fontFamily: "Inter, Segoe UI, sans-serif",
         whiteSpace: "nowrap",
-        transition: "background 0.12s",
         flexShrink: 0,
+        boxShadow: hover
+          ? "0 3px 10px rgba(0,0,0,0.22)"
+          : "0 1px 4px rgba(0,0,0,0.15)",
+        transform: hover ? "translateY(-1px)" : "translateY(0)",
+        transition: "box-shadow 0.15s, transform 0.15s, color 0.1s",
       }}
     >
       {label}
@@ -281,9 +285,6 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
   // ── Resize state (8-way handles own all the drag logic) ───────────────────
   const [size, setSize] = useState({ width: initW, height: initH });
 
-  // ── Banner action button notification state ───────────────────────────────
-  const [bannerMsg, setBannerMsg] = useState<string | null>(null);
-
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -440,7 +441,7 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
         {/* ── Scrollable body ── */}
         <div style={{ flex: 1, overflow: "auto", background: "#fff" }}>
 
-          {/* ── Cover banner with action command bar ── */}
+          {/* ── Cover banner with action buttons ── */}
           <div
             style={{
               position: "relative",
@@ -449,7 +450,7 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              padding: hasActions ? "10px 16px 12px 20px" : "0 28px 14px",
+              padding: hasActions ? "12px 20px 14px" : "0 28px 14px",
               overflow: "hidden",
             }}
           >
@@ -479,17 +480,12 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
               }}
             />
 
-            {/* Action command bar row (top of banner) */}
+            {/* Action buttons row */}
             {hasActions && (
-              <div style={{ display: "flex", gap: 6, position: "relative", zIndex: 1, flexWrap: "wrap", alignItems: "center" }}>
-                <BannerBtn label="Flag for Analysis"  onClick={onFlagForAnalysis  ? () => { setBannerMsg("Flagging article for analysis…");  onFlagForAnalysis(); }  : undefined} />
-                <BannerBtn label="Analyze Article"    onClick={onAnalyzeArticle   ? () => { setBannerMsg("Opening analysis…");               onAnalyzeArticle(); }   : undefined} />
-                <BannerBtn label="Request Feedback"   onClick={onRequestFeedback  ? () => { setBannerMsg("Requesting feedback…");            onRequestFeedback(); }  : undefined} />
-                {bannerMsg && (
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", fontStyle: "italic", marginLeft: 4 }}>
-                    {bannerMsg}
-                  </span>
-                )}
+              <div style={{ display: "flex", gap: 7, position: "relative", zIndex: 1, flexWrap: "wrap", alignItems: "center" }}>
+                <BannerBtn label="Flag for Analysis" onClick={onFlagForAnalysis} />
+                <BannerBtn label="Analyze Article"   onClick={onAnalyzeArticle} />
+                <BannerBtn label="Request Feedback"  onClick={onRequestFeedback} />
               </div>
             )}
 

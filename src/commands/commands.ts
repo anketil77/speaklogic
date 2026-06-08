@@ -13,6 +13,7 @@ import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpr
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { saveArticle, updateArticle, publishArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById } from "@/db/queries/article";
+import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
 import { saveProblemSolution } from "@/db/queries/problem";
 import { dbg, clearLog } from "@/debug/log";
 import { openInterpretedPrincipleReport, openIdentifiedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
@@ -1723,6 +1724,7 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
     projectName: "",
     peopleList: [],
     articles: getAllArticles(),
+    publishers: getAllPublishers(),
   };
 
   Office.context.ui.displayDialogAsync(
@@ -1767,6 +1769,28 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
               dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
             } catch (err) {
               replyError(dialog, `Publish failed: ${String(err)}`);
+            }
+            break;
+          }
+          case "ADD_PUBLISHER": {
+            const ap = m as { action: string; name: string; logoBase64: string };
+            try {
+              savePublisher(ap.name, ap.logoBase64);
+              initPayload.publishers = getAllPublishers();
+              dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            } catch (err) {
+              replyError(dialog, `Add publisher failed: ${String(err)}`);
+            }
+            break;
+          }
+          case "DELETE_PUBLISHER": {
+            const dp = m as { action: string; id: number };
+            try {
+              deletePublisher(dp.id);
+              initPayload.publishers = getAllPublishers();
+              dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            } catch (err) {
+              replyError(dialog, `Delete publisher failed: ${String(err)}`);
             }
             break;
           }

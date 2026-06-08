@@ -27,7 +27,8 @@ import {
   getCommSignalRequests,
   deleteCommSignalRequest,
 } from "@/db/queries/feedback";
-import { saveArticle, saveArticleWizard, getAllArticles, deleteArticle } from "@/db/queries/article";
+import { saveArticle, saveArticleWizard, getAllArticles, deleteArticle, publishArticle } from "@/db/queries/article";
+import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
 import { deleteFlag, getAllFlaggedSelections, saveFlag, getAllSelectionHistories, deleteSelectionHistory } from "@/db/queries/flag";
 import {
   addAttachedFile,
@@ -717,11 +718,30 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=list-articles`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], articles: getAllArticles() }),
-      (_dialog, action) => {
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], articles: getAllArticles(), publishers: getAllPublishers() }),
+      (dlg, action) => {
+        const rebuildPayload = () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], articles: getAllArticles(), publishers: getAllPublishers() });
         if (action.action === "DELETE_ARTICLE") {
           try { deleteArticle((action as { action: string; id: number }).id); }
           catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
+        } else if (action.action === "PUBLISH_ARTICLE") {
+          const pm = action as { action: string; id: number; publishers: string[] };
+          try {
+            publishArticle(pm.id, pm.publishers);
+            dlg.messageChild(JSON.stringify({ type: "INIT", payload: rebuildPayload() }));
+          } catch (err) { setStatus({ msg: `Publish failed: ${String(err)}`, ok: false }); }
+        } else if (action.action === "ADD_PUBLISHER") {
+          const ap = action as { action: string; name: string; logoBase64: string };
+          try {
+            savePublisher(ap.name, ap.logoBase64);
+            dlg.messageChild(JSON.stringify({ type: "INIT", payload: rebuildPayload() }));
+          } catch (err) { setStatus({ msg: `Add publisher failed: ${String(err)}`, ok: false }); }
+        } else if (action.action === "DELETE_PUBLISHER") {
+          const dp = action as { action: string; id: number };
+          try {
+            deletePublisher(dp.id);
+            dlg.messageChild(JSON.stringify({ type: "INIT", payload: rebuildPayload() }));
+          } catch (err) { setStatus({ msg: `Delete publisher failed: ${String(err)}`, ok: false }); }
         }
       }
     );

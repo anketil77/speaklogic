@@ -228,6 +228,12 @@ export interface Article {
   publishedTo?: string;
 }
 
+export interface Publisher {
+  id: number;
+  name: string;
+  logoBase64: string;
+}
+
 export interface SaveArticlePayload {
   id?: number;
   articleTitle: string;
@@ -642,6 +648,7 @@ export interface DialogInitPayload {
   selectionsWithPrinciple?: SelectionWithPrinciple[];
   filesBySelectionWithPrincipleId?: Record<number, AttachFileToProject[]>;
   articles?: Article[];
+  publishers?: Publisher[];
   commSignalRequests?: CommSignalInfo[];
   selectionHistories?: FlaggedEntityHistory[];
   /** Passed when opening the article wizard after template selection. */
@@ -730,6 +737,8 @@ export type DialogAction =
   | { action: "DELETE_ARTICLE"; id: number }
   | { action: "EDIT_ARTICLE"; id: number }
   | { action: "PUBLISH_ARTICLE"; id: number; publishers: string[] }
+  | { action: "ADD_PUBLISHER"; name: string; logoBase64: string }
+  | { action: "DELETE_PUBLISHER"; id: number }
   | { action: "DELETE_COMM_SIGNAL_REQUEST"; id: number }
   | { action: "DELETE_SELECTION_HISTORY"; id: number }
   | { action: "LIST_FEEDBACK_REQUESTED" }

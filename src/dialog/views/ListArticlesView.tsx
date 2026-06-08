@@ -138,7 +138,7 @@ export default function ListArticlesView() {
 
   // ── Publish article dialog ────────────────────────────────────────────────
   const [publishTarget, setPublishTarget] = useState<Article | null>(null);
-  const [publishSuccess, setPublishSuccess] = useState(false);
+
 
   // ── Article action callbacks (sent to host) ───────────────────────────────
   const handleFlagArticle = useCallback(() => {
@@ -238,13 +238,20 @@ export default function ListArticlesView() {
   const handlePublishConfirm = useCallback((publishers: string[]) => {
     if (!publishTarget?.id) return;
     sendMessage({ action: "PUBLISH_ARTICLE", id: publishTarget.id as number, publishers });
-    setPublishSuccess(true);
     setPublishTarget(null);
   }, [publishTarget, sendMessage]);
 
   const handlePublishCancel = useCallback(() => {
     setPublishTarget(null);
   }, []);
+
+  const handleAddPublisher = useCallback((name: string, logoBase64: string) => {
+    sendMessage({ action: "ADD_PUBLISHER", name, logoBase64 });
+  }, [sendMessage]);
+
+  const handleDeletePublisher = useCallback((id: number) => {
+    sendMessage({ action: "DELETE_PUBLISHER", id });
+  }, [sendMessage]);
 
   const selectedRow = selectedIndex !== null ? displayRows[selectedIndex] ?? null : null;
   const hasSelection = selectedIndex !== null;
@@ -711,43 +718,14 @@ export default function ListArticlesView() {
     {publishTarget && (
       <PublishArticleDialog
         article={publishTarget}
+        publishers={initData.publishers ?? []}
         onCancel={handlePublishCancel}
         onPublish={handlePublishConfirm}
+        onAddPublisher={handleAddPublisher}
+        onDeletePublisher={handleDeletePublisher}
       />
     )}
 
-    {/* ── Publish success toast ── */}
-    {publishSuccess && (
-      <div
-        style={{
-          position: "fixed",
-          bottom: 20,
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: "#107C10",
-          color: "#FFFFFF",
-          borderRadius: 4,
-          padding: "8px 16px",
-          fontSize: 12.4,
-          fontWeight: 600,
-          fontFamily: "Inter, Segoe UI, sans-serif",
-          zIndex: 300,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-          cursor: "pointer",
-        }}
-        onClick={() => setPublishSuccess(false)}
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="7" cy="7" r="6.5" fill="#FFFFFF" stroke="#FFFFFF" />
-          <path d="M3.5 7L5.8 9.3L10.5 4.5" stroke="#107C10" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        Article published successfully
-        <span style={{ fontSize: 14, lineHeight: 1, opacity: 0.8 }}>×</span>
-      </div>
-    )}
     </>
   );
 }
