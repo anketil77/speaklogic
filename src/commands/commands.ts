@@ -602,24 +602,6 @@ async function openAnalyzeDialog(
               replyError(dialog, `Failed to save analysis: ${String(err)}`);
               break;
             }
-            // Audit trail — every analyzed selection/paragraph logs an "Analyzed" row,
-            // independent of the disposition (Apply/Provide/Retain each log their own row too).
-            // Non-critical: analysis is already saved; catch so the disposition flow always continues.
-            try {
-              saveFeedbackHistory({
-                selectionAction: "Analyzed",
-                entityName: plainText(payload.analysis.entityUnderAnalysis),
-                actualSelection: payload.analysis.entityUnderAnalysis,
-                selectionType: payload.analysis.selectionType ?? "",
-                source: payload.analysis.source,
-                applicationName: payload.analysis.applicationName ?? "",
-                communicationFunction: payload.analysis.communicationFunction ?? "",
-                communicationSignal: payload.analysis.communicationSignal ?? "",
-                projectName: payload.analysis.projectName ?? "",
-                personName: payload.analysis.personName ?? "",
-                personEmail: payload.analysis.personEmail ?? "",
-              });
-            } catch (err) { dbg("HOST", "saveFeedbackHistory (analyzed) failed — non-critical", String(err)); }
             if (payload.analysis.whatToDoWithAnalysis === "ApplyAnalysisAsFeedback") {
               const { personName, personEmail } = getUserIdentity();
               const applyAnalyses = getAllAnalyses().map((a) => {
@@ -694,7 +676,7 @@ async function openAnalyzeDialog(
               // Audit trail is non-critical — analysis is already saved. Catch so RETAIN_SAVED always sends.
               try {
                 saveFeedbackHistory({
-                  selectionAction: "Retain as Needed",
+                  selectionAction: "Analyzed",
                   entityName: plainText(payload.analysis.entityUnderAnalysis),
                   actualSelection: payload.analysis.entityUnderAnalysis,
                   selectionType: payload.analysis.selectionType ?? "",
@@ -734,7 +716,7 @@ async function openAnalyzeDialog(
               try {
                 saveFeedbackHistory({
                   selectionAction: f.feedbackType === "Applied" ? "Applied as Feedback" : "Provided as Feedback",
-                  entityName: f.internalFeedbackName || `Text selected from ${f.source} on ${f.feedbackDate}`,
+                  entityName: plainText(f.actualSelection) || plainText(f.feedbackApplication),
                   actualSelection: f.feedbackApplication,
                   selectionType: f.selectionType,
                   source: f.source,
@@ -873,7 +855,7 @@ function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
               saveCommSignalInfo({ ...p, entitySelected: entityName });
               saveFeedbackHistory({
                 selectionAction: "Requested Feedback With",
-                entityName,
+                entityName: plainText(p.actualSelection) || entityName,
                 actualSelection: p.actualSelection,
                 selectionType: "Web Contain",
                 source: p.selectionType,
@@ -2112,7 +2094,7 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
             const f = fbPayload.feedback;
             saveFeedbackHistory({
               selectionAction: "Applied as Feedback",
-              entityName: f.internalFeedbackName || `Text selected from ${f.source} on ${f.feedbackDate}`,
+              entityName: plainText(f.actualSelection) || plainText(f.feedbackApplication),
               actualSelection: f.feedbackApplication,
               selectionType: f.selectionType,
               source: f.source,
