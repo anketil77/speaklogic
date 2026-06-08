@@ -27,5 +27,5 @@ export function useDraggable({ initialX = 0, initialY = 0 } = {}) {
     document.addEventListener("mouseup", onUp);
   }, [pos]);
 
-  return { pos, onHeaderMouseDown };
+  return { pos, setPos, onHeaderMouseDown };
 }

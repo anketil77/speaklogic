@@ -1,18 +1,21 @@
 // src/dialog/components/ViewArticleDialog.tsx
-// Medium/blog-style article viewer.
-// Gradient cover banner → featured image (extracted from content) → title → body → details.
+// Medium/blog-style article viewer with command bar, resizable dialog, and metadata-first layout.
 
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { formatDisplayDate } from "@/db/db";
 import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import { createPortal } from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
+import { ResizeHandles } from "@/dialog/components/ResizeHandles";
 import { ArticleHeaderIcon, ArticleCloseIcon } from "@/dialog/components/Icons";
 import type { Article } from "@/types/db";
 
 interface Props {
   article: Article;
   onClose: () => void;
+  onFlagForAnalysis?: () => void;
+  onAnalyzeArticle?: () => void;
+  onRequestFeedback?: () => void;
 }
 
 // Each category has its own gradient — gives every article a unique visual identity.
@@ -39,6 +42,37 @@ function getBannerGradient(category?: string | null): string {
   return `linear-gradient(135deg, ${from} 0%, ${to} 100%)`;
 }
 
+// ─── Banner action button ─────────────────────────────────────────────────────
+
+function BannerBtn({ label, onClick }: { label: string; onClick?: () => void }) {
+  const [hover, setHover] = useState(false);
+  if (!onClick) return null;
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        height: 24,
+        paddingLeft: 10,
+        paddingRight: 10,
+        background: hover ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.16)",
+        color: "#fff",
+        border: "1px solid rgba(255,255,255,0.35)",
+        borderRadius: 4,
+        cursor: "pointer",
+        fontSize: 11.2,
+        fontWeight: 600,
+        fontFamily: "Inter, Segoe UI, sans-serif",
+        whiteSpace: "nowrap",
+        transition: "background 0.12s",
+        flexShrink: 0,
+      }}
+    >
+      {label}
+    </button>
+  );
+}
 
 // ─── WizardContent ────────────────────────────────────────────────────────────
 
@@ -233,8 +267,22 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ViewArticleDialog({ article, onClose }: Props) {
-  const { pos, onHeaderMouseDown } = useDraggable();
+export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnalyzeArticle, onRequestFeedback }: Props) {
+  // Clamp the initial size to the real viewport — the host dialog window is only
+  // ~43% of the screen wide, so a fixed 760px would overflow and push the resize
+  // grip off-screen on narrower windows. Never exceed the viewport.
+  const initW = Math.min(760, Math.round(window.innerWidth  * 0.96));
+  const initH = Math.min(600, Math.round(window.innerHeight * 0.92));
+  const { pos, setPos, onHeaderMouseDown } = useDraggable({
+    initialX: Math.max(0, Math.round((window.innerWidth  - initW) / 2)),
+    initialY: Math.max(0, Math.round((window.innerHeight - initH) / 2)),
+  });
+
+  // ── Resize state (8-way handles own all the drag logic) ───────────────────
+  const [size, setSize] = useState({ width: initW, height: initH });
+
+  // ── Banner action button notification state ───────────────────────────────
+  const [bannerMsg, setBannerMsg] = useState<string | null>(null);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -247,6 +295,8 @@ export function ViewArticleDialog({ article, onClose }: Props) {
   const isDraft = article.isDraft === 1;
   const authorInitial = (article.personName || "?")[0].toUpperCase();
   const bannerGradient = getBannerGradient(article.category);
+
+  const hasActions = onFlagForAnalysis || onAnalyzeArticle || onRequestFeedback;
 
   return createPortal(
     <>
@@ -267,9 +317,8 @@ export function ViewArticleDialog({ article, onClose }: Props) {
           position: "fixed",
           left: pos.x,
           top: pos.y,
-          width: 760,
-          maxWidth: "96vw",
-          maxHeight: "90vh",
+          width: size.width,
+          height: size.height,
           zIndex: 200,
           background: "#fff",
           border: "1px solid #E5E7EB",
@@ -391,16 +440,16 @@ export function ViewArticleDialog({ article, onClose }: Props) {
         {/* ── Scrollable body ── */}
         <div style={{ flex: 1, overflow: "auto", background: "#fff" }}>
 
-          {/* ── Cover banner (reduced height) ── */}
+          {/* ── Cover banner with action command bar ── */}
           <div
             style={{
               position: "relative",
-              height: 82,
+              height: hasActions ? 104 : 82,
               background: bannerGradient,
               display: "flex",
               flexDirection: "column",
-              justifyContent: "flex-end",
-              padding: "0 28px 14px",
+              justifyContent: "space-between",
+              padding: hasActions ? "10px 16px 12px 20px" : "0 28px 14px",
               overflow: "hidden",
             }}
           >
@@ -430,7 +479,21 @@ export function ViewArticleDialog({ article, onClose }: Props) {
               }}
             />
 
-            {/* Category + Draft tags */}
+            {/* Action command bar row (top of banner) */}
+            {hasActions && (
+              <div style={{ display: "flex", gap: 6, position: "relative", zIndex: 1, flexWrap: "wrap", alignItems: "center" }}>
+                <BannerBtn label="Flag for Analysis"  onClick={onFlagForAnalysis  ? () => { setBannerMsg("Flagging article for analysis…");  onFlagForAnalysis(); }  : undefined} />
+                <BannerBtn label="Analyze Article"    onClick={onAnalyzeArticle   ? () => { setBannerMsg("Opening analysis…");               onAnalyzeArticle(); }   : undefined} />
+                <BannerBtn label="Request Feedback"   onClick={onRequestFeedback  ? () => { setBannerMsg("Requesting feedback…");            onRequestFeedback(); }  : undefined} />
+                {bannerMsg && (
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", fontStyle: "italic", marginLeft: 4 }}>
+                    {bannerMsg}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Category + Draft tags (bottom of banner) */}
             <div style={{ display: "flex", gap: 6, position: "relative" }}>
               {article.category ? (
                 <span
@@ -548,6 +611,30 @@ export function ViewArticleDialog({ article, onClose }: Props) {
               </div>
             </div>
 
+            {/* ── Article Details (metadata before content) ── */}
+            <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: "1px solid #F3F4F6" }}>
+              <div
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: "#C4CAC7",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.9px",
+                  marginBottom: 4,
+                }}
+              >
+                Article Details
+              </div>
+              <MetaRow
+                label="Article Number"
+                value={article.articleNumber ? String(article.articleNumber) : ""}
+              />
+              <MetaRow label="Provider Uses Given Set?" value={givenSet} />
+              {article.articleBasisReference ? (
+                <MetaRow label="Article Basis Reference" value={article.articleBasisReference} />
+              ) : null}
+            </div>
+
             {/* Article body */}
             <style>
               {`
@@ -588,35 +675,23 @@ export function ViewArticleDialog({ article, onClose }: Props) {
 
             {/* Wizard content sections — shown for template-based articles */}
             {article.templateName && <WizardContent article={article} />}
-
-            {/* ── Article Details ── */}
-            <div style={{ marginTop: 28, paddingTop: 20, borderTop: "1px solid #F3F4F6" }}>
-              <div
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 700,
-                  color: "#C4CAC7",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.9px",
-                  marginBottom: 4,
-                }}
-              >
-                Article Details
-              </div>
-              <MetaRow
-                label="Article Number"
-                value={article.articleNumber ? String(article.articleNumber) : ""}
-              />
-              <MetaRow label="Provider Uses Given Set?" value={givenSet} />
-              {article.articleBasisReference ? (
-                <MetaRow label="Article Basis Reference" value={article.articleBasisReference} />
-              ) : null}
-            </div>
           </div>
         </div>
 
         {/* ── Footer ── */}
         <FooterBar><DismissBtn label="Close" onClick={onClose} /></FooterBar>
+
+        {/* ── 8-way resize handles (4 edges + 4 corners), reusable component ── */}
+        <ResizeHandles
+          pos={pos}
+          setPos={setPos}
+          size={size}
+          setSize={setSize}
+          minWidth={500}
+          minHeight={360}
+          maxWidth={Math.round(window.innerWidth * 0.99)}
+          maxHeight={Math.round(window.innerHeight * 0.98)}
+        />
       </div>
     </>,
     document.body
