@@ -11,6 +11,7 @@ import {
 
   DeleteSelectedIcon,
   EditSelectedAnalysisIcon,
+  PublishArticleIcon,
   FilterFunnelIcon,
   SmallCaretDownIcon,
   FilterWordDocIcon,
@@ -18,6 +19,7 @@ import {
   FilterPowerPointIcon,
   FilterShowAllIcon,
 } from "@/dialog/components/Icons";
+import { PublishArticleDialog } from "@/dialog/components/PublishArticleDialog";
 import { colors } from "@/styles/tokens";
 import type { Article } from "@/types/db";
 import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
@@ -50,8 +52,30 @@ const DATA_COLUMNS: PanelTableCol<Article>[] = [
   {
     header: "Title",
     width: "44%",
-    render: (a) => a.articleTitle || "—",
-    truncate: true,
+    render: (a) => (
+      <span style={{ display: "flex", alignItems: "center", gap: 5, overflow: "hidden" }}>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+          {a.articleTitle || "—"}
+        </span>
+        {a.isPublished === 1 && (
+          <span
+            style={{
+              flexShrink: 0,
+              fontSize: 9.5,
+              fontWeight: 700,
+              color: "#FFFFFF",
+              background: "#107C10",
+              borderRadius: 3,
+              padding: "1px 5px",
+              letterSpacing: "0.3px",
+              lineHeight: "14px",
+            }}
+          >
+            Published
+          </span>
+        )}
+      </span>
+    ),
   },
   {
     header: "Article Number",
@@ -106,11 +130,31 @@ export default function ListArticlesView() {
   const [cancelDeleteHover, setCancelDeleteHover] = useState(false);
   const [confirmDeleteHover, setConfirmDeleteHover] = useState(false);
 
-  // ── Info message (Edit = info only) ──────────────────────────────────────
+  // ── Info message (published-article edit warning) ────────────────────────
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
 
   // ── View article portal ───────────────────────────────────────────────────
   const [viewArticle, setViewArticle] = useState<Article | null>(null);
+
+  // ── Publish article dialog ────────────────────────────────────────────────
+  const [publishTarget, setPublishTarget] = useState<Article | null>(null);
+  const [publishSuccess, setPublishSuccess] = useState(false);
+
+  // ── Article action callbacks (sent to host) ───────────────────────────────
+  const handleFlagArticle = useCallback(() => {
+    if (!viewArticle) return;
+    sendMessage({ action: "FLAG_ARTICLE", id: viewArticle.id });
+  }, [viewArticle, sendMessage]);
+
+  const handleAnalyzeArticle = useCallback(() => {
+    if (!viewArticle) return;
+    sendMessage({ action: "ANALYZE_ARTICLE", id: viewArticle.id });
+  }, [viewArticle, sendMessage]);
+
+  const handleRequestFeedbackArticle = useCallback(() => {
+    if (!viewArticle) return;
+    sendMessage({ action: "REQUEST_FEEDBACK_ARTICLE", id: viewArticle.id });
+  }, [viewArticle, sendMessage]);
 
   // ── Outside-click closes filter dropdown ─────────────────────────────────
   useEffect(() => {
@@ -174,7 +218,37 @@ export default function ListArticlesView() {
     setInfoMsg(INFO_MESSAGES[key]);
   }, []);
 
+  const handleEdit = useCallback(() => {
+    if (selectedIndex === null) return;
+    const row = displayRows[selectedIndex];
+    if (!row) return;
+    if (row.isPublished === 1) {
+      showInfo("edit");
+    } else {
+      sendMessage({ action: "EDIT_ARTICLE", id: row.id as number });
+    }
+  }, [selectedIndex, displayRows, showInfo, sendMessage]);
+
+  const handlePublish = useCallback(() => {
+    if (selectedIndex === null) return;
+    const row = displayRows[selectedIndex];
+    if (row) setPublishTarget(row);
+  }, [selectedIndex, displayRows]);
+
+  const handlePublishConfirm = useCallback((publishers: string[]) => {
+    if (!publishTarget?.id) return;
+    sendMessage({ action: "PUBLISH_ARTICLE", id: publishTarget.id as number, publishers });
+    setPublishSuccess(true);
+    setPublishTarget(null);
+  }, [publishTarget, sendMessage]);
+
+  const handlePublishCancel = useCallback(() => {
+    setPublishTarget(null);
+  }, []);
+
+  const selectedRow = selectedIndex !== null ? displayRows[selectedIndex] ?? null : null;
   const hasSelection = selectedIndex !== null;
+  const isSelectedPublished = selectedRow?.isPublished === 1;
   const activeFilterLabel = FILTER_OPTIONS.find((f) => f.value === filterSource)?.label ?? null;
 
   return (
@@ -310,10 +384,11 @@ export default function ListArticlesView() {
           <DeleteSelectedIcon />
         </button>
 
-        {/* Edit (info-only — C# EditAnalysis message) */}
+        {/* Edit — opens editor if unpublished, shows message if published */}
         <button
           title="Edit Selected Article"
-          onClick={() => showInfo("edit")}
+          disabled={!hasSelection}
+          onClick={handleEdit}
           className="sl-icon-btn"
           style={{
             width: 28,
@@ -324,11 +399,35 @@ export default function ListArticlesView() {
             background: "none",
             border: "none",
             borderRadius: 4,
-            cursor: "pointer",
+            cursor: hasSelection ? "pointer" : "default",
+            opacity: hasSelection ? 1 : 0.35,
             flexShrink: 0,
           }}
         >
           <EditSelectedAnalysisIcon />
+        </button>
+
+        {/* Publish — disabled when nothing selected or already published */}
+        <button
+          title={isSelectedPublished ? "Article already published" : "Publish Selected Article"}
+          disabled={!hasSelection || isSelectedPublished}
+          onClick={handlePublish}
+          className="sl-icon-btn"
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "none",
+            border: "none",
+            borderRadius: 4,
+            cursor: (hasSelection && !isSelectedPublished) ? "pointer" : "default",
+            opacity: (hasSelection && !isSelectedPublished) ? 1 : 0.35,
+            flexShrink: 0,
+          }}
+        >
+          <PublishArticleIcon />
         </button>
 
         <CmdSepBar />
@@ -602,7 +701,52 @@ export default function ListArticlesView() {
       <ViewArticleDialog
         article={viewArticle}
         onClose={() => setViewArticle(null)}
+        onFlagForAnalysis={handleFlagArticle}
+        onAnalyzeArticle={handleAnalyzeArticle}
+        onRequestFeedback={handleRequestFeedbackArticle}
       />
+    )}
+
+    {/* ── Publish Article dialog ── */}
+    {publishTarget && (
+      <PublishArticleDialog
+        article={publishTarget}
+        onCancel={handlePublishCancel}
+        onPublish={handlePublishConfirm}
+      />
+    )}
+
+    {/* ── Publish success toast ── */}
+    {publishSuccess && (
+      <div
+        style={{
+          position: "fixed",
+          bottom: 20,
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#107C10",
+          color: "#FFFFFF",
+          borderRadius: 4,
+          padding: "8px 16px",
+          fontSize: 12.4,
+          fontWeight: 600,
+          fontFamily: "Inter, Segoe UI, sans-serif",
+          zIndex: 300,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+          cursor: "pointer",
+        }}
+        onClick={() => setPublishSuccess(false)}
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="6.5" fill="#FFFFFF" stroke="#FFFFFF" />
+          <path d="M3.5 7L5.8 9.3L10.5 4.5" stroke="#107C10" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Article published successfully
+        <span style={{ fontSize: 14, lineHeight: 1, opacity: 0.8 }}>×</span>
+      </div>
     )}
     </>
   );

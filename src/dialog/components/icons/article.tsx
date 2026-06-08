@@ -246,3 +246,15 @@ export function WizardSelectInfoIcon() {
     </svg>
   );
 }
+
+/**
+ * Publish article icon (16×16, upload-arrow) for "Publish Article" command bar button.
+ */
+export function PublishArticleIcon({ color = "#616161" }: { color?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 10V3M5 6L8 3L11 6" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 12H13" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}

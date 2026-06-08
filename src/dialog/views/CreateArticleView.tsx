@@ -1,6 +1,6 @@
 // src/dialog/views/CreateArticleView.tsx
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { ArticleHeaderIcon, ArticleCaretDownIcon } from "@/dialog/components/Icons";
@@ -11,14 +11,16 @@ import {
 import { ArticleEditorPanel } from "@/dialog/views/createarticle/ArticleEditorPanel";
 
 export default function CreateArticleView() {
-  const { sendMessage, submitSave, saving } = useDialogComm();
+  const { initData, sendMessage, submitSave, saving } = useDialogComm();
+  const editData = initData?.editArticleData;
+  const isEditMode = !!editData;
 
   // ── Form state ──────────────────────────────────────────────────────────────
-  const [title, setTitle]             = useState("");
-  const [category, setCategory]       = useState<ArticleCategory>("");
-  const [givenSetOn, setGivenSetOn]   = useState(true);
-  const [articleBasisReference, setArticleBasisReference] = useState("");
-  const [contentEmpty, setContentEmpty] = useState(true);
+  const [title, setTitle]             = useState(editData?.articleTitle ?? "");
+  const [category, setCategory]       = useState<ArticleCategory>((editData?.category ?? "") as ArticleCategory);
+  const [givenSetOn, setGivenSetOn]   = useState((editData?.isProviderUseGivenSetOfInfo ?? 1) === 1);
+  const [articleBasisReference, setArticleBasisReference] = useState(editData?.articleBasisReference ?? "");
+  const [contentEmpty, setContentEmpty] = useState(!editData?.articleContent);
   const [error, setError]             = useState("");
 
   // ── Hover state ─────────────────────────────────────────────────────────────
@@ -45,6 +47,16 @@ export default function CreateArticleView() {
 
   // ── Content area ────────────────────────────────────────────────────────────
   const contentRef = useRef<HTMLDivElement>(null);
+  const contentInitialized = useRef(false);
+
+  useEffect(() => {
+    if (contentInitialized.current) return;
+    if (editData?.articleContent && contentRef.current) {
+      contentRef.current.innerHTML = editData.articleContent;
+      setContentEmpty(false);
+      contentInitialized.current = true;
+    }
+  });
 
   const isContentEmpty = useCallback((el: HTMLDivElement | null): boolean => {
     if (!el) return true;
@@ -92,6 +104,7 @@ export default function CreateArticleView() {
       submitSave({
         action: "SAVE_ARTICLE",
         payload: {
+          ...(editData?.id !== undefined ? { id: editData.id as number } : {}),
           articleTitle: title.trim(),
           articleContent: content,
           category,
@@ -146,7 +159,7 @@ export default function CreateArticleView() {
               color: "#1B1B1B",
             }}
           >
-            Create Blank Article
+            {isEditMode ? "Edit Article" : "Create Blank Article"}
           </span>
         </div>
       </div>
