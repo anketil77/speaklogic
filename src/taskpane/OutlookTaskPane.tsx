@@ -126,6 +126,9 @@ async function readOutlookText(mode: SelectionMode): Promise<string> {
         }
       );
     } else {
+      // Read mode — no selection API. Selection buttons can't work here (return ""
+      // so the caller shows the "no text" error); paragraph buttons read the full body.
+      if (mode === "selection") { resolve(""); return; }
       getFullBody();
     }
   });

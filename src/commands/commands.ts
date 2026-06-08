@@ -330,6 +330,9 @@ async function getOutlookText(mode: SelectionMode): Promise<string> {
         }
       );
     } else {
+      // Read mode — no selection API. Selection buttons can't work here (return ""
+      // so the caller shows the "Text Selection Message" dialog); paragraph buttons read the full body.
+      if (mode === "selection") { resolve(""); return; }
       getFullBody();
     }
   });
@@ -2740,19 +2743,24 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event): void 
 
 function openPeopleDialog(event: Office.AddinCommands.Event): void {
   ensureDb().then(() => {
-    const buildPayload = () => ({
-      selection: "",
-      mode: "selection" as const,
-      source: getSource(),
-      personName: "",
-      personEmail: "",
-      applicationName: "",
-      communicationFunction: "",
-      communicationSignal: "",
-      projectName: "",
-      peopleList: [],
-      contacts: getAllPeople(),
-    });
+    const buildPayload = () => {
+      const commConfig = getCommunicationConfig();
+      return {
+        selection: "",
+        mode: "selection" as const,
+        source: getSource(),
+        personName: "",
+        personEmail: "",
+        applicationName: "",
+        communicationFunction: "",
+        communicationSignal: "",
+        projectName: "",
+        peopleList: [],
+        communicationPersonName: commConfig?.personName ?? "",
+        communicationPersonEmail: commConfig?.personEmail ?? "",
+        contacts: getAllPeople(),
+      };
+    };
 
     const TARGET_H_PX = 520;
     const TARGET_W_PX = 460;
@@ -2771,7 +2779,8 @@ function openPeopleDialog(event: Office.AddinCommands.Event): void {
         }
         const dialog = result.value;
         const complete = makeEventCompleter(event);
-        dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { complete(); });
+        let handingOffToCommConfig = false;
+        dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { if (!handingOffToCommConfig) complete(); });
         dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
           const m = JSON.parse((msg as { message: string }).message) as { action: string; id?: number; personName?: string; emailAddress?: string };
           const sendInit = () => dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() }));
@@ -2796,6 +2805,11 @@ function openPeopleDialog(event: Office.AddinCommands.Event): void {
                 deletePersonById(m.id ?? 0);
                 sendInit();
               } catch (err) { replyError(dialog, `Failed to delete contact: ${String(err)}`); }
+              break;
+            case "OPEN_COMM_CONFIG":
+              handingOffToCommConfig = true;
+              try { dialog.close(); } catch { }
+              openCommunicationConfigDialog(event);
               break;
             case "CLOSE":
               try { dialog.close(); } catch { }
