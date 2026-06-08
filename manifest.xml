@@ -68,8 +68,8 @@
                   <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
                 </Control>
                 <Control xsi:type="Menu" id="selectionConfigMenu">
-                  <Label resid="selectionConfig.Label"/>
-                  <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
+                  <Label resid="selectionMenu.Label"/>
+                  <Supertip><Title resid="selectionMenu.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                   <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
                   <Items>
                     <Item id="listSelection_item"><Label resid="listSelection.Label"/><Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
@@ -280,8 +280,8 @@
                   <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
                 </Control>
                 <Control xsi:type="Menu" id="selectionConfigMenu_PPT">
-                  <Label resid="selectionConfig.Label"/>
-                  <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
+                  <Label resid="selectionMenu.Label"/>
+                  <Supertip><Title resid="selectionMenu.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                   <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
                   <Items>
                     <Item id="listSelection_PPT_item"><Label resid="listSelection.Label"/><Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
@@ -590,6 +590,7 @@
         <bt:String id="flagSelection.Label" DefaultValue="Flag Selection"/>
         <bt:String id="flagParagraph.Label" DefaultValue="Flag Paragraph"/>
         <bt:String id="selectionConfig.Label" DefaultValue="Selection Config"/>
+        <bt:String id="selectionMenu.Label" DefaultValue="Selection"/>
         <bt:String id="applySelection.Label" DefaultValue="Apply Selection"/>
         <bt:String id="applyParagraph.Label" DefaultValue="Apply Paragraph"/>
         <bt:String id="provideFeedbackSelection.Label" DefaultValue="Provide Feedback"/>
@@ -693,8 +694,8 @@
                     <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Menu" id="selectionConfigMenu_OL">
-                    <Label resid="selectionConfig.Label"/>
-                    <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
+                    <Label resid="selectionMenu.Label"/>
+                    <Supertip><Title resid="selectionMenu.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
                     <Items>
                       <Item id="listSelection_OL_item"><Label resid="listSelection.Label"/><Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
@@ -854,8 +855,8 @@
                     <Action xsi:type="ExecuteFunction"><FunctionName>flagParagraph</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Menu" id="selectionConfigMenu_OLC">
-                    <Label resid="selectionConfig.Label"/>
-                    <Supertip><Title resid="selectionConfig.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
+                    <Label resid="selectionMenu.Label"/>
+                    <Supertip><Title resid="selectionMenu.Label"/><Description resid="selectionConfig.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="selectionConfig.Icon16"/><bt:Image size="32" resid="selectionConfig.Icon32"/><bt:Image size="80" resid="selectionConfig.Icon80"/></Icon>
                     <Items>
                       <Item id="listSelection_OLC_item"><Label resid="listSelection.Label"/><Supertip><Title resid="listSelection.Label"/><Description resid="listSelection.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="listSelection.Icon16"/><bt:Image size="32" resid="listSelection.Icon32"/><bt:Image size="80" resid="listSelection.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>listSelection</FunctionName></Action></Item>
@@ -1081,6 +1082,7 @@
           <bt:String id="flagSelection.Label" DefaultValue="Flag Selection"/>
           <bt:String id="flagParagraph.Label" DefaultValue="Flag Paragraph"/>
           <bt:String id="selectionConfig.Label" DefaultValue="Selection Config"/>
+          <bt:String id="selectionMenu.Label" DefaultValue="Selection"/>
           <bt:String id="applySelection.Label" DefaultValue="Apply Selection"/>
           <bt:String id="applyParagraph.Label" DefaultValue="Apply Paragraph"/>
           <bt:String id="provideFeedbackSelection.Label" DefaultValue="Provide Feedback"/>
