@@ -16,10 +16,10 @@ const NS1_CONTENT:   ContentConfig = { motherNature: true,  negFunc: true,  prob
 const NS2_CONTENT:   ContentConfig = { motherNature: true,  negFunc: true,  problem: true,  funcExec: false, relationship: true  };
 const NS3_CONTENT:   ContentConfig = { motherNature: true,  negFunc: true,  problem: false, funcExec: false, relationship: true  };
 const NS4_CONTENT:   ContentConfig = { motherNature: true,  negFunc: true,  problem: false, funcExec: false, relationship: false };
-const SP1_CONTENT:   ContentConfig = { motherNature: false, negFunc: false, problem: false, funcExec: true,  relationship: false };
-const SP2_CONTENT:   ContentConfig = { motherNature: false, negFunc: false, problem: false, funcExec: true,  relationship: false };
-const SP3_CONTENT:   ContentConfig = { motherNature: true,  negFunc: false, problem: false, funcExec: true,  relationship: false };
-const SP4_CONTENT:   ContentConfig = { motherNature: true,  negFunc: false, problem: false, funcExec: true,  relationship: true  };
+const SP1_CONTENT:   ContentConfig = { motherNature: false, negFunc: true,  problem: false, funcExec: false, relationship: false };
+const SP2_CONTENT:   ContentConfig = { motherNature: false, negFunc: true,  problem: false, funcExec: false, relationship: false };
+const SP3_CONTENT:   ContentConfig = { motherNature: true,  negFunc: true,  problem: false, funcExec: false, relationship: false };
+const SP4_CONTENT:   ContentConfig = { motherNature: true,  negFunc: true,  problem: false, funcExec: false, relationship: true  };
 
 // ─── Step sequences ───────────────────────────────────────────────────────────
 

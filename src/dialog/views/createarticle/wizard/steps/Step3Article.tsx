@@ -15,7 +15,7 @@ import { CategoryPickerPanel } from "@/dialog/views/createarticle/CategoryPicker
 import type { StepProps } from "../wizardTypes";
 import type { ArticleCategory } from "@/dialog/views/createarticle/CategoryPickerPanel";
 
-export function Step3Article({ data, onChange, onNext, onBack, onCancel }: StepProps) {
+export function Step3Article({ data, onChange, onNext, onBack, onCancel, hideProviderSection }: StepProps & { hideProviderSection?: boolean }) {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
   const catBtnRef = useRef<HTMLButtonElement>(null);
@@ -111,24 +111,26 @@ export function Step3Article({ data, onChange, onNext, onBack, onCancel }: StepP
           </div>
         </SectionBox>
 
-        {/* ── Provider Information ── */}
-        <SectionBox title="Provider Information" showHelp>
-          <FormInput
-            placeholder="Provider Name"
-            value={data.providerName}
-            onChange={(v) => onChange({ providerName: v })}
-          />
-          <FormInput
-            placeholder="Person Name"
-            value={data.personName}
-            onChange={(v) => onChange({ personName: v })}
-          />
-          <FormInput
-            placeholder="Person Location"
-            value={data.personLocation}
-            onChange={(v) => onChange({ personLocation: v })}
-          />
-        </SectionBox>
+        {/* ── Provider Information (hidden for Product Reviews) ── */}
+        {!hideProviderSection && (
+          <SectionBox title="Provider Information" showHelp>
+            <FormInput
+              placeholder="Provider Name"
+              value={data.providerName}
+              onChange={(v) => onChange({ providerName: v })}
+            />
+            <FormInput
+              placeholder="Person Name"
+              value={data.personName}
+              onChange={(v) => onChange({ personName: v })}
+            />
+            <FormInput
+              placeholder="Person Location"
+              value={data.personLocation}
+              onChange={(v) => onChange({ personLocation: v })}
+            />
+          </SectionBox>
+        )}
       </div>
 
       {/* Footer */}

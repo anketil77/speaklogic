@@ -13,11 +13,23 @@ export function StepProductProvider({ data, onChange, onNext, onBack, onCancel }
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
       <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "10px 14px 6px", display: "flex", flexDirection: "column", gap: 9 }}>
 
-        {/* Given Set toggle */}
-        <SectionBox title="Provider Information" showHelp>
+        {/* Product details */}
+        <SectionBox title="Product Details" showHelp>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <LabeledInput label="Product Name *"  value={data.productName}     onChange={(v) => onChange({ productName: v })}     placeholder="Enter product name" error={nextDisabled && data.productName === ""} />
+            <LabeledInput label="Model Number"    value={data.modelNumber}     onChange={(v) => onChange({ modelNumber: v })}     placeholder="Enter model number" />
+            <LabeledInput label="Product Type"    value={data.productType}     onChange={(v) => onChange({ productType: v })}     placeholder="Enter product type" />
+            <LabeledInput label="Product Function" value={data.productFunction} onChange={(v) => onChange({ productFunction: v })} placeholder="Enter product function" />
+            <LabeledInput label="Problem Solved"  value={data.problemSolved}   onChange={(v) => onChange({ problemSolved: v })}   placeholder="What problem does this product solve?" />
+            <LabeledInput label="Product URL"     value={data.productURL}      onChange={(v) => onChange({ productURL: v })}      placeholder="Enter product URL" />
+          </div>
+        </SectionBox>
+
+        {/* Given Set toggle + Article Basis Reference */}
+        <SectionBox title="About The Given Set" showHelp>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "2px 0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 11.1, color: "#616161", minWidth: 280 }}>
+              <span style={{ fontSize: 11.1, color: "#616161", flex: 1 }}>
                 Does provider use The Given Set to provide this information?
               </span>
               <Toggle
@@ -28,19 +40,7 @@ export function StepProductProvider({ data, onChange, onNext, onBack, onCancel }
                 {data.isProviderUseGivenSetOfInfo1 ? "Yes" : "No"}
               </span>
             </div>
-            <LabeledInput label="Provider Name" value={data.providerName} onChange={(v) => onChange({ providerName: v })} placeholder="Enter provider name" />
-            <LabeledInput label="Reviewer Name" value={data.reviewerName} onChange={(v) => onChange({ reviewerName: v })} placeholder="Enter reviewer name" />
-          </div>
-        </SectionBox>
-
-        {/* Product details */}
-        <SectionBox title="Product Details" showHelp>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <LabeledInput label="Product Name *" value={data.productName} onChange={(v) => onChange({ productName: v })} placeholder="Enter product name" error={nextDisabled && data.productName === ""} />
-            <LabeledInput label="Model Number"   value={data.modelNumber} onChange={(v) => onChange({ modelNumber: v })} placeholder="Enter model number" />
-            <LabeledInput label="Product Type"   value={data.productType} onChange={(v) => onChange({ productType: v })} placeholder="Enter product type" />
-            <LabeledInput label="Product Function" value={data.productFunction} onChange={(v) => onChange({ productFunction: v })} placeholder="Enter product function" />
-            <LabeledInput label="Problem Solved"  value={data.problemSolved} onChange={(v) => onChange({ problemSolved: v })} placeholder="What problem does this product solve?" />
+            <LabeledInput label="Article Basis Reference" value={data.articleBasisReference} onChange={(v) => onChange({ articleBasisReference: v })} placeholder="Enter article basis reference" />
           </div>
         </SectionBox>
       </div>

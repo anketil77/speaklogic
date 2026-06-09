@@ -23,27 +23,37 @@ export function StepFuncDuringReview({ data, onChange, onNext, onBack, onCancel 
 
         <SectionBox title="Problem solved by product?" showHelp>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0" }}>
-            <span style={{ fontSize: 11.1, color: "#616161" }}>Is the identified problem solved by this product?</span>
-            <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11.1, color: "#1B1B1B" }}>
-              <input
-                type="radio"
-                checked={data.isSolvedProblem === true}
-                onChange={() => onChange({ isSolvedProblem: true })}
-              />
-              Yes
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11.1, color: "#1B1B1B" }}>
-              <input
-                type="radio"
-                checked={data.isSolvedProblem === false}
-                onChange={() => onChange({ isSolvedProblem: false })}
-              />
-              No
-            </label>
+            <span style={{ fontSize: 11.1, color: "#616161", flex: 1 }}>
+              Is the identified problem solved by this product?
+            </span>
+            <Toggle
+              value={data.isSolvedProblem}
+              onChange={(v) => onChange({ isSolvedProblem: v })}
+            />
+            <span style={{ fontSize: 11.1, color: data.isSolvedProblem ? "#0078D4" : "#616161", fontWeight: 600, minWidth: 28 }}>
+              {data.isSolvedProblem ? "Yes" : "No"}
+            </span>
           </div>
         </SectionBox>
       </div>
       <WizardFooter hintText="Describe function and problem status" onBack={onBack} onCancel={onCancel} onNext={onNext} />
+    </div>
+  );
+}
+
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div
+      onClick={() => onChange(!value)}
+      style={{
+        position: "relative", width: 32, height: 18, borderRadius: 18,
+        background: value ? "#0078D4" : "#C7C7C7", cursor: "pointer", flexShrink: 0, transition: "background 0.15s",
+      }}
+    >
+      <div style={{
+        position: "absolute", top: 2, left: value ? 14 : 2, width: 14, height: 14,
+        borderRadius: 14, background: "#FFFFFF", transition: "left 0.15s",
+      }} />
     </div>
   );
 }

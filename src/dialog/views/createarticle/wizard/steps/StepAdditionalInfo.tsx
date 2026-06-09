@@ -21,11 +21,10 @@ export function StepAdditionalInfo({ data, onChange, onNext, onBack, onCancel }:
           />
         </SectionBox>
 
-        <SectionBox title="Product & Reviewer Details" showHelp>
+        <SectionBox title="Provider &amp; Reviewer Details" showHelp>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "2px 0" }}>
-            <LabeledInput label="Product URL"     value={data.productURL}     onChange={(v) => onChange({ productURL: v })}     placeholder="Enter product URL" />
-            <LabeledInput label="Provider Name"   value={data.providerName}   onChange={(v) => onChange({ providerName: v })}   placeholder="Enter provider name" />
-            <LabeledInput label="Reviewer Name"   value={data.reviewerName}   onChange={(v) => onChange({ reviewerName: v })}   placeholder="Enter reviewer name" />
+            <LabeledInput label="Provider Name" value={data.providerName} onChange={(v) => onChange({ providerName: v })} placeholder="Enter provider name" />
+            <LabeledInput label="Reviewer Name" value={data.reviewerName} onChange={(v) => onChange({ reviewerName: v })} placeholder="Enter reviewer name" />
           </div>
         </SectionBox>
       </div>

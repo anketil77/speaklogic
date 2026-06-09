@@ -193,7 +193,7 @@ export default function ArticleWizardView() {
           ? <Step7Content {...stepProps} config={contentConfig} isFinish={isLastBeforeDone} />
           : null;
       case "productProvider": return <StepProductProvider {...stepProps} />;
-      case "productArticle":  return <Step3Article        {...stepProps} />;
+      case "productArticle":  return <Step3Article        {...stepProps} hideProviderSection />;
       case "funcReview":      return <StepFuncDuringReview {...stepProps} />;
       case "additionalInfo":  return <StepAdditionalInfo  {...stepProps} />;
       case "done":            return <Step8Done data={data} onClose={handleClose} />;
