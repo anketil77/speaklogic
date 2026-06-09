@@ -27,7 +27,9 @@
   },
   "dependencies": {
     "@fluentui/react-components": "^9.55.1",
+    "@fluentui/react-datepicker-compat": "^0.6.32",
     "@fluentui/react-icons": "^2.0.264",
+    "@fluentui/react-timepicker-compat": "^0.4.35",
     "core-js": "^3.36.0",
     "dictionary-en": "^4.0.0",
     "es6-promise": "^4.2.8",

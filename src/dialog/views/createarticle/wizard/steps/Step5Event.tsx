@@ -1,16 +1,51 @@
 // src/dialog/views/createarticle/wizard/steps/Step5Event.tsx
 //
 // Wizard Step 5 — "Event" step.
-// Section: About Event — Name, Location, and a 50/50 Date + Time row.
-// Footer hint: "Enter event name, location, date and time"
+// Section: About Event — Name, Location, Date picker, Time picker.
+// DatePicker: Fluent UI compat (inlinePopup).
+// TimePicker: custom absolute-positioned dropdown — safe in Office.js iframes.
 
-import React from "react";
-import { SectionBox }   from "../SectionBox";
-import { FormInput }    from "../FormInput";
-import { WizardFooter } from "../WizardFooter";
-import type { StepProps } from "../wizardTypes";
+import React, { useCallback, useMemo } from "react";
+import { DatePicker }          from "@fluentui/react-datepicker-compat";
+import { CustomTimePicker }    from "../CustomTimePicker";
+import { SectionBox }          from "../SectionBox";
+import { FormInput }           from "../FormInput";
+import { WizardFooter }        from "../WizardFooter";
+import type { StepProps }      from "../wizardTypes";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function parseDateStr(s: string): Date | null {
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDate(date: Date): string {
+  const mm   = String(date.getMonth() + 1).padStart(2, "0");
+  const dd   = String(date.getDate()).padStart(2, "0");
+  return `${mm}/${dd}/${date.getFullYear()}`;
+}
+
+const INPUT_SLOT_STYLE: React.CSSProperties = {
+  height:     30,
+  minHeight:  30,
+  fontSize:   11.4,
+  fontFamily: "'Inter','Segoe UI',sans-serif",
+  color:      "#1B1B1B",
+  padding:    "0 9px",
+  boxSizing:  "border-box",
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export function Step5Event({ data, onChange, onNext, onBack, onCancel }: StepProps) {
+  const dateValue = useMemo(() => parseDateStr(data.eventDate), [data.eventDate]);
+
+  const handleDateSelect = useCallback((date: Date | null | undefined) => {
+    onChange({ eventDate: date ? formatDate(date) : "" });
+  }, [onChange]);
+
   return (
     <div
       style={{
@@ -21,16 +56,16 @@ export function Step5Event({ data, onChange, onNext, onBack, onCancel }: StepPro
         overflow:      "hidden",
       }}
     >
-      {/* Scrollable body */}
+      {/* Body */}
       <div
         style={{
           flex:          1,
-          overflowY:     "auto",
           minHeight:     0,
           padding:       "10px 14px 6px",
           display:       "flex",
           flexDirection: "column",
           gap:           9,
+          overflow:      "visible",
         }}
       >
         <SectionBox title="About Event" showHelp>
@@ -45,20 +80,29 @@ export function Step5Event({ data, onChange, onNext, onBack, onCancel }: StepPro
             onChange={(v) => onChange({ eventLocation: v })}
           />
 
-          {/* Date + Time — side by side, 50/50 */}
-          <div style={{ display: "flex", flexDirection: "row", gap: 8, width: "100%" }}>
-            <FormInput
-              placeholder="Event Date"
-              value={data.eventDate}
-              onChange={(v) => onChange({ eventDate: v })}
-              style={{ flex: 1 }}
-            />
-            <FormInput
-              placeholder="Event Time"
+          {/* Date + Time — 50/50 */}
+          <div style={{ display: "flex", gap: 8, width: "100%", minWidth: 0 }}>
+
+            {/* Date picker — Fluent UI, inlinePopup */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <DatePicker
+                value={dateValue}
+                onSelectDate={handleDateSelect}
+                formatDate={(d) => (d ? formatDate(d) : "")}
+                placeholder="Select date..."
+                allowTextInput={false}
+                inlinePopup
+                input={{ style: INPUT_SLOT_STYLE }}
+                style={{ width: "100%" }}
+              />
+            </div>
+
+            {/* Time picker — custom, position:absolute dropdown */}
+            <CustomTimePicker
               value={data.eventTime}
               onChange={(v) => onChange({ eventTime: v })}
-              style={{ flex: 1 }}
             />
+
           </div>
         </SectionBox>
       </div>

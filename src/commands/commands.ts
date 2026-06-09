@@ -1587,6 +1587,7 @@ function openArticleWizardDialog(
   wizardCategory: string,
   attempt       = 0,
 ): void {
+  const commConfig = getCommunicationConfig();
   const initPayload: DialogInitPayload = {
     selection:             "",
     mode:                  "selection",
@@ -1600,6 +1601,7 @@ function openArticleWizardDialog(
     peopleList:            [],
     templateName,
     wizardCategory,
+    communicationPersonName: commConfig?.personName ?? "",
   };
 
   Office.context.ui.displayDialogAsync(

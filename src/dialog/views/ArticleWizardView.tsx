@@ -79,6 +79,12 @@ export default function ArticleWizardView() {
     if (initData?.wizardCategory) dispatch({ category: initData.wizardCategory });
   }, [initData?.wizardCategory]);
 
+  useEffect(() => {
+    if (initData?.communicationPersonName && !data.personName) {
+      dispatch({ personName: initData.communicationPersonName });
+    }
+  }, [initData?.communicationPersonName]);
+
   const onChange = useCallback((patch: Partial<WizardData>) => dispatch(patch), []);
 
   // Derive sequence once per template (initData won't change mid-wizard)
