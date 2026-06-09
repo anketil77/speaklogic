@@ -69,23 +69,22 @@ export function getTemplateSequence(templateName: string, category: string): Tem
   const cat = category.toLowerCase();
   const t   = templateName.toLowerCase();
 
-  if (cat.includes("product")) {
+  if (cat === "product-reviews") {
     return { steps: PR_STEPS, contentConfig: null };
   }
 
-  if (cat.includes("sport")) {
+  if (cat === "sport") {
     if (t.includes("template 1") || t.includes("template1")) return { steps: SP1_STEPS, contentConfig: SP1_CONTENT };
     if (t.includes("template 2") || t.includes("template2")) return { steps: SP2_STEPS, contentConfig: SP2_CONTENT };
     if (t.includes("template 3") || t.includes("template3")) return { steps: BASE_SPORT, contentConfig: SP3_CONTENT };
     if (t.includes("template 4") || t.includes("template4")) return { steps: BASE_SPORT, contentConfig: SP4_CONTENT };
-    // default sport: template 1
     return { steps: SP1_STEPS, contentConfig: SP1_CONTENT };
   }
 
-  // Non-Sport & Game (default)
+  // Non-Sport & Game (cat === "non-sport")
   if (t.includes("template 1") || t.includes("template1")) return { steps: BASE_NS, contentConfig: NS1_CONTENT };
+  if (t.includes("template 2") || t.includes("template2")) return { steps: BASE_NS, contentConfig: NS2_CONTENT };
   if (t.includes("template 3") || t.includes("template3")) return { steps: BASE_NS, contentConfig: NS3_CONTENT };
   if (t.includes("template 4") || t.includes("template4")) return { steps: BASE_NS, contentConfig: NS4_CONTENT };
-  // template 2 is default (also matches "template2")
   return { steps: BASE_NS, contentConfig: NS2_CONTENT };
 }
