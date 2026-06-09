@@ -166,6 +166,21 @@ export default function ArticleWizardView() {
   const currentId: StepId = steps[stepIdx]?.id ?? "done";
   const isLastBeforeDone   = stepIdx === steps.findIndex((s) => s.id === "done") - 1;
 
+  const STEP_TITLES: Record<StepId, string> = {
+    article:         "Add Article",
+    givenSet:        "Given Set",
+    event:           "About Event",
+    prePostObs:      "Observations",
+    info:            "Information",
+    content:         "Content",
+    productProvider: "Product Provider",
+    productArticle:  "Add Article",
+    funcReview:      "Function Review",
+    additionalInfo:  "Additional Info",
+    done:            "Done",
+  };
+  const wizardTitle = STEP_TITLES[currentId] ?? "Add Article";
+
   const renderStep = () => {
     switch (currentId) {
       case "article":         return <Step3Article        {...stepProps} />;
@@ -197,7 +212,7 @@ export default function ArticleWizardView() {
         fontFamily:    "'Inter','Segoe UI',sans-serif",
       }}
     >
-      <WizardHeader title="Create Article" />
+      <WizardHeader title={wizardTitle} />
       <WizardStepBar steps={steps} currentIdx={stepIdx} />
       {renderStep()}
     </div>
