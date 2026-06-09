@@ -12,6 +12,7 @@ import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import { colors } from "@/styles/tokens";
 import type { SaveFeedbackPayload } from "@/types/db";
 import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
+import { PersonComboBox } from "@/dialog/components/PersonComboBox";
 
 const F = {
   borderInput: `1px solid #C7C7C7`,
@@ -172,16 +173,6 @@ const readonlyDisplayStyle: React.CSSProperties = {
 };
 
 
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  padding: "0 32px 0 11px",
-  appearance: "none" as const,
-  WebkitAppearance: "none" as const,
-  backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23616161' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-  backgroundRepeat: "no-repeat" as const,
-  backgroundPosition: "right 11px center",
-  cursor: "pointer",
-};
 
 const rowStyle: React.CSSProperties = {
   display: "flex", alignItems: "center", minHeight: "32px", marginBottom: "14px",
@@ -482,26 +473,15 @@ export default function ProvideFeedbackView() {
               <div style={readonlyDisplayStyle}>{form.fromPerson}</div>
             </div>
 
-            {/* To Person — select from people list or free-text */}
+            {/* To Person — searchable combobox (free-text + filtered suggestions) */}
             <div style={rowStyle}>
               <span style={labelStyle}>To Person</span>
-              {peopleList.length > 0 ? (
-                <select
-                  style={selectStyle}
-                  value={form.toPerson}
-                  onChange={(e) => updateForm("toPerson", e.target.value)}
-                >
-                  <option value="">-- Select person --</option>
-                  {peopleList.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-              ) : (
-                <input
-                  style={inputStyle}
-                  value={form.toPerson}
-                  onChange={(e) => updateForm("toPerson", e.target.value)}
-                  placeholder="Enter recipient name"
-                />
-              )}
+              <PersonComboBox
+                value={form.toPerson}
+                onChange={(name) => updateForm("toPerson", name)}
+                suggestions={peopleList}
+                placeholder={peopleList.length > 0 ? "Search or enter recipient name" : "Enter recipient name"}
+              />
             </div>
 
             {/* Person Email */}
