@@ -8,7 +8,7 @@ const DIALOG_BASE = window.location.origin;
 import { initDb, nowDate, formatDisplayDate } from "@/db/db";
 import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
-import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory } from "@/db/queries/flag";
+import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail, getAllPeople, updatePersonById, deletePersonById } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
@@ -17,6 +17,7 @@ import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/p
 import { saveProblemSolution } from "@/db/queries/problem";
 import { dbg, clearLog } from "@/debug/log";
 import { openInterpretedPrincipleReport, openIdentifiedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
+import { formatArticleForAnalysis } from "@/dialog/utils/formatArticleForAnalysis";
 
 function buildPeopleList(commPersonName?: string): string[] {
   const names = getPeopleNames();
@@ -148,6 +149,9 @@ function registerHandlers(): void {
   );
   Office.actions.associate("listArticles", (event) =>
     void openListArticlesDialog(event)
+  );
+  Office.actions.associate("listFlaggedArticles", (event) =>
+    void openFlaggedArticlesDialog(event)
   );
   Office.actions.associate("openPeople", (event) => openPeopleDialog(event));
 }
@@ -574,18 +578,29 @@ async function openAnalyzeDialog(
     communicationPersonEmail: commConfig?.personEmail ?? "",
   };
 
-  const params = new URLSearchParams({ view: "analyze", mode });
-  dbg("HOST", "calling displayDialogAsync for analyze");
+  openAnalyzeDialogWithPayload(initPayload, commConfig?.personName ?? "", commConfig?.personEmail ?? "", event);
+}
+
+function openAnalyzeDialogWithPayload(
+  initPayload: DialogInitPayload,
+  commPersonName: string,
+  commPersonEmail: string,
+  event: Office.AddinCommands.Event,
+  attempt = 0
+): void {
+  const params = new URLSearchParams({ view: "analyze", mode: initPayload.mode });
   Office.context.ui.displayDialogAsync(
     `${DIALOG_BASE}/dialog.html?${params.toString()}`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
       if (result.status === Office.AsyncResultStatus.Failed) {
-        dbg("HOST", "displayDialogAsync FAILED (analyze)", { code: (result.error as { code: number }).code, message: result.error.message });
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openAnalyzeDialogWithPayload(initPayload, commPersonName, commPersonEmail, event, attempt + 1), 300);
+          return;
+        }
         handleDialogOpenError(result.error, event);
         return;
       }
-      dbg("HOST", "analyze dialog opened successfully");
       const dialog = result.value;
       const complete = makeEventCompleter(event);
 
@@ -631,8 +646,8 @@ async function openAnalyzeDialog(
                 communicationSignal: payload.analysis.communicationSignal,
                 projectName: payload.analysis.projectName,
                 peopleList: [],
-                communicationPersonName: commConfig?.personName ?? "",
-                communicationPersonEmail: commConfig?.personEmail ?? "",
+                communicationPersonName: commPersonName,
+                communicationPersonEmail: commPersonEmail,
                 analysisData: {
                   id: savedId,
                   entityUnderAnalysis: payload.analysis.entityUnderAnalysis,
@@ -1806,6 +1821,30 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
             }
             break;
           }
+          case "FLAG_ARTICLE": {
+            const faArticle = getArticleById((m as { action: string; id: number }).id);
+            if (!faArticle) break;
+            transitioning = true;
+            try { dialog.close(); } catch { }
+            openFlagArticleDialog(event, personName, personEmail, faArticle);
+            break;
+          }
+          case "ANALYZE_ARTICLE": {
+            const aaArticle = getArticleById((m as { action: string; id: number }).id);
+            if (!aaArticle) break;
+            transitioning = true;
+            try { dialog.close(); } catch { }
+            openAnalyzeArticleDialog(event, personName, personEmail, aaArticle);
+            break;
+          }
+          case "REQUEST_FEEDBACK_ARTICLE": {
+            const rfArticle = getArticleById((m as { action: string; id: number }).id);
+            if (!rfArticle) break;
+            transitioning = true;
+            try { dialog.close(); } catch { }
+            openRequestFeedbackArticleDialog(event, personName, personEmail, rfArticle);
+            break;
+          }
           case "CLOSE":
             try { dialog.close(); } catch { }
             complete();
@@ -1816,6 +1855,210 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
       });
     }
   );
+}
+
+async function openFlaggedArticlesDialog(event: Office.AddinCommands.Event): Promise<void> {
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
+  const { personName, personEmail } = getUserIdentity();
+
+  const initPayload: DialogInitPayload = {
+    selection: "",
+    mode: "selection",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: "",
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: [],
+    flaggedArticles: getAllFlaggedArticles(),
+    articles: getAllArticles(),
+  };
+
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=flagged-articles`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      const complete = makeEventCompleter(event);
+      let transitioning = false;
+
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        if (!transitioning) complete();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "DELETE_FLAGGED_ARTICLE": {
+            try { deleteFlaggedArticle((m as { action: string; id: number }).id); }
+            catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+            break;
+          }
+          case "FLAG_ARTICLE": {
+            const faArticle = getArticleById((m as { action: string; id: number }).id);
+            if (!faArticle) break;
+            transitioning = true;
+            try { dialog.close(); } catch { }
+            openFlagArticleDialog(event, personName, personEmail, faArticle);
+            break;
+          }
+          case "ANALYZE_ARTICLE": {
+            const aaArticle = getArticleById((m as { action: string; id: number }).id);
+            if (!aaArticle) break;
+            transitioning = true;
+            try { dialog.close(); } catch { }
+            openAnalyzeArticleDialog(event, personName, personEmail, aaArticle);
+            break;
+          }
+          case "REQUEST_FEEDBACK_ARTICLE": {
+            const rfArticle = getArticleById((m as { action: string; id: number }).id);
+            if (!rfArticle) break;
+            transitioning = true;
+            try { dialog.close(); } catch { }
+            openRequestFeedbackArticleDialog(event, personName, personEmail, rfArticle);
+            break;
+          }
+          case "CLOSE":
+            try { dialog.close(); } catch { }
+            complete();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+function openFlagArticleDialog(
+  event: Office.AddinCommands.Event,
+  personName: string,
+  personEmail: string,
+  article: import("@/types/db").Article,
+  attempt = 0
+): void {
+  const commConfig = getCommunicationConfig();
+  const initPayload: DialogInitPayload = {
+    selection: plainText(article.articleContent),
+    selectionHtml: formatArticleForAnalysis(article),
+    mode: "paragraph",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: article.articleTitle,
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: buildPeopleList(commConfig?.personName),
+    communicationPersonName: commConfig?.personName ?? "",
+  };
+  const screenH = window.screen?.availHeight || 1080;
+  const screenW = window.screen?.availWidth  || 1440;
+  const flagHeight = Math.min(75, Math.max(28, Math.round((433 / (screenH * 0.93)) * 100) + 4));
+  const flagWidth  = Math.min(80, Math.max(22, Math.round((380 / (screenW * 0.95)) * 100)));
+  Office.context.ui.displayDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=flag`,
+    { height: flagHeight, width: flagWidth, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openFlagArticleDialog(event, personName, personEmail, article, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      const complete = makeEventCompleter(event);
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        void (evt as { error: number }).error;
+        complete();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "SAVE_FLAG": {
+            const flag = m.payload as Omit<FlagEntityForAnalysis, "id">;
+            try {
+              saveFlag({ ...flag, articleId: article.id });
+            } catch (err) {
+              dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+              break;
+            }
+            break;
+          }
+          case "CLOSE":
+            try { dialog.close(); } catch { }
+            complete();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+function openAnalyzeArticleDialog(
+  event: Office.AddinCommands.Event,
+  personName: string,
+  personEmail: string,
+  article: import("@/types/db").Article
+): void {
+  const commConfig = getCommunicationConfig();
+  const initPayload: DialogInitPayload = {
+    selection: plainText(article.articleContent),
+    selectionHtml: formatArticleForAnalysis(article),
+    mode: "paragraph",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: article.articleTitle,
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: buildPeopleList(commConfig?.personName),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+  };
+  openAnalyzeDialogWithPayload(initPayload, commConfig?.personName ?? "", commConfig?.personEmail ?? "", event);
+}
+
+function openRequestFeedbackArticleDialog(
+  event: Office.AddinCommands.Event,
+  personName: string,
+  personEmail: string,
+  article: import("@/types/db").Article,
+  attempt = 0
+): void {
+  const commConfig = getCommunicationConfig();
+  openRequestFeedbackDialog({
+    selection: article.articleTitle,
+    selectionHtml: formatArticleForAnalysis(article),
+    mode: "paragraph",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: article.articleTitle,
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: buildPeopleList(commConfig?.personName),
+    peopleEmailMap: getPeopleEmailMap(),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+  }, event, attempt);
 }
 
 function openEditArticleDialog(

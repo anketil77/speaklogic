@@ -14,6 +14,21 @@ export interface FlagEntityForAnalysis {
   personName: string;
   personEmail: string;
   wasEntityAnalyzed?: string;
+  articleId?: number;
+}
+
+export interface FlaggedArticle {
+  id?: number;
+  articleId: number;
+  articleTitle: string;
+  category?: string;
+  flagDate: string;
+  flagTime: string;
+  personName: string;
+  personEmail: string;
+  source: "Word Document" | "Outlook Mail" | "PowerPoint Document";
+  applicationName: string;
+  wasEntityAnalyzed?: string;
 }
 
 export interface FlaggedEntityHistory {
@@ -654,6 +669,7 @@ export interface DialogInitPayload {
   selectionsWithPrinciple?: SelectionWithPrinciple[];
   filesBySelectionWithPrincipleId?: Record<number, AttachFileToProject[]>;
   articles?: Article[];
+  flaggedArticles?: FlaggedArticle[];
   publishers?: Publisher[];
   commSignalRequests?: CommSignalInfo[];
   selectionHistories?: FlaggedEntityHistory[];
@@ -743,6 +759,10 @@ export type DialogAction =
   | { action: "BACK_TO_PICKER" }
   | { action: "DELETE_ARTICLE"; id: number }
   | { action: "EDIT_ARTICLE"; id: number }
+  | { action: "FLAG_ARTICLE"; id: number }
+  | { action: "ANALYZE_ARTICLE"; id: number }
+  | { action: "REQUEST_FEEDBACK_ARTICLE"; id: number }
+  | { action: "DELETE_FLAGGED_ARTICLE"; id: number }
   | { action: "PUBLISH_ARTICLE"; id: number; publishers: string[] }
   | { action: "ADD_PUBLISHER"; name: string; logoBase64: string }
   | { action: "DELETE_PUBLISHER"; id: number }

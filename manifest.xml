@@ -136,6 +136,12 @@
                   <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>listArticles</FunctionName></Action>
                 </Control>
+                <Control xsi:type="Button" id="listFlaggedArticles">
+                  <Label resid="listFlaggedArticles.Label"/>
+                  <Supertip><Title resid="listFlaggedArticles.Label"/><Description resid="listFlaggedArticles.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listFlaggedArticles</FunctionName></Action>
+                </Control>
               </Group>
 
               <Group id="grpFlagged">
@@ -357,6 +363,12 @@
                   <Supertip><Title resid="listArticles.Label"/><Description resid="listArticles.Tooltip"/></Supertip>
                   <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>listArticles</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="listFlaggedArticles_PPT">
+                  <Label resid="listFlaggedArticles.Label"/>
+                  <Supertip><Title resid="listFlaggedArticles.Label"/><Description resid="listFlaggedArticles.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>listFlaggedArticles</FunctionName></Action>
                 </Control>
               </Group>
 
@@ -622,6 +634,7 @@
         <bt:String id="requestFeedback.Label" DefaultValue="Request Feedback"/>
         <bt:String id="createArticle.Label" DefaultValue="Create Article"/>
         <bt:String id="listArticles.Label" DefaultValue="List Articles"/>
+        <bt:String id="listFlaggedArticles.Label" DefaultValue="Flagged Articles"/>
         <bt:String id="flaggedSelection.Label" DefaultValue="Flagged Selection"/>
         <bt:String id="listAnalysis.Label" DefaultValue="List of Analysis"/>
         <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
@@ -652,6 +665,7 @@
         <bt:String id="requestFeedback.Tooltip" DefaultValue="Request feedback from another person"/>
         <bt:String id="createArticle.Tooltip" DefaultValue="Create a new article"/>
         <bt:String id="listArticles.Tooltip" DefaultValue="View saved articles"/>
+        <bt:String id="listFlaggedArticles.Tooltip" DefaultValue="View articles flagged for analysis"/>
         <bt:String id="flaggedSelection.Tooltip" DefaultValue="View flagged selections"/>
         <bt:String id="listAnalysis.Tooltip" DefaultValue="View all saved analyses"/>
         <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>
@@ -787,6 +801,12 @@
                     <Supertip><Title resid="listArticles.Label"/><Description resid="listArticles.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>listArticles</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listFlaggedArticles_OL">
+                    <Label resid="listFlaggedArticles.Label"/>
+                    <Supertip><Title resid="listFlaggedArticles.Label"/><Description resid="listFlaggedArticles.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listFlaggedArticles</FunctionName></Action>
                   </Control>
                 </Group>
 
@@ -958,6 +978,12 @@
                     <Supertip><Title resid="listArticles.Label"/><Description resid="listArticles.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>listArticles</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="listFlaggedArticles_OLC">
+                    <Label resid="listFlaggedArticles.Label"/>
+                    <Supertip><Title resid="listFlaggedArticles.Label"/><Description resid="listFlaggedArticles.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listArticles.Icon16"/><bt:Image size="32" resid="listArticles.Icon32"/><bt:Image size="80" resid="listArticles.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>listFlaggedArticles</FunctionName></Action>
                   </Control>
                 </Group>
 
@@ -1139,6 +1165,7 @@
           <bt:String id="requestFeedback.Label" DefaultValue="Request Feedback"/>
           <bt:String id="createArticle.Label" DefaultValue="Create Article"/>
           <bt:String id="listArticles.Label" DefaultValue="List Articles"/>
+          <bt:String id="listFlaggedArticles.Label" DefaultValue="Flagged Articles"/>
           <bt:String id="flaggedSelection.Label" DefaultValue="Flagged Selection"/>
           <bt:String id="listAnalysis.Label" DefaultValue="List of Analysis"/>
           <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
@@ -1168,6 +1195,7 @@
           <bt:String id="requestFeedback.Tooltip" DefaultValue="Request feedback from another person"/>
           <bt:String id="createArticle.Tooltip" DefaultValue="Create a new article"/>
           <bt:String id="listArticles.Tooltip" DefaultValue="View saved articles"/>
+          <bt:String id="listFlaggedArticles.Tooltip" DefaultValue="View articles flagged for analysis"/>
           <bt:String id="flaggedSelection.Tooltip" DefaultValue="View flagged selections"/>
           <bt:String id="listAnalysis.Tooltip" DefaultValue="View all saved analyses"/>
           <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>

@@ -8,6 +8,7 @@ import type {
   ProjectFeedback,
   FlagEntityForAnalysis,
   FlaggedEntityHistory,
+  FlaggedArticle,
   PrincipleInterpretation,
   PrincipleInSelection,
   SelectionWithPrinciple,
@@ -265,6 +266,19 @@ export function openFlaggedReport(flag: FlagEntityForAnalysis): void {
 
   const body = sectionBlock("About Selection", rows);
   openBlob(wrapPage("Selection Report", body));
+}
+
+export function openFlaggedArticleReport(fa: FlaggedArticle): void {
+  const rows = [
+    fieldRow("Article Title", esc(fa.articleTitle)),
+    fieldRow("Category", esc(fa.category ?? "—")),
+    fieldRow("Source", esc(fa.source)),
+    fieldRow("Date Flagged", esc(formatDisplayDate(fa.flagDate))),
+    fieldRow("Flagged By", esc(fa.personName)),
+  ].join("");
+
+  const body = sectionBlock("About Flagged Article", rows);
+  openBlob(wrapPage("Flagged Article Report", body));
 }
 
 // ── Feedback reports ───────────────────────────────────────────────────────

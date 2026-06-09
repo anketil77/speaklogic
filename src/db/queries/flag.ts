@@ -9,8 +9,8 @@ export function saveFlag(flag: Omit<FlagEntityForAnalysis, "id">): number {
     `INSERT INTO FlagEntityForAnalysis (
       actualSelection, selectionType, source,
       applicationName, communicationFunction, communicationSignal, projectName,
-      flagDate, flagTime, personName, personEmail, wasEntityAnalyzed
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      flagDate, flagTime, personName, personEmail, wasEntityAnalyzed, articleId
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       flag.actualSelection,
       flag.selectionType,
@@ -24,6 +24,7 @@ export function saveFlag(flag: Omit<FlagEntityForAnalysis, "id">): number {
       flag.personName,
       flag.personEmail,
       flag.wasEntityAnalyzed ?? "No",
+      flag.articleId ?? null,
     ]
   );
 
@@ -68,8 +69,9 @@ export function getAllFlaggedSelections(): FlagEntityForAnalysis[] {
   const result = db.exec(
     `SELECT id, actualSelection, selectionType, source, applicationName,
             communicationFunction, communicationSignal, projectName,
-            flagDate, flagTime, personName, personEmail, wasEntityAnalyzed
+            flagDate, flagTime, personName, personEmail, wasEntityAnalyzed, articleId
      FROM FlagEntityForAnalysis
+     WHERE articleId IS NULL
      ORDER BY flagDate DESC, flagTime DESC`
   );
   if (!result.length || !result[0].values.length) return [];
@@ -109,5 +111,31 @@ export function getAllSelectionHistories(): import("@/types/db").FlaggedEntityHi
 export function deleteSelectionHistory(id: number): void {
   const db = getDb();
   db.run(`DELETE FROM FlaggedEntityHistory WHERE id = ?`, [id]);
+  persistDb();
+}
+
+export function getAllFlaggedArticles(): import("@/types/db").FlaggedArticle[] {
+  const db = getDb();
+  const result = db.exec(
+    `SELECT f.id, f.articleId, f.flagDate, f.flagTime, f.personName, f.personEmail,
+            f.source, f.applicationName, f.wasEntityAnalyzed,
+            a.articleTitle, a.category
+     FROM FlagEntityForAnalysis f
+     LEFT JOIN Article a ON f.articleId = a.id
+     WHERE f.articleId IS NOT NULL
+     ORDER BY f.flagDate DESC, f.flagTime DESC`
+  );
+  if (!result.length || !result[0].values.length) return [];
+  const cols = result[0].columns;
+  return result[0].values.map((row) => {
+    const obj: Record<string, unknown> = {};
+    cols.forEach((c, i) => { obj[c] = row[i]; });
+    return obj as unknown as import("@/types/db").FlaggedArticle;
+  });
+}
+
+export function deleteFlaggedArticle(id: number): void {
+  const db = getDb();
+  db.run(`DELETE FROM FlagEntityForAnalysis WHERE id = ? AND articleId IS NOT NULL`, [id]);
   persistDb();
 }

@@ -94,3 +94,12 @@ export function GuidelineReferenceIcon() {
     </svg>
   );
 }
+
+export function TrashCanIcon({ color = "#616161" }: { color?: string } = {}) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2 3.5h10M5 3.5V2.5a.5.5 0 01.5-.5h3a.5.5 0 01.5.5v1M5.5 6v4.5M8.5 6v4.5M3 3.5l.75 8a.5.5 0 00.5.5h5.5a.5.5 0 00.5-.5L11 3.5"
+        stroke={color} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
