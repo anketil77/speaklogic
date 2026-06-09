@@ -82,7 +82,11 @@ export interface WizardData {
   isSolvedProblem:              boolean;
   additionalInformation:        string;
   productURL:                   string;
+  providerPhone:                string;
+  providerEmail:                string;
   reviewerName:                 string;
+  reviewerPhone:                string;
+  reviewerEmail:                string;
 }
 
 export const INITIAL_WIZARD_DATA: WizardData = {
@@ -117,7 +121,11 @@ export const INITIAL_WIZARD_DATA: WizardData = {
   isSolvedProblem:              false,
   additionalInformation:        "",
   productURL:                   "",
+  providerPhone:                "",
+  providerEmail:                "",
   reviewerName:                 "",
+  reviewerPhone:                "",
+  reviewerEmail:                "",
 };
 
 // ─── Shared step-component prop type ────────────────────────────────────────

@@ -212,7 +212,11 @@ CREATE TABLE IF NOT EXISTS Article (
   isSolvedProblem INTEGER DEFAULT 0,
   additionalInformation TEXT DEFAULT '',
   productURL TEXT DEFAULT '',
+  providerPhone TEXT DEFAULT '',
+  providerEmail TEXT DEFAULT '',
   reviewerName TEXT DEFAULT '',
+  reviewerPhone TEXT DEFAULT '',
+  reviewerEmail TEXT DEFAULT '',
   isPublished INTEGER DEFAULT 0,
   publishedTo TEXT DEFAULT ''
 );

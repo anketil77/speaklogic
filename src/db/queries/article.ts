@@ -133,8 +133,8 @@ export function saveArticleWizard(
       funcExecuteFromEvent, preEventObservation, postEventObservation,
       isProviderUseGivenSetOfInfo1, productName, modelNumber, productType,
       productFunction, problemSolved, functionExecutedDuringReview, isSolvedProblem,
-      additionalInformation, productURL, reviewerName
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      additionalInformation, productURL, providerPhone, providerEmail, reviewerName, reviewerPhone, reviewerEmail
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       payload.articleTitle,
       "",
@@ -176,7 +176,11 @@ export function saveArticleWizard(
       payload.isSolvedProblem,
       payload.additionalInformation,
       payload.productURL,
+      payload.providerPhone,
+      payload.providerEmail,
       payload.reviewerName,
+      payload.reviewerPhone,
+      payload.reviewerEmail,
     ]
   );
 

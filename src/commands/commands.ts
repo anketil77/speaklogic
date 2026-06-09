@@ -1121,6 +1121,48 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           const navMsg: HostMessage = { type: "NAVIGATE", view: "provide-feedback", payload: providePayload };
           dialog.messageChild(JSON.stringify(navMsg));
         }
+        if (m.action === "DELETE_ANALYSIS") {
+          try { deleteAnalysis((m as { action: string; id: number }).id); }
+          catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+        }
+        if (m.action === "SAVE_FEEDBACK") {
+          const fbPayload = m.payload as SaveFeedbackPayload;
+          try {
+            saveFeedback(fbPayload);
+          } catch (err) {
+            replyError(dialog, `Failed to save feedback: ${String(err)}`);
+            return;
+          }
+          if (fbPayload.feedback.feedbackType === "Provided" && fbPayload.feedback.toPerson) {
+            upsertPersonWithEmail(fbPayload.feedback.toPerson, fbPayload.toPersonEmail ?? "");
+          }
+          if (fbPayload.feedback.feedbackType === "Provided" || fbPayload.feedback.feedbackType === "Applied") {
+            const f = fbPayload.feedback;
+            try {
+              saveFeedbackHistory({
+                selectionAction: f.feedbackType === "Applied" ? "Applied as Feedback" : "Provided as Feedback",
+                entityName: plainText(f.actualSelection) || plainText(f.feedbackApplication),
+                actualSelection: f.feedbackApplication,
+                selectionType: f.selectionType,
+                source: f.source,
+                applicationName: f.applicationName,
+                communicationFunction: f.communicationFunction,
+                communicationSignal: f.communicationSignal,
+                projectName: f.projectName,
+                personName: f.personName,
+                personEmail: f.personEmail,
+              });
+            } catch (err) { dbg("HOST", "saveFeedbackHistory (feedback audit) failed — non-critical", String(err)); }
+          }
+          if (fbPayload.feedback.feedbackType === "Provided") {
+            const mailtoUrl = buildMailtoUrl(fbPayload);
+            const opened = mailtoUrl ? openMailtoUrl(mailtoUrl) : false;
+            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: opened ? "" : mailtoUrl } as HostMessage));
+          } else {
+            try { dialog.close(); } catch { }
+            complete();
+          }
+        }
       });
     }
   );

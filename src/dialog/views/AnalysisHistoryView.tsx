@@ -32,13 +32,13 @@ const MSG_EDIT = {
   title: "Edit Analysis Message",
   text: "By viewing the selected analysis, I can determine if it is possible to edit it. Simply choose view analysis to determine if the selected analysis can be edited.",
 };
-const MSG_APPLY = {
+const MSG_APPLY_BLOCKED = {
   title: "Apply Analysis as Feedback",
-  text: "In order to apply an analysis as feedback, that analysis itself must be identified. It may not be possible to apply an analysis as feedback if that analysis cannot be identified. By viewing the selected analysis, I can determine whether or not I can apply it as feedback.",
+  text: "An analysis that is not retained cannot be applied later as a feedback. It is not possible or practical to apply an analysis that is not retained as feedback. Here in order to apply this analysis as feedback, I will need to flag that analysis as communication, perform another analysis on that communication and use that analysis as feedback.",
 };
-const MSG_PROVIDE = {
-  title: "Provide Feedback with Analysis",
-  text: "If we can identify an analysis, then we can determine if we can provide feedback with that analysis. By viewing the selected analysis, I can determine if I can use it to provide feedback to someone.",
+const MSG_PROVIDE_BLOCKED = {
+  title: "Apply Analysis as Feedback",
+  text: "An analysis that is not retained cannot be provided later as a feedback. It is not possible or practical to provided feedback with an analysis that is not retained. Here in order to provided this analysis as feedback as feedback, I will need to flag it as communication, perform another analysis on that communication and provide that analysis as feedback.",
 };
 const MSG_FLAG = {
   title: "Flag Analysis as Communication",
@@ -128,6 +128,27 @@ export default function AnalysisHistoryView() {
     if (selectedIndex === null) return;
     openAnalysisReport(displayRows[selectedIndex]);
   }, [selectedIndex, displayRows]);
+
+  const handleApply = useCallback(() => {
+    if (selectedIndex === null) return;
+    const analysis = displayRows[selectedIndex];
+    const wt = analysis.whatToDoWithAnalysis;
+    if (wt === "RetainAnalysisAsNeed" || wt === "ProvideFeedbackWithAnalysis") {
+      sendMessage({ action: "NAVIGATE_TO_APPLY", analysisId: analysis.id as number });
+    } else {
+      setInfoMsg(MSG_APPLY_BLOCKED);
+    }
+  }, [selectedIndex, displayRows, sendMessage]);
+
+  const handleProvide = useCallback(() => {
+    if (selectedIndex === null) return;
+    const analysis = displayRows[selectedIndex];
+    if (analysis.whatToDoWithAnalysis === "RetainAnalysisAsNeed") {
+      sendMessage({ action: "NAVIGATE_TO_PROVIDE", analysisId: analysis.id as number });
+    } else {
+      setInfoMsg(MSG_PROVIDE_BLOCKED);
+    }
+  }, [selectedIndex, displayRows, sendMessage]);
 
   const hasSelection = selectedIndex !== null;
   const activeFilterLabel = FILTER_OPTIONS.find((f) => f.value === filterSource)?.label ?? null;
@@ -327,7 +348,7 @@ export default function AnalysisHistoryView() {
         <button
           title="Apply Analysis as Feedback"
           disabled={!hasSelection}
-          onClick={() => hasSelection && setInfoMsg(MSG_APPLY)}
+          onClick={() => hasSelection && handleApply()}
           className="sl-icon-btn"
           style={{
             width: 28,
@@ -350,7 +371,7 @@ export default function AnalysisHistoryView() {
         <button
           title="Provide Feedback With Analysis"
           disabled={!hasSelection}
-          onClick={() => hasSelection && setInfoMsg(MSG_PROVIDE)}
+          onClick={() => hasSelection && handleProvide()}
           className="sl-icon-btn"
           style={{
             width: 28,
@@ -508,7 +529,7 @@ export default function AnalysisHistoryView() {
         <DismissBtn label="Close" onClick={closeDialog} />
         <button
           disabled={!hasSelection}
-          onClick={() => hasSelection && setInfoMsg(MSG_APPLY)}
+          onClick={() => hasSelection && handleApply()}
           style={{
             height: 32,
             minWidth: 125,

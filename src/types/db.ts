@@ -296,7 +296,11 @@ export interface SaveArticleWizardPayload {
   isSolvedProblem: 0 | 1;
   additionalInformation: string;
   productURL: string;
+  providerPhone: string;
+  providerEmail: string;
   reviewerName: string;
+  reviewerPhone: string;
+  reviewerEmail: string;
 }
 
 export interface SaveProblemSolutionPayload {

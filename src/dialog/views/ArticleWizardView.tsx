@@ -135,7 +135,11 @@ export default function ArticleWizardView() {
         isSolvedProblem:            data.isSolvedProblem ? 1 : 0,
         additionalInformation:      data.additionalInformation,
         productURL:                 data.productURL,
+        providerPhone:              data.providerPhone,
+        providerEmail:              data.providerEmail,
         reviewerName:               data.reviewerName,
+        reviewerPhone:              data.reviewerPhone,
+        reviewerEmail:              data.reviewerEmail,
       };
       submitSave({ action: "SAVE_ARTICLE_WIZARD", payload });
       setStepIdx(doneIdx);

@@ -21,10 +21,16 @@ export function StepAdditionalInfo({ data, onChange, onNext, onBack, onCancel }:
           />
         </SectionBox>
 
-        <SectionBox title="Provider &amp; Reviewer Details" showHelp>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "2px 0" }}>
-            <LabeledInput label="Provider Name" value={data.providerName} onChange={(v) => onChange({ providerName: v })} placeholder="Enter provider name" />
-            <LabeledInput label="Reviewer Name" value={data.reviewerName} onChange={(v) => onChange({ reviewerName: v })} placeholder="Enter reviewer name" />
+        <SectionBox title="Other Informations" showHelp>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+            <span style={{ fontSize: 10.6, fontWeight: 700, color: "#1B1B1B" }}>Provider Information</span>
+            <LabeledInput value={data.providerName}  onChange={(v) => onChange({ providerName: v })}  placeholder="Provider Name" />
+            <LabeledInput value={data.providerPhone} onChange={(v) => onChange({ providerPhone: v })} placeholder="Provider Phone" />
+            <LabeledInput value={data.providerEmail} onChange={(v) => onChange({ providerEmail: v })} placeholder="Provider Email" />
+            <span style={{ fontSize: 10.6, fontWeight: 700, color: "#1B1B1B", marginTop: 4 }}>Reviewer Information</span>
+            <LabeledInput value={data.reviewerName}  onChange={(v) => onChange({ reviewerName: v })}  placeholder="Reviewer Name" />
+            <LabeledInput value={data.reviewerPhone} onChange={(v) => onChange({ reviewerPhone: v })} placeholder="Reviewer Phone" />
+            <LabeledInput value={data.reviewerEmail} onChange={(v) => onChange({ reviewerEmail: v })} placeholder="Reviewer Email" />
           </div>
         </SectionBox>
       </div>
@@ -40,22 +46,21 @@ export function StepAdditionalInfo({ data, onChange, onNext, onBack, onCancel }:
   );
 }
 
-function LabeledInput({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+function LabeledInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <span style={{ fontSize: 10.6, fontWeight: 600, color: "#616161" }}>{label}</span>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={{
-          boxSizing: "border-box", height: 30, padding: "0 8px",
-          border: "1px solid #C7C7C7", borderRadius: 4,
-          fontFamily: "'Inter','Segoe UI',sans-serif", fontSize: 11.1, color: "#1B1B1B", outline: "none",
-        }}
-      />
-    </div>
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="sl-wizard-input"
+      style={{
+        boxSizing: "border-box", width: "100%", height: 30, padding: "7px 9px",
+        border: "1px solid #C7C7C7", borderRadius: 4,
+        fontFamily: "'Inter','Segoe UI',sans-serif", fontSize: 11.1, color: "#1B1B1B",
+        outline: "none", background: "#FFFFFF",
+      }}
+    />
   );
 }
 
