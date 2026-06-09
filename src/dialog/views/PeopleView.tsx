@@ -68,6 +68,29 @@ function CloseXIcon() {
   );
 }
 
+// ── Initials avatar ───────────────────────────────────────────────────────────
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function InitialsAvatar({ name, size = 32 }: { name: string; size?: number }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: colors.grey95, border: `1.5px solid ${colors.purple}`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexShrink: 0, userSelect: "none",
+      fontSize: size <= 28 ? "10px" : "11.5px",
+      fontWeight: "700", color: colors.purple, letterSpacing: "0.3px",
+    }}>
+      {getInitials(name)}
+    </div>
+  );
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FormState = {
   mode: "idle" | "add" | "edit";
@@ -204,8 +227,9 @@ export default function PeopleView() {
           }}>
             <span style={{ fontSize: "10.6px", fontWeight: "700", color: colors.grey38, textTransform: "uppercase", letterSpacing: "0.5px" }}>You</span>
           </div>
-          <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+          <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: "12px" }}>
+            {myName && <InitialsAvatar name={myName} size={34} />}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
               {myName ? (
                 <>
                   <span style={{ fontSize: "12.4px", fontWeight: "700", color: colors.grey11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{myName}</span>
@@ -218,7 +242,7 @@ export default function PeopleView() {
             <button
               onClick={() => sendMessage({ action: "OPEN_COMM_CONFIG" })}
               style={{
-                flexShrink: 0, height: "26px", padding: "0 10px",
+                marginLeft: "auto", flexShrink: 0, height: "26px", padding: "0 10px",
                 border: `1px solid ${colors.grey78}`, borderRadius: "4px",
                 background: colors.white, color: colors.grey38,
                 fontSize: "11px", fontFamily: "inherit", cursor: "pointer",
@@ -341,7 +365,12 @@ export default function PeopleView() {
             <tbody>
               {contacts.map((c, i) => (
                 <tr key={c.id} style={{ background: i % 2 === 0 ? colors.white : "#FAFAFA" }}>
-                  <td style={cellStyle} title={c.personName}>{c.personName}</td>
+                  <td style={{ ...cellStyle, overflow: "hidden" }} title={c.personName}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+                      <InitialsAvatar name={c.personName} size={26} />
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{c.personName}</span>
+                    </span>
+                  </td>
                   <td style={{ ...cellStyle, color: c.emailAddress ? colors.grey11 : colors.grey38 }} title={c.emailAddress}>
                     {c.emailAddress || "—"}
                   </td>
