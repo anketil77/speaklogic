@@ -61,7 +61,7 @@ export interface AnalysisTabFormProps {
   actualAnalysis: string;
   onActualAnalysisChange: (html: string) => void;
   editorRef: React.RefObject<HTMLDivElement>;
-  onContextMenuQuestion?: (selectedText: string) => void;
+  onContextMenuQuestion?: (selectedText: string, range: Range | null) => void;
   onContextMenuCompensator?: (selectedText: string, range: Range | null) => void;
 }
 
@@ -94,13 +94,16 @@ export function AnalysisTabForm({
   const styles = useStyles();
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; text: string } | null>(null);
   const compensatorRangeRef = useRef<Range | null>(null);
+  const questionRangeRef = useRef<Range | null>(null);
 
   function handleEditorContextMenu(e: React.MouseEvent) {
     if (!onContextMenuQuestion && !onContextMenuCompensator) return;
     e.preventDefault();
     const sel = window.getSelection();
     const text = sel?.toString().trim() ?? "";
-    compensatorRangeRef.current = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0).cloneRange() : null;
+    const cloned = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0).cloneRange() : null;
+    compensatorRangeRef.current = cloned;
+    questionRangeRef.current = cloned ? cloned.cloneRange() : null;
     setCtxMenu({ x: e.clientX, y: e.clientY, text });
   }
 
@@ -178,7 +181,7 @@ export function AnalysisTabForm({
                 style={{ ...ctxItemStyle, opacity: ctxMenu.text ? 1 : 0.4, cursor: ctxMenu.text ? "pointer" : "default" }}
                 onMouseEnter={(e) => { if (ctxMenu.text) (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-                onClick={() => { onContextMenuQuestion(ctxMenu.text); setCtxMenu(null); }}
+                onClick={() => { onContextMenuQuestion(ctxMenu.text, questionRangeRef.current); setCtxMenu(null); }}
               >
                 Identify Selection as Analysis Question
               </button>

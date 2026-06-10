@@ -359,19 +359,35 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
   }, []);
 
   const analysisCompensatorRangeRef = useRef<Range | null>(null);
+  const analysisQuestionRangeRef = useRef<Range | null>(null);
 
-  const applyAnalysisHighlight = useCallback(() => {
-    const range = analysisCompensatorRangeRef.current;
+  function insertHighlightSpan(rangeRef: React.MutableRefObject<Range | null>, bg: string, fg: string) {
+    const range = rangeRef.current;
     const editor = editorRef.current;
     if (!range || !editor) return;
     const span = document.createElement("span");
-    span.style.backgroundColor = "#00C800";
-    span.style.color = "#fff";
+    span.style.backgroundColor = bg;
+    span.style.color = fg;
     const fragment = range.extractContents();
     span.appendChild(fragment);
     range.insertNode(span);
+    // Zero-width space after the span so the browser caret lands outside it on next focus
+    const zwsp = document.createTextNode("​");
+    if (span.nextSibling) {
+      span.parentNode?.insertBefore(zwsp, span.nextSibling);
+    } else {
+      span.parentNode?.appendChild(zwsp);
+    }
     updateForm("actualAnalysis", editor.innerHTML);
-    analysisCompensatorRangeRef.current = null;
+    rangeRef.current = null;
+  }
+
+  const applyAnalysisHighlight = useCallback(() => {
+    insertHighlightSpan(analysisCompensatorRangeRef, "#00C800", "#fff");
+  }, []);
+
+  const applyQuestionHighlight = useCallback(() => {
+    insertHighlightSpan(analysisQuestionRangeRef, "#FFFF00", "#000");
   }, []);
 
   useEffect(() => {
@@ -648,7 +664,8 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
               actualAnalysis={form.actualAnalysis}
               onActualAnalysisChange={(v) => updateForm("actualAnalysis", v)}
               editorRef={editorRef}
-              onContextMenuQuestion={(text) => {
+              onContextMenuQuestion={(text, range) => {
+                analysisQuestionRangeRef.current = range;
                 panels.setAddQuestionInitial(text || null);
                 panels.setShowAddQuestion(true);
               }}
@@ -738,6 +755,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         sendMessage={submitSave}
         onAddError={(text) => applyEuaHighlight(text, "#FF0000")}
         onAddCompensator={() => applyAnalysisHighlight()}
+        onAddQuestion={() => applyQuestionHighlight()}
       />
 
       {retainSaved && (

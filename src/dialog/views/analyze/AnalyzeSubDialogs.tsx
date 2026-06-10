@@ -20,9 +20,10 @@ interface AnalyzeSubDialogsProps {
   sendMessage: (msg: { action: string; payload?: unknown }) => void;
   onAddError?: (text: string) => void;
   onAddCompensator?: (text: string) => void;
+  onAddQuestion?: () => void;
 }
 
-export function AnalyzeSubDialogs({ panels, applicationName, sendMessage, onAddError, onAddCompensator }: AnalyzeSubDialogsProps) {
+export function AnalyzeSubDialogs({ panels, applicationName, sendMessage, onAddError, onAddCompensator, onAddQuestion }: AnalyzeSubDialogsProps) {
   const {
     showAddQuestion, setShowAddQuestion, addQuestionInitial, setAddQuestionInitial,
     questions, addQuestion, viewQuestion, setViewQuestion,
@@ -45,7 +46,7 @@ export function AnalyzeSubDialogs({ panels, applicationName, sendMessage, onAddE
       {showAddQuestion && (
         <AnalysisQuestionDialog
           itemCount={questions.length}
-          onAdd={addQuestion}
+          onAdd={(q) => { addQuestion(q); onAddQuestion?.(); }}
           onClose={() => { setShowAddQuestion(false); setAddQuestionInitial(null); }}
           initialQuestion={addQuestionInitial ?? undefined}
         />
