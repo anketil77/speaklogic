@@ -95,9 +95,21 @@ export function sanitizeWordHtml(html: string): string {
     for (const child of Array.from(el.children)) fix(child as HTMLElement);
   };
   fix(body);
-  // Zero the first paragraph's default browser margin-top (1em) — Word Online doesn't set it inline.
-  const firstP = body.querySelector("p") as HTMLElement | null;
-  if (firstP) firstP.style.marginTop = "0";
+  // Remove leading empty block elements (e.g. empty <p> before actual content in Word's getHtml()).
+  const stripLeadingEmpty = (parent: Element) => {
+    while (parent.firstElementChild) {
+      const first = parent.firstElementChild as HTMLElement;
+      if ((first.textContent?.trim() ?? "") || first.querySelector("img, table")) break;
+      first.remove();
+    }
+  };
+  stripLeadingEmpty(body);
+  // Word Desktop wraps content in <div class=WordSection1> — strip empty from there too.
+  const firstWrapper = body.firstElementChild as HTMLElement | null;
+  if (firstWrapper?.tagName === "DIV") stripLeadingEmpty(firstWrapper);
+  // Zero the first visible block element's top margin and padding.
+  const firstBlock = body.querySelector("p, h1, h2, h3, h4, h5, h6") as HTMLElement | null;
+  if (firstBlock) { firstBlock.style.marginTop = "0"; firstBlock.style.paddingTop = "0"; }
   // Strip dangerous content: <script> tags, javascript: hrefs, and inline event handlers.
   body.querySelectorAll("script").forEach((s) => s.remove());
   body.querySelectorAll("[href]").forEach((el) => {
@@ -109,5 +121,5 @@ export function sanitizeWordHtml(html: string): string {
       if (/^on/i.test(attr.name)) el.removeAttribute(attr.name);
     });
   });
-  return body.innerHTML;
+  return body.innerHTML.trim();
 }
