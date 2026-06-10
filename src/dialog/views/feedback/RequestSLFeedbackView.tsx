@@ -203,15 +203,8 @@ const btnStyle = (variant: "cancel" | "apply"): React.CSSProperties => ({
     : { padding: "0 20px", background: colors.azure42, border: "none", color: colors.white, fontWeight: "700" }),
 });
 
-const SIGNAL_OPTIONS = [
-  "Request",
-  "Instruction",
-  "Question",
-  "Statement",
-  "Response",
-  "Notification",
-  "Acknowledgement",
-];
+const SIGNAL_OPTIONS = ["Red", "Blue", "Green"];
+const SIGNAL_DOT_COLOR: Record<string, string> = { Red: "#D13438", Blue: "#0078D4", Green: "#107C10" };
 
 export default function RequestSLFeedbackView() {
   const styles = useStyles();
@@ -431,6 +424,7 @@ export default function RequestSLFeedbackView() {
             {/* Communication Signal */}
             <div style={rowStyle}>
               <span style={labelStyle}>Communication Signal</span>
+              <span style={{ width: 10, height: 10, borderRadius: "50%", flexShrink: 0, marginRight: 6, background: SIGNAL_DOT_COLOR[form.communicationSignalType] ?? "transparent", border: "1px solid #C7C7C7", display: "inline-block" }} />
               <select
                 style={selectStyle}
                 value={form.communicationSignalType}
