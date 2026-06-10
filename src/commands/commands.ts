@@ -532,7 +532,9 @@ function buildMailtoUrl(payload: SaveFeedbackPayload): string {
   const email = payload.toPersonEmail ?? "";
   if (!email) return "";
   const subject = encodeURIComponent(payload.feedback.feedbackSubject);
-  const bodyText = payload.feedback.feedbackApplication.replace(/<[^>]*>/g, "").slice(0, 1800);
+  const tmp = document.createElement("div");
+  tmp.innerHTML = payload.feedback.feedbackApplication;
+  const bodyText = (tmp.textContent || tmp.innerText || "").slice(0, 1800);
   const body = encodeURIComponent(bodyText);
   return `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
 }

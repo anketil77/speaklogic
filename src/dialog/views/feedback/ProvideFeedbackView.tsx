@@ -365,6 +365,8 @@ export default function ProvideFeedbackView() {
           {mailtoUrl && (
             <a
               href={mailtoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               style={{ fontSize: "13px", color: colors.azure42, textDecoration: "underline", cursor: "pointer" }}
             >
               Open email draft in Outlook
