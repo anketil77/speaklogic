@@ -86,6 +86,53 @@ function plainText(html: string | undefined | null): string {
   return html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
 }
 
+// Compose mode: item.subject is an object (getAsync/setAsync); read mode: a plain string.
+function isComposeMode(): boolean {
+  const subject = (Office.context.mailbox.item as { subject?: unknown }).subject;
+  return subject !== null && typeof subject === "object";
+}
+
+// ── Comm Context email marker (visible block, parsed by recipient's sidebar) ──
+// Encode order matters: & first on encode, last on decode.
+function encodeCtxValue(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\|/g, "&#124;");
+}
+function decodeCtxValue(v: string): string {
+  return v.replace(/&#124;/g, "|").replace(/&lt;/g, "<").replace(/&amp;/g, "&");
+}
+
+type CommCtxValues = { appName: string; commFunction: string; commSignal: string; projectName: string };
+
+// No nested <div> inside — the strip/parse regexes stop at the first </div>.
+// 2×2 table layout (tables render reliably across all email clients).
+function buildCtxMarker(ctx: CommCtxValues): string {
+  const signalColor = ctx.commSignal === "Red" ? "#D13438" : ctx.commSignal === "Blue" ? "#0078D4" : ctx.commSignal === "Green" ? "#107C10" : "#1B1B1B";
+  const labelStyle = `font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#1B1B1B;padding:6px 20px 1px 0`;
+  const valueStyle = `font-size:12px;color:#424242;padding:0 20px 4px 0`;
+  return (
+    `<div id="sl-comm-ctx" style="margin-top:16px;padding:8px 14px 10px;border:1px solid #DDDDDD;border-radius:4px;background:#F7F7F7;font-family:'Segoe UI',Arial,sans-serif">` +
+    `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:'Segoe UI',Arial,sans-serif">` +
+    `<tr><td style="${labelStyle}">App Name</td><td style="${labelStyle}">Project Name</td></tr>` +
+    `<tr><td style="${valueStyle}">${encodeCtxValue(ctx.appName) || "-"}</td><td style="${valueStyle}">${encodeCtxValue(ctx.projectName) || "-"}</td></tr>` +
+    `<tr><td style="${labelStyle}">Comm. Function</td><td style="${labelStyle}">Comm. Signal</td></tr>` +
+    `<tr><td style="${valueStyle}">${encodeCtxValue(ctx.commFunction) || "-"}</td><td style="${valueStyle.replace("#424242", signalColor)};font-weight:600">${encodeCtxValue(ctx.commSignal) || "-"}</td></tr>` +
+    `</table>` +
+    `<span id="sl-comm-ctx-data" style="display:none;mso-hide:all;font-size:1px;max-height:0;overflow:hidden">${encodeCtxValue(ctx.appName)}|${encodeCtxValue(ctx.commFunction)}|${encodeCtxValue(ctx.commSignal)}|${encodeCtxValue(ctx.projectName)}</span>` +
+    `</div>`
+  );
+}
+
+const CTX_MARKER_STRIP_RE = /<div[^>]*id=["']?sl-comm-ctx["']?[^>]*>[\s\S]*?<\/div>/gi;
+const CTX_MARKER_DATA_RE = /<span[^>]*id=["']?sl-comm-ctx-data["']?[^>]*>([\s\S]*?)<\/span>/i;
+
+function parseCtxMarker(bodyHtml: string): CommCtxValues | null {
+  const match = bodyHtml.match(CTX_MARKER_DATA_RE);
+  if (!match) return null;
+  const parts = match[1].split("|").map(decodeCtxValue);
+  if (parts.length !== 4) return null;
+  return { appName: parts[0] ?? "", commFunction: parts[1] ?? "", commSignal: parts[2] ?? "", projectName: parts[3] ?? "" };
+}
+
 function getUserIdentity(): { personName: string; personEmail: string } {
   try {
     const p = Office.context.mailbox.userProfile;
@@ -234,6 +281,9 @@ export function OutlookTaskPane() {
   const [status, setStatus] = useState<{ msg: string; ok: boolean } | null>(null);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
   const dialogRef = useRef<Office.Dialog | null>(null);
+  const commCtxRef = useRef({ appName: "", commFunction: "", commSignal: "", projectName: "" });
+  const [commCtx, setCommCtx] = useState(commCtxRef.current);
+  const [commCtxOpen, setCommCtxOpen] = useState(true);
 
   useEffect(() => {
     // ── TEMP DIAGNOSTIC: why is userProfile empty on M365? Remove once root cause found. ──
@@ -260,6 +310,42 @@ export function OutlookTaskPane() {
     initDb()
       .then(() => setDbReady(true))
       .catch(() => setStatus({ msg: "Failed to initialize database.", ok: false }));
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (Office.context.mailbox.item as any).loadCustomPropertiesAsync((result: Office.AsyncResult<Office.CustomProperties>) => {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          const props = result.value;
+          const saved = {
+            appName: props.get("sl_appName") ?? "",
+            commFunction: props.get("sl_commFunction") ?? "",
+            commSignal: props.get("sl_commSignal") ?? "",
+            projectName: props.get("sl_projectName") ?? "",
+          };
+          commCtxRef.current = saved;
+          setCommCtx(saved);
+
+          // Fallback: no saved props — look for a Speak Logic Context block in the
+          // email body (injected by the sender's "Attach context" button).
+          const hasAnyValue = saved.appName || saved.commFunction || saved.commSignal || saved.projectName;
+          if (!hasAnyValue) {
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (Office.context.mailbox.item as any).body.getAsync(
+                Office.CoercionType.Html,
+                (bodyResult: Office.AsyncResult<string>) => {
+                  if (bodyResult.status !== Office.AsyncResultStatus.Succeeded) return;
+                  const fromBody = parseCtxMarker(bodyResult.value);
+                  if (fromBody) {
+                    commCtxRef.current = fromBody;
+                    setCommCtx(fromBody);
+                  }
+                }
+              );
+            } catch { /* non-critical */ }
+          }
+        }
+      });
+    } catch { /* non-critical */ }
   }, []);
 
   // ── core dialog helper ────────────────────────────────────────────────────
@@ -305,6 +391,54 @@ export function OutlookTaskPane() {
 
   // ── action handlers ───────────────────────────────────────────────────────
 
+  const saveCommCtxToProps = useCallback((ctx: { appName: string; commFunction: string; commSignal: string; projectName: string }) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (Office.context.mailbox.item as any).loadCustomPropertiesAsync((result: Office.AsyncResult<Office.CustomProperties>) => {
+        if (result.status !== Office.AsyncResultStatus.Succeeded) return;
+        const props = result.value;
+        props.set("sl_appName", ctx.appName);
+        props.set("sl_commFunction", ctx.commFunction);
+        props.set("sl_commSignal", ctx.commSignal);
+        props.set("sl_projectName", ctx.projectName);
+        props.saveAsync(() => {});
+      });
+    } catch { /* non-critical */ }
+  }, []);
+
+  const updateCommCtx = useCallback((field: "appName" | "commFunction" | "commSignal" | "projectName", value: string) => {
+    const newCtx = { ...commCtxRef.current, [field]: value };
+    commCtxRef.current = newCtx;
+    setCommCtx(newCtx);
+    saveCommCtxToProps(newCtx);
+  }, [saveCommCtxToProps]);
+
+  // Inject a visible "Speak Logic Context" block at the end of the email body.
+  // Recipients see it in any client; their sidebar parses it to auto-fill the panel.
+  const handleAttachCtx = useCallback(() => {
+    const ctx = commCtxRef.current;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const item = Office.context.mailbox.item as any;
+    if (!item?.body) return;
+
+    item.body.getAsync(Office.CoercionType.Html, (result: Office.AsyncResult<string>) => {
+      if (result.status !== Office.AsyncResultStatus.Succeeded) {
+        setStatus({ msg: "Failed to read email body.", ok: false });
+        return;
+      }
+      const html = result.value.replace(CTX_MARKER_STRIP_RE, "");
+      item.body.setAsync(html + buildCtxMarker(ctx), { coercionType: Office.CoercionType.Html },
+        (setResult: Office.AsyncResult<void>) => {
+          if (setResult.status === Office.AsyncResultStatus.Succeeded) {
+            setStatus({ msg: "Context attached to email.", ok: true });
+            setTimeout(() => setStatus(null), 2500);
+          } else {
+            setStatus({ msg: "Failed to attach context.", ok: false });
+          }
+        });
+    });
+  }, []);
+
   const handleAnalyze = useCallback(async (mode: SelectionMode) => {
     if (!dbReady) return;
     let text = "";
@@ -315,7 +449,7 @@ export function OutlookTaskPane() {
     const subject = await readSubject();
     const initPayload: DialogInitPayload = {
       selection: text, mode, source: getSource(), personName, personEmail,
-      applicationName: subject, communicationFunction: "", communicationSignal: "", projectName: "",
+      applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName,
       peopleList: buildPeopleList(commConfig?.personName),
       communicationPersonName: commConfig?.personName ?? "",
       communicationPersonEmail: commConfig?.personEmail ?? "",
@@ -381,7 +515,7 @@ export function OutlookTaskPane() {
     const subject = await readSubject();
     const initPayload: DialogInitPayload = {
       selection: text, mode, source: getSource(), personName, personEmail,
-      applicationName: subject, communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [],
+      applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [],
       communicationPersonName: commConfig?.personName ?? "",
       communicationPersonEmail: commConfig?.personEmail ?? "",
     };
@@ -403,7 +537,7 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=selection-config`,
       SELECTION_CONFIG_DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [] }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [] }),
       () => { /* handled inside the dialog */ }
     );
   }, [openManagedDialog]);
@@ -418,7 +552,7 @@ export function OutlookTaskPane() {
     const subject = await readSubject();
     const analyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
     const feedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
-    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: subject, communicationFunction: "", communicationSignal: "", projectName: subject, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "", analyses, feedbacks };
+    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName || subject, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "", analyses, feedbacks };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=apply`,
       DIALOG_SIZE,
@@ -441,7 +575,7 @@ export function OutlookTaskPane() {
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
-    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: subject, communicationFunction: "", communicationSignal: "", projectName: subject, peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
+    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName || subject, peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=provide-feedback`,
       DIALOG_SIZE,
@@ -466,7 +600,7 @@ export function OutlookTaskPane() {
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
-    const initPayload: DialogInitPayload = { selection: text, mode: "paragraph", source: getSource(), personName, personEmail, applicationName: subject, communicationFunction: "", communicationSignal: "", projectName: "", peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
+    const initPayload: DialogInitPayload = { selection: text, mode: "paragraph", source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=request-feedback`,
       DIALOG_SIZE,
@@ -498,7 +632,7 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=flagged-history`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], flaggedEntities, principleInterpretations, filesByInterpretationId }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], flaggedEntities, principleInterpretations, filesByInterpretationId }),
       (dialog, action) => {
         if (action.action === "DELETE_FLAG") {
           try { deleteFlag((action as { action: string; id: number }).id); }
@@ -539,7 +673,7 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=analysis-history`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], analyses }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], analyses }),
       (dialog, action) => {
         if (action.action === "DELETE_ANALYSIS") {
           try { deleteAnalysis((action as { action: string; id: number }).id); }
@@ -581,7 +715,7 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=feedback-history`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], feedbacks: buildFeedbacks() }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], feedbacks: buildFeedbacks() }),
       (dialog, action) => {
         if (action.action === "DELETE_FEEDBACK") {
           try { deleteFeedback((action as { action: string; id: number }).id); }
@@ -589,11 +723,11 @@ export function OutlookTaskPane() {
         }
         if (action.action === "LIST_FEEDBACK_REQUESTED") {
           const { personName: pn, personEmail: pe } = getUserIdentity();
-          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "list-feedback-requested", payload: { selection: "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], commSignalRequests: getCommSignalRequests() } } as HostMessage));
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "list-feedback-requested", payload: { selection: "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], commSignalRequests: getCommSignalRequests() } } as HostMessage));
         }
         if (action.action === "BACK_TO_FEEDBACK_HISTORY") {
           const { personName: pn, personEmail: pe } = getUserIdentity();
-          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "feedback-history", payload: { selection: "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], feedbacks: buildFeedbacks() } } as HostMessage));
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "feedback-history", payload: { selection: "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], feedbacks: buildFeedbacks() } } as HostMessage));
         }
         if (action.action === "DELETE_COMM_SIGNAL_REQUEST") {
           try { deleteCommSignalRequest((action as { action: string; id: number }).id); }
@@ -610,7 +744,7 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=retained-history`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], analyses }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], analyses }),
       (_dialog, action) => {
         if (action.action === "DELETE_ANALYSIS") {
           try { deleteAnalysis((action as { action: string; id: number }).id); }
@@ -626,7 +760,7 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=selection-history`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], selectionHistories: getAllSelectionHistories() }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], selectionHistories: getAllSelectionHistories() }),
       (_dialog, action) => {
         if (action.action === "DELETE_SELECTION_HISTORY") {
           try { deleteSelectionHistory((action as { action: string; id: number }).id); }
@@ -648,7 +782,7 @@ export function OutlookTaskPane() {
           if (p.id !== undefined) filesByPrincipleInSelectionId[p.id] = getFilesByPrincipleInSelection(p.id);
         }
         const { personName, personEmail } = getUserIdentity();
-        return { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], principlesInSelection, filesByPrincipleInSelectionId };
+        return { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], principlesInSelection, filesByPrincipleInSelectionId };
       },
       (dialog, action) => {
         if (action.action === "DELETE_PRINCIPLE") {
@@ -660,7 +794,7 @@ export function OutlookTaskPane() {
             if (p.id !== undefined) filesByPrincipleInSelectionId[p.id] = getFilesByPrincipleInSelection(p.id);
           }
           const { personName, personEmail } = getUserIdentity();
-          dialog.messageChild(JSON.stringify({ type: "INIT", payload: { selection: "", mode: "selection", source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], principlesInSelection, filesByPrincipleInSelectionId } }));
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: { selection: "", mode: "selection", source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], principlesInSelection, filesByPrincipleInSelectionId } }));
         } else if (action.action === "REPORT_IDENTIFIED_PRINCIPLE") {
           const { principle } = action as { action: string; principle: import("@/types/db").PrincipleInSelection };
           openIdentifiedPrincipleReport(principle);
@@ -681,7 +815,7 @@ export function OutlookTaskPane() {
           if (pi.id !== undefined) filesByInterpretationId[pi.id] = getFilesByPrincipleInterpretation(pi.id);
         }
         const { personName, personEmail } = getUserIdentity();
-        return { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], principleInterpretations, filesByInterpretationId };
+        return { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], principleInterpretations, filesByInterpretationId };
       },
       (dialog, action) => {
         if (action.action === "DELETE_INTERPRETED_PRINCIPLE") {
@@ -693,7 +827,7 @@ export function OutlookTaskPane() {
             if (pi.id !== undefined) filesByInterpretationId[pi.id] = getFilesByPrincipleInterpretation(pi.id);
           }
           const { personName, personEmail } = getUserIdentity();
-          dialog.messageChild(JSON.stringify({ type: "INIT", payload: { selection: "", mode: "selection", source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], principleInterpretations, filesByInterpretationId } }));
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: { selection: "", mode: "selection", source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], principleInterpretations, filesByInterpretationId } }));
         } else if (action.action === "REPORT_INTERPRETED_PRINCIPLE") {
           const { interpretation } = action as { action: string; interpretation: import("@/types/db").PrincipleInterpretation };
           openInterpretedPrincipleReport(interpretation);
@@ -714,7 +848,7 @@ export function OutlookTaskPane() {
           if (s.id !== undefined) filesBySelectionWithPrincipleId[s.id] = getFilesBySelectionWithPrinciple(s.id);
         }
         const { personName, personEmail } = getUserIdentity();
-        return { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], selectionsWithPrinciple, filesBySelectionWithPrincipleId };
+        return { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], selectionsWithPrinciple, filesBySelectionWithPrincipleId };
       },
       (dialog, action) => {
         if (action.action === "DELETE_RELATED_SELECTION") {
@@ -726,7 +860,7 @@ export function OutlookTaskPane() {
             if (s.id !== undefined) filesBySelectionWithPrincipleId[s.id] = getFilesBySelectionWithPrinciple(s.id);
           }
           const { personName, personEmail } = getUserIdentity();
-          dialog.messageChild(JSON.stringify({ type: "INIT", payload: { selection: "", mode: "selection", source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], selectionsWithPrinciple, filesBySelectionWithPrincipleId } }));
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: { selection: "", mode: "selection", source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], selectionsWithPrinciple, filesBySelectionWithPrincipleId } }));
         } else if (action.action === "REPORT_RELATED_SELECTION") {
           const { relation } = action as { action: string; relation: import("@/types/db").SelectionWithPrinciple };
           openRelatedPrincipleReport(relation);
@@ -741,9 +875,9 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=list-articles`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], articles: getAllArticles(), publishers: getAllPublishers() }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], articles: getAllArticles(), publishers: getAllPublishers() }),
       (dlg, action) => {
-        const rebuildPayload = () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], articles: getAllArticles(), publishers: getAllPublishers() });
+        const rebuildPayload = () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], articles: getAllArticles(), publishers: getAllPublishers() });
         if (action.action === "DELETE_ARTICLE") {
           try { deleteArticle((action as { action: string; id: number }).id); }
           catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
@@ -769,7 +903,7 @@ export function OutlookTaskPane() {
           const ea = action as { action: string; id: number };
           const article = getArticleById(ea.id);
           if (!article) { setStatus({ msg: "Article not found.", ok: false }); return; }
-          const editPayload: DialogInitPayload = { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], editArticleData: article };
+          const editPayload: DialogInitPayload = { selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], editArticleData: article };
           dlg.messageChild(JSON.stringify({ type: "NAVIGATE", view: "create-article", payload: editPayload } as HostMessage));
         } else if (action.action === "SAVE_ARTICLE") {
           const p = action.payload as import("@/types/db").SaveArticlePayload;
@@ -792,7 +926,7 @@ export function OutlookTaskPane() {
 
     const basePayload = (extra?: Partial<DialogInitPayload>): DialogInitPayload => ({
       selection: "", mode: "selection" as const, source: getSource(), personName, personEmail,
-      applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [],
+      applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [],
       ...extra,
     });
 
@@ -927,7 +1061,7 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=communication-config`,
       COMM_CONFIG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [], communicationPersonName: prefillName, communicationPersonEmail: prefillEmail }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], communicationPersonName: prefillName, communicationPersonEmail: prefillEmail }),
       (dialog, action) => {
         if (action.action === "SAVE_COMMUNICATION_CONFIG") {
           try {
@@ -946,7 +1080,7 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=request-sl-feedback`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: buildPeopleList(commConfig?.personName), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: buildPeopleList(commConfig?.personName), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" }),
       (dialog, action) => {
         if (action.action === "SAVE_REQUEST_SL_FEEDBACK") {
           const p = action.payload as SaveRequestSLFeedbackPayload;
@@ -964,7 +1098,7 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=${view}`,
       view === "about" ? ABOUT_DIALOG_SIZE : DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [] }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [] }),
       () => { /* no custom messages */ }
     );
   }, [openManagedDialog]);
@@ -1017,6 +1151,82 @@ export function OutlookTaskPane() {
           <button onClick={() => setStatus(null)} style={{ float: "right", background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
         </div>
       )}
+
+      {/* Communication Context Panel */}
+      <div style={{ borderBottom: "1px solid #E0E0E0", background: "#FFFFFF", flexShrink: 0 }}>
+        <button
+          onClick={() => setCommCtxOpen((o) => !o)}
+          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", background: "none", border: "none", borderBottom: commCtxOpen ? "1px solid #E8E8E8" : "none", cursor: "pointer" }}
+        >
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.8px", textTransform: "uppercase", color: "#616161" }}>
+            Communication Context
+          </span>
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: commCtxOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s", flexShrink: 0 }}>
+            <path d="M1 1L5 5L9 1" stroke="#616161" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+        {commCtxOpen && <div style={{ padding: "10px 12px 12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 8px" }}>
+          <div>
+            <div style={{ fontSize: 10, color: "#616161", marginBottom: 3, fontWeight: 500 }}>App Name</div>
+            <input
+              style={{ width: "100%", height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 6px", background: "#FFFFFF", fontFamily: "inherit", boxSizing: "border-box", color: "#1B1B1B" }}
+              value={commCtx.appName}
+              onChange={(e) => updateCommCtx("appName", e.target.value)}
+              placeholder="App name"
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: "#616161", marginBottom: 3, fontWeight: 500 }}>Project Name</div>
+            <input
+              style={{ width: "100%", height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 6px", background: "#FFFFFF", fontFamily: "inherit", boxSizing: "border-box", color: "#1B1B1B" }}
+              value={commCtx.projectName}
+              onChange={(e) => updateCommCtx("projectName", e.target.value)}
+              placeholder="Project"
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: "#616161", marginBottom: 3, fontWeight: 500 }}>Comm. Function</div>
+            <input
+              style={{ width: "100%", height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 6px", background: "#FFFFFF", fontFamily: "inherit", boxSizing: "border-box", color: "#1B1B1B" }}
+              value={commCtx.commFunction}
+              onChange={(e) => updateCommCtx("commFunction", e.target.value)}
+              placeholder="Function"
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: "#616161", marginBottom: 3, fontWeight: 500 }}>Comm. Signal</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: commCtx.commSignal === "Red" ? "#D13438" : commCtx.commSignal === "Blue" ? "#0078D4" : commCtx.commSignal === "Green" ? "#107C10" : "#BDBDBD" }} />
+              <select
+                style={{ flex: 1, height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 2px", background: "#FFFFFF", fontFamily: "inherit", color: "#1B1B1B" }}
+                value={commCtx.commSignal}
+                onChange={(e) => updateCommCtx("commSignal", e.target.value)}
+              >
+                <option value="">Signal</option>
+                <option value="Red">Red</option>
+                <option value="Blue">Blue</option>
+                <option value="Green">Green</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        {isComposeMode() && (
+          <button
+            onClick={handleAttachCtx}
+            title="Insert a visible context card at the end of this email so the recipient's sidebar can auto-fill these fields"
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#EBF3FC"; e.currentTarget.style.borderColor = "#0078D4"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#C7C7C7"; }}
+            style={{ marginTop: 10, width: "100%", height: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#FFFFFF", border: "1px solid #C7C7C7", borderRadius: 3, cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#0078D4", fontFamily: "inherit", transition: "background 0.12s, border-color 0.12s" }}
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13.5 7.5L8 13C6.6 14.4 4.4 14.4 3 13C1.6 11.6 1.6 9.4 3 8L8.5 2.5C9.4 1.6 10.9 1.6 11.8 2.5C12.7 3.4 12.7 4.9 11.8 5.8L6.5 11.1C6 11.6 5.2 11.6 4.7 11.1C4.2 10.6 4.2 9.8 4.7 9.3L9.5 4.5" stroke="#0078D4" strokeWidth="1.3" strokeLinecap="round"/>
+            </svg>
+            Attach Context to Email
+          </button>
+        )}
+        </div>}
+      </div>
 
       {/* Button grid */}
       <div style={{ flex: 1, overflowY: "auto", padding: "12px 12px 20px" }}>
