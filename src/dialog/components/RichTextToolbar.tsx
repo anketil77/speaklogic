@@ -1,5 +1,7 @@
 // src/dialog/components/RichTextToolbar.tsx
 import React, { useEffect, useRef, useState } from "react";
+import mammoth from "mammoth";
+import htmlDocx from "html-docx-js";
 import { createPortal } from "react-dom";
 import { FontPicker } from "@/dialog/components/FontPicker";
 import {
@@ -59,7 +61,7 @@ import { useSpellCheck } from "@/dialog/components/toolbar/useSpellCheck";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type DropdownId = "font" | "alignment" | "clipboard" | "list";
+type DropdownId = "font" | "alignment" | "clipboard" | "list" | "save";
 type Alignment = "left" | "center" | "right" | "justify";
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -86,6 +88,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   const alignGroupRef = useRef<HTMLDivElement>(null);
   const clipboardGroupRef = useRef<HTMLDivElement>(null);
   const listGroupRef = useRef<HTMLDivElement>(null);
+  const saveGroupRef = useRef<HTMLDivElement>(null);
   const portalPanelRef = useRef<HTMLDivElement | null>(null);
   const [panelAnchor, setPanelAnchor] = useState<{ top: number; left: number } | null>(null);
 
@@ -534,6 +537,67 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
     );
   }
 
+  // ── Save As: download in a chosen format ─────────────────────────────────
+  function handleSaveAs(format: "html" | "txt" | "rtf" | "docx") {
+    const el = editorRef.current;
+    if (!el || !el.innerHTML.trim()) { showSaveStatus("empty"); return; }
+
+    const now = new Date();
+    const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const htmlFull = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'Calibri',sans-serif;font-size:11pt;margin:1in;line-height:1.4;}</style></head><body>${el.innerHTML}</body></html>`;
+
+    if (format === "docx") {
+      try {
+        const blob = htmlDocx.asBlob(htmlFull) as Blob;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = `speak-logic-analysis-${ts}.docx`;
+        a.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+        showSaveStatus("saved");
+      } catch { showSaveStatus("error"); }
+      setOpenDropdown(null); return;
+    }
+
+    let content: string;
+    let mimeType: string;
+    let fileName: string;
+
+    if (format === "txt") {
+      content = (el.innerText || el.textContent || "").trim();
+      mimeType = "text/plain;charset=utf-8";
+      fileName = `speak-logic-analysis-${ts}.txt`;
+    } else if (format === "rtf") {
+      const plain = (el.innerText || el.textContent || "").trim();
+      const escaped = plain.replace(/\\/g, "\\\\").replace(/\{/g, "\\{").replace(/\}/g, "\\}");
+      const rtfLines = escaped.split(/\n/).map((line) => line ? `${line}\\par` : "\\par").join("\n");
+      content = `{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Calibri;}}\n\\f0\\fs22 ${rtfLines}\n}`;
+      mimeType = "application/rtf";
+      fileName = `speak-logic-analysis-${ts}.rtf`;
+    } else {
+      content = htmlFull;
+      mimeType = "text/html;charset=utf-8";
+      fileName = `speak-logic-analysis-${ts}.html`;
+    }
+
+    try {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = fileName;
+      a.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+      showSaveStatus("saved");
+    } catch {
+      copyToClipboard(content);
+    }
+
+    setOpenDropdown(null);
+  }
+
   // ── Print: stamp sl-print-region only on the toolbar's bound editor, then remove ──
   // Matches original: richEditBarController1 was bound to richEditControlActualAnalysis only.
   // All other RichEditor instances (Entity Under Analysis, etc.) are excluded from printing.
@@ -553,23 +617,60 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const text = evt.target?.result as string | null;
-      if (!text) return;
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
 
-      // Try to extract <body> content for full HTML files; use raw text otherwise
-      const bodyMatch = text.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-      const content = bodyMatch ? bodyMatch[1].trim() : text;
-
-      if (editorRef.current) {
-        editorRef.current.innerHTML = content;
-        // Dispatch input event so RichEditor's onChange fires and parent state updates.
-        // Without this, the next React render wipes the loaded content back to the old value.
+    if (ext === "docx" || ext === "doc") {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const arrayBuffer = evt.target?.result as ArrayBuffer | null;
+        if (!arrayBuffer) return;
+        try {
+          const result = await mammoth.convertToHtml({ arrayBuffer });
+          if (editorRef.current) {
+            editorRef.current.innerHTML = result.value;
+            editorRef.current.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        } catch {
+          if (editorRef.current) {
+            editorRef.current.innerHTML =
+              ext === "doc"
+                ? "<p>The older .doc format cannot be opened directly. Please open the file in Word, save it as .docx, then try again.</p>"
+                : "<p>Could not open file. Make sure it is a valid .docx document.</p>";
+            editorRef.current.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else if (ext === "rtf") {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const text = evt.target?.result as string | null;
+        if (!text || !editorRef.current) return;
+        // Strip RTF control words and groups, leaving readable plain text
+        const plain = text
+          .replace(/\{\\[^}]*\}/g, "")
+          .replace(/\\[a-z]+[-0-9]* ?/gi, "")
+          .replace(/[{}\\]/g, "")
+          .trim();
+        editorRef.current.innerHTML = plain.split(/\n{2,}/).map((p) => `<p>${p}</p>`).join("");
         editorRef.current.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-    };
-    reader.readAsText(file);
+      };
+      reader.readAsText(file);
+    } else {
+      // HTML / HTM
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const text = evt.target?.result as string | null;
+        if (!text) return;
+        const bodyMatch = text.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        const content = bodyMatch ? bodyMatch[1].trim() : text;
+        if (editorRef.current) {
+          editorRef.current.innerHTML = content;
+          editorRef.current.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      };
+      reader.readAsText(file);
+    }
 
     // Reset so the same file can be re-chosen
     e.target.value = "";
@@ -999,10 +1100,44 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
         , document.body)}
       </div>
 
-      {/* Save */}
-      <button className="sl-icon-btn" style={iconBtnBase} title="Save" onClick={handleSave}>
-        <SaveLayoutIcon />
-      </button>
+      {/* Save — split button: icon saves as HTML, chevron opens format menu */}
+      <div ref={saveGroupRef} style={{ position: "relative", height: "100%", display: "flex", alignItems: "center" }}>
+        <button className="sl-icon-btn" style={iconBtnBase} title="Save as HTML" onClick={handleSave}>
+          <SaveLayoutIcon />
+        </button>
+        <button
+          className="sl-icon-btn"
+          style={{ ...iconBtnBase, padding: "0 2px", minWidth: 14 }}
+          title="Save as…"
+          onClick={() => toggleDd("save", saveGroupRef)}
+        >
+          <ChevronDown />
+        </button>
+        {openDropdown === "save" && panelAnchor && createPortal(
+          <div
+            ref={(el) => { portalPanelRef.current = el; }}
+            style={{ position: "fixed", top: panelAnchor.top, left: panelAnchor.left, zIndex: 9999, minWidth: "160px", paddingTop: "4px", paddingBottom: "4px", background: "#FFFFFF", border: "1px solid #E0E0E0", boxShadow: "0px 4px 16px rgba(0,0,0,0.12), 0px 1px 4px rgba(0,0,0,0.06)", borderRadius: "4px" }}
+          >
+            {(
+              [
+                { label: "HTML (.html)", format: "html" as const },
+                { label: "Word (.docx)", format: "docx" as const },
+                { label: "RTF (.rtf)", format: "rtf" as const },
+                { label: "Plain Text (.txt)", format: "txt" as const },
+              ]
+            ).map(({ label, format }) => (
+              <button
+                key={format}
+                className="sl-panel-item"
+                onClick={() => handleSaveAs(format)}
+                style={{ height: "31px", width: "100%", display: "flex", alignItems: "center", padding: "0 14px", gap: "10px", border: "none", cursor: "pointer", fontFamily: "inherit", background: "transparent", fontSize: "12px", color: "#1B1B1B", textAlign: "left" }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        , document.body)}
+      </div>
       {saveStatus && (
         <span style={{
           fontSize: 11, color:
@@ -1013,7 +1148,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
           {saveStatus === "saved" && "Saved"}
           {saveStatus === "copied" && "Copied to clipboard"}
           {saveStatus === "empty" && "Nothing to save"}
-            {saveStatus === "error" && "Save failed"}
+          {saveStatus === "error" && "Save failed"}
         </span>
       )}
 
@@ -1059,7 +1194,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
         id="sl-rtt-file-open"
         ref={fileInputRef}
         type="file"
-        accept=".html,.htm"
+        accept=".html,.htm,.docx,.doc,.rtf"
         style={{ position: "absolute", width: 0, height: 0, opacity: 0, overflow: "hidden" }}
         onChange={handleFileSelected}
       />

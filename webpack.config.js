@@ -38,6 +38,8 @@ module.exports = async (env, options) => {
       extensions: [".ts", ".tsx", ".html", ".js"],
       alias: {
         "@": path.resolve(__dirname, "src"),
+        "mammoth": path.resolve(__dirname, "node_modules/mammoth/mammoth.browser.js"),
+        "html-docx-js": path.resolve(__dirname, "node_modules/html-docx-js/dist/html-docx.js"),
       },
       fallback: {
         fs: false,
@@ -98,6 +100,10 @@ module.exports = async (env, options) => {
           {
             from: "assets/icons/*.svg",
             to: "assets/icons/[name][ext]",
+          },
+          {
+            from: "assets/email-icons/*",
+            to: "assets/email-icons/[name][ext]",
           },
           {
             from: "node_modules/sql.js/dist/sql-wasm.wasm",
