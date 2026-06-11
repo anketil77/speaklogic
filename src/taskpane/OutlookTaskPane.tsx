@@ -47,6 +47,8 @@ import {
   saveSelectionWithPrinciple,
 } from "@/db/queries/principle";
 import { openIdentifiedPrincipleReport, openInterpretedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
+import { buildProvideFeedbackEmail, buildApplyFeedbackEmail, buildRequestFeedbackEmail } from "@/dialog/utils/emailTemplates";
+import type { ProjectAnalysis } from "@/types/db";
 import type {
   AttachFileToProject,
   DialogAction,
@@ -209,6 +211,72 @@ function buildRequestSLMailtoUrl(p: SaveRequestSLFeedbackPayload): string {
   const subject = encodeURIComponent(p.communicationSubject ?? "");
   const bodyText = (p.actualCommunication ?? "").replace(/<[^>]*>/g, "").slice(0, 1800);
   return `mailto:support@speaklogic.org?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+}
+
+function loadAnalysisForFeedback(analysisId: number | undefined): ProjectAnalysis | null {
+  if (!analysisId) return null;
+  try {
+    const a = getAnalysisById(analysisId);
+    if (!a || !a.id) return null;
+    return {
+      ...a,
+      errors: getErrorsByAnalysis(a.id),
+      compensators: getCompensatorsByAnalysis(a.id),
+      questions: getQuestionsByAnalysis(a.id),
+      answers: getAnswersByAnalysis(a.id),
+    };
+  } catch { return null; }
+}
+
+function plainTextMailtoUrl(toEmail: string, subject: string, htmlBody: string): string {
+  if (!toEmail) return "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = htmlBody;
+  const bodyText = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim().slice(0, 1800);
+  return `mailto:${encodeURIComponent(toEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+}
+
+function openHtmlEmailDraft(
+  html: string,
+  toEmail: string,
+  subject: string,
+  htmlBodyForFallback: string,
+  onDone: (mailtoUrl: string) => void,
+): void {
+  if (Office.context.host === Office.HostType.Outlook) {
+    if (typeof Office.context.mailbox.displayNewMessageForm === "function") {
+      try {
+        Office.context.mailbox.displayNewMessageForm({
+          toRecipients: toEmail ? [toEmail] : [],
+          subject,
+          htmlBody: html,
+        });
+        onDone("");
+      } catch {
+        onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
+      }
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const item = Office.context.mailbox.item as any;
+      if (item?.body?.setAsync) {
+        item.body.setAsync(
+          html,
+          { coercionType: Office.CoercionType.Html },
+          (result: Office.AsyncResult<void>) => {
+            if (result.status === Office.AsyncResultStatus.Succeeded) {
+              onDone("");
+            } else {
+              onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
+            }
+          }
+        );
+      } else {
+        onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
+      }
+    }
+  } else {
+    onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
+  }
 }
 
 function buildPeopleList(commPersonName?: string): string[] {
@@ -493,9 +561,17 @@ export function OutlookTaskPane() {
               saveFeedbackHistory({ selectionAction: f.feedbackType === "Applied" ? "Applied as Feedback" : "Provided as Feedback", entityName: plainText(f.actualSelection) || plainText(f.feedbackApplication), actualSelection: f.feedbackApplication, selectionType: f.selectionType, source: f.source, applicationName: f.applicationName, communicationFunction: f.communicationFunction, communicationSignal: f.communicationSignal, projectName: f.projectName, personName: f.personName, personEmail: f.personEmail });
             } catch { /* non-critical */ }
           }
-          const mailtoUrl = buildMailtoUrl(p);
-          if (mailtoUrl) { dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage)); }
-          else { dialog.close(); dialogRef.current = null; }
+          if (p.feedback.feedbackType === "Provided" || p.feedback.feedbackType === "Applied") {
+            const analysis = loadAnalysisForFeedback(p.feedback.analysisId);
+            const html = p.feedback.feedbackType === "Applied"
+              ? buildApplyFeedbackEmail(p.feedback, analysis)
+              : buildProvideFeedbackEmail(p.feedback, analysis);
+            openHtmlEmailDraft(html, p.toPersonEmail ?? "", p.feedback.feedbackSubject, p.feedback.feedbackApplication, (mailtoUrl) => {
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+            });
+          } else {
+            dialog.close(); dialogRef.current = null;
+          }
         } else if (action.action === "SAVE_PROBLEM_SOLUTION") {
           const p = action.payload as import("@/types/db").SaveProblemSolutionPayload;
           try { saveProblemSolution({ actualProblem: p.actualProblem, feedbackApplied: p.feedbackApplied, errorCorrected: p.errorCorrected, compensatorReplaced: p.compensatorReplaced, additionalExplanation: p.additionalExplanation, files: p.files }); }
@@ -559,9 +635,20 @@ export function OutlookTaskPane() {
       () => initPayload,
       (dialog, action) => {
         if (action.action === "SAVE_FEEDBACK") {
-          try { saveFeedback(action.payload as SaveFeedbackPayload); }
+          const p = action.payload as SaveFeedbackPayload;
+          try { saveFeedback(p); }
           catch (err) { setStatus({ msg: `Failed to save feedback: ${String(err)}`, ok: false }); dialog.close(); dialogRef.current = null; return; }
-          dialog.close(); dialogRef.current = null;
+          if (p.feedback.feedbackType === "Provided" || p.feedback.feedbackType === "Applied") {
+            const analysis = loadAnalysisForFeedback(p.feedback.analysisId);
+            const html = p.feedback.feedbackType === "Applied"
+              ? buildApplyFeedbackEmail(p.feedback, analysis)
+              : buildProvideFeedbackEmail(p.feedback, analysis);
+            openHtmlEmailDraft(html, p.toPersonEmail ?? "", p.feedback.feedbackSubject, p.feedback.feedbackApplication, (mailtoUrl) => {
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+            });
+          } else {
+            dialog.close(); dialogRef.current = null;
+          }
         }
       }
     );
@@ -586,7 +673,13 @@ export function OutlookTaskPane() {
           try { saveFeedback(p); }
           catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); return; }
           try { saveFeedbackHistory({ selectionAction: "Provided as Feedback", entityName: plainText(p.feedback.actualSelection) || plainText(p.feedback.feedbackApplication), actualSelection: p.feedback.feedbackApplication, selectionType: p.feedback.selectionType, source: p.feedback.source, applicationName: p.feedback.applicationName, communicationFunction: p.feedback.communicationFunction, communicationSignal: p.feedback.communicationSignal, projectName: p.feedback.projectName, personName: p.feedback.personName, personEmail: p.feedback.personEmail }); } catch { /* non-critical */ }
-          dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: buildMailtoUrl(p) } as HostMessage));
+          {
+            const analysis = loadAnalysisForFeedback(p.feedback.analysisId);
+            const html = buildProvideFeedbackEmail(p.feedback, analysis);
+            openHtmlEmailDraft(html, p.toPersonEmail ?? "", p.feedback.feedbackSubject, p.feedback.feedbackApplication, (mailtoUrl) => {
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+            });
+          }
         }
       }
     );
@@ -614,7 +707,12 @@ export function OutlookTaskPane() {
             if (email) upsertPersonWithEmail((p as { toPerson?: string }).toPerson ?? "", email);
             try { saveFeedbackHistory({ selectionAction: "Requested Feedback With", entityName: p.fromPerson ?? "", actualSelection: p.applicationName ?? "", selectionType: "Request Feedback", source: getSource(), applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignal: (p as { communicationSignalType?: string }).communicationSignalType ?? "", projectName: "", personName: p.fromPerson ?? "", personEmail: "" }); } catch { /* non-critical */ }
           } catch (err) { setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false }); }
-          dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: buildRequestMailtoUrl(p) } as HostMessage));
+          {
+            const html = buildRequestFeedbackEmail(p);
+            openHtmlEmailDraft(html, (p as { toPersonEmail?: string }).toPersonEmail ?? "", p.communicationSubject ?? "", p.actualCommunication ?? "", (mailtoUrl) => {
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+            });
+          }
         }
       }
     );
@@ -698,9 +796,20 @@ export function OutlookTaskPane() {
           dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "provide-feedback", payload: { selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: analysis.applicationName ?? "", communicationFunction: analysis.communicationFunction ?? "", communicationSignal: analysis.communicationSignal ?? "", projectName: analysis.projectName ?? "", peopleList: buildPeopleList(cc?.personName), peopleEmailMap: getPeopleEmailMap(), communicationPersonName: cc?.personName ?? "", communicationPersonEmail: cc?.personEmail ?? "" } } as HostMessage));
         }
         if (action.action === "SAVE_FEEDBACK") {
-          try { saveFeedback(action.payload as SaveFeedbackPayload); }
-          catch (err) { setStatus({ msg: `Failed to save feedback: ${String(err)}`, ok: false }); }
-          dialog.close(); dialogRef.current = null;
+          const p = action.payload as SaveFeedbackPayload;
+          try { saveFeedback(p); }
+          catch (err) { setStatus({ msg: `Failed to save feedback: ${String(err)}`, ok: false }); dialog.close(); dialogRef.current = null; return; }
+          if (p.feedback.feedbackType === "Provided" || p.feedback.feedbackType === "Applied") {
+            const analysis = loadAnalysisForFeedback(p.feedback.analysisId);
+            const html = p.feedback.feedbackType === "Applied"
+              ? buildApplyFeedbackEmail(p.feedback, analysis)
+              : buildProvideFeedbackEmail(p.feedback, analysis);
+            openHtmlEmailDraft(html, p.toPersonEmail ?? "", p.feedback.feedbackSubject, p.feedback.feedbackApplication, (mailtoUrl) => {
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+            });
+          } else {
+            dialog.close(); dialogRef.current = null;
+          }
         }
       }
     );

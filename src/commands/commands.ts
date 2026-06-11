@@ -18,6 +18,12 @@ import { saveProblemSolution } from "@/db/queries/problem";
 import { dbg, clearLog } from "@/debug/log";
 import { openInterpretedPrincipleReport, openIdentifiedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
 import { formatArticleForAnalysis } from "@/dialog/utils/formatArticleForAnalysis";
+import {
+  buildProvideFeedbackEmail,
+  buildApplyFeedbackEmail,
+  buildRequestFeedbackEmail,
+} from "@/dialog/utils/emailTemplates";
+import type { ProjectAnalysis } from "@/types/db";
 
 function buildPeopleList(commPersonName?: string): string[] {
   const names = getPeopleNames();
@@ -44,18 +50,28 @@ import type {
   SelectionMode,
 } from "@/types/db";
 
-const DIALOG_SIZE = { height: 69, width: 43 } as const;
+// Scales a base width % (tuned for 1920px screens) to the current screen size.
+// Uses the same breakpoints as the main dialog so all dialogs grow/shrink together.
+function adaptiveWidth(base: number): number {
+  const sw = typeof window !== "undefined" && window.screen ? window.screen.width : 1920;
+  if (sw < 1280) return Math.round(base * 78 / 43);  // small / tablet
+  if (sw < 1440) return Math.round(base * 70 / 43);  // 13" laptop
+  if (sw <= 1512) return Math.round(base * 52 / 43); // 14" MacBook (1512px logical)
+  if (sw < 1920) return Math.round(base * 57 / 43);  // 15" MacBook / laptop
+  return base;                                        // full HD and larger (original default)
+}
+const DIALOG_SIZE = { height: 69, width: adaptiveWidth(43) } as const;
 // Flag dialog: computed dynamically via pixel formula in openFlagDialog
-// Selection Config dialog: 480×428px → 52% height, 25% width (same ref as FLAG_DIALOG_SIZE)
-const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: 25 } as const;
-// About dialog: 604×292px → 27% height, 32% width on 1920×1080
-const ABOUT_DIALOG_SIZE = { height: 27, width: 32 } as const;
-// Create Article dialog: 520×508px → 61% height, 27% width (height % is of Word viewport ~827px, not raw 1080)
-// Picker (260×163px on 1920×1080): width=14%, height≈20% of Word viewport (~827px)
-const CREATE_ARTICLE_PICKER_SIZE        = { height: 30, width: 16 } as const;
-const CREATE_ARTICLE_TEMPLATE_SIZE      = { height: 56, width: 27 } as const; // ~605×520px — fits 460×516 card
-const CREATE_ARTICLE_DIALOG_SIZE        = { height: 61, width: 27 } as const;
-const ARTICLE_WIZARD_SIZE               = { height: 53, width: 27 } as const; // ~572px @ 1080p — all steps fit cleanly
+// Selection Config dialog: 480×428px → 52% height, 25% width on 1920px
+const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: adaptiveWidth(25) } as const;
+// About dialog: 604×292px → 27% height, 32% width on 1920px
+const ABOUT_DIALOG_SIZE = { height: 27, width: adaptiveWidth(32) } as const;
+// Create Article dialog: 520×508px → 61% height, 27% width on 1920px
+// Picker (260×163px on 1920px): width=16%, height=30%
+const CREATE_ARTICLE_PICKER_SIZE        = { height: 30, width: adaptiveWidth(16) } as const;
+const CREATE_ARTICLE_TEMPLATE_SIZE      = { height: 56, width: adaptiveWidth(27) } as const;
+const CREATE_ARTICLE_DIALOG_SIZE        = { height: 61, width: adaptiveWidth(27) } as const;
+const ARTICLE_WIZARD_SIZE               = { height: 53, width: adaptiveWidth(27) } as const;
 
 let dbInitialized = false;
 
@@ -229,7 +245,7 @@ function showNoSelectionMessage(
   const complete = makeEventCompleter(event);
   Office.context.ui.displayDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=message&title=${encodeURIComponent(title)}&text=${encodeURIComponent(text)}`,
-    { height: heightPct, width: 26, displayInIframe: true },
+    { height: heightPct, width: adaptiveWidth(26), displayInIframe: true },
     (result) => {
       if (result.status === Office.AsyncResultStatus.Failed) {
         // Simple fallback — do NOT call handleDialogOpenError here (would recurse).
@@ -539,6 +555,84 @@ function buildMailtoUrl(payload: SaveFeedbackPayload): string {
   return `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
 }
 
+function plainTextMailtoUrl(toEmail: string, subject: string, htmlBody: string): string {
+  if (!toEmail) return "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = htmlBody;
+  const bodyText = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim().slice(0, 1800);
+  return `mailto:${encodeURIComponent(toEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+}
+
+function loadAnalysisForFeedback(analysisId: number | undefined): ProjectAnalysis | null {
+  if (!analysisId) return null;
+  try {
+    const a = getAnalysisById(analysisId);
+    if (!a || !a.id) return null;
+    return {
+      ...a,
+      errors: getErrorsByAnalysis(a.id),
+      compensators: getCompensatorsByAnalysis(a.id),
+      questions: getQuestionsByAnalysis(a.id),
+      answers: getAnswersByAnalysis(a.id),
+    };
+  } catch { return null; }
+}
+
+// Opens an HTML-formatted email draft:
+//   Outlook read mode  → displayNewMessageForm with htmlBody
+//   Outlook compose    → setAsync into current item body
+//   Word / PowerPoint  → plain-text mailto: fallback
+// onDone receives "" when the draft was opened/injected, or a mailto URL for the fallback link.
+function openHtmlEmailDraft(
+  html: string,
+  toEmail: string,
+  subject: string,
+  htmlBodyForFallback: string,
+  onDone: (mailtoUrl: string) => void,
+): void {
+  if (Office.context.host === Office.HostType.Outlook) {
+    if (typeof Office.context.mailbox.displayNewMessageForm === "function") {
+      // Read mode: open a new compose window with the fully-formatted HTML body.
+      try {
+        Office.context.mailbox.displayNewMessageForm({
+          toRecipients: toEmail ? [toEmail] : [],
+          subject,
+          htmlBody: html,
+        });
+        dbg("HOST", "openHtmlEmailDraft: displayNewMessageForm called");
+        onDone("");
+      } catch (err) {
+        dbg("HOST", "openHtmlEmailDraft: displayNewMessageForm failed", String(err));
+        onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
+      }
+    } else {
+      // Compose mode: inject the HTML template into the body of the current compose window.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const item = Office.context.mailbox.item as any;
+      if (item?.body?.setAsync) {
+        item.body.setAsync(
+          html,
+          { coercionType: Office.CoercionType.Html },
+          (result: Office.AsyncResult<void>) => {
+            if (result.status === Office.AsyncResultStatus.Succeeded) {
+              dbg("HOST", "openHtmlEmailDraft: body.setAsync succeeded (compose mode)");
+              onDone("");
+            } else {
+              dbg("HOST", "openHtmlEmailDraft: body.setAsync failed", String(result.error?.message));
+              onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
+            }
+          }
+        );
+      } else {
+        onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
+      }
+    }
+  } else {
+    // Word / PowerPoint: mailto: link, plain text only.
+    onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
+  }
+}
+
 async function openAnalyzeDialog(
   mode: SelectionMode,
   event: Office.AddinCommands.Event
@@ -756,16 +850,21 @@ function openAnalyzeDialogWithPayload(
                 });
               } catch (err) { dbg("HOST", "saveFeedbackHistory (feedback audit) failed — non-critical", String(err)); }
             }
-            // For "Provided" feedback: send SAVED with a mailto URL back to the dialog
-            // so the user can open it via a user-initiated click (window.open from dialog
-            // context opens a new browser tab in Office Online instead of the OS handler).
-            if (fbPayload.feedback.feedbackType === "Provided") {
-              const mailtoUrl = buildMailtoUrl(fbPayload);
-              const opened = mailtoUrl ? openMailtoUrl(mailtoUrl) : false;
-              dbg("HOST", "sending SAVED to dialog", { hasMailto: !!mailtoUrl, opened });
-              // If host opened the compose window, send empty URL (hide link in dialog).
-              // If not (compose mode / failed), send the URL so the user can click natively.
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: opened ? "" : mailtoUrl } as HostMessage));
+            if (fbPayload.feedback.feedbackType === "Provided" || fbPayload.feedback.feedbackType === "Applied") {
+              const analysis = loadAnalysisForFeedback(fbPayload.feedback.analysisId);
+              const html = fbPayload.feedback.feedbackType === "Applied"
+                ? buildApplyFeedbackEmail(fbPayload.feedback, analysis)
+                : buildProvideFeedbackEmail(fbPayload.feedback, analysis);
+              openHtmlEmailDraft(
+                html,
+                fbPayload.toPersonEmail ?? "",
+                fbPayload.feedback.feedbackSubject,
+                fbPayload.feedback.feedbackApplication,
+                (mailtoUrl) => {
+                  dbg("HOST", "openHtmlEmailDraft done", { mailtoUrl: mailtoUrl?.slice(0, 60) });
+                  dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+                },
+              );
               // Do NOT close here — wait for the dialog to send CLOSE after the user clicks.
             } else {
               try { dialog.close(); } catch { }
@@ -900,9 +999,12 @@ function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
             if (p.toPerson) {
               upsertPersonWithEmail(p.toPerson, p.toPersonEmail);
             }
-            const mailtoUrl = buildRequestMailtoUrl(p);
-            const opened = mailtoUrl ? openMailtoUrl(mailtoUrl) : false;
-            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: opened ? "" : mailtoUrl } as HostMessage));
+            {
+              const html = buildRequestFeedbackEmail(p);
+              openHtmlEmailDraft(html, p.toPersonEmail, p.communicationSubject, p.actualCommunication, (mailtoUrl) => {
+                dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+              });
+            }
             break;
           }
           case "OPEN_MAILTO":
@@ -1156,10 +1258,20 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
               });
             } catch (err) { dbg("HOST", "saveFeedbackHistory (feedback audit) failed — non-critical", String(err)); }
           }
-          if (fbPayload.feedback.feedbackType === "Provided") {
-            const mailtoUrl = buildMailtoUrl(fbPayload);
-            const opened = mailtoUrl ? openMailtoUrl(mailtoUrl) : false;
-            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: opened ? "" : mailtoUrl } as HostMessage));
+          if (fbPayload.feedback.feedbackType === "Provided" || fbPayload.feedback.feedbackType === "Applied") {
+            const analysis = loadAnalysisForFeedback(fbPayload.feedback.analysisId);
+            const html = fbPayload.feedback.feedbackType === "Applied"
+              ? buildApplyFeedbackEmail(fbPayload.feedback, analysis)
+              : buildProvideFeedbackEmail(fbPayload.feedback, analysis);
+            openHtmlEmailDraft(
+              html,
+              fbPayload.toPersonEmail ?? "",
+              fbPayload.feedback.feedbackSubject,
+              fbPayload.feedback.feedbackApplication,
+              (mailtoUrl) => {
+                dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+              },
+            );
           } else {
             try { dialog.close(); } catch { }
             complete();
@@ -2537,9 +2649,21 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
               personName: f.personName,
               personEmail: f.personEmail,
             });
-            const mailtoUrl = buildMailtoUrl(fbPayload);
-            const opened = mailtoUrl ? openMailtoUrl(mailtoUrl) : false;
-            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: opened ? "" : mailtoUrl } as HostMessage));
+            {
+              const analysis = loadAnalysisForFeedback(fbPayload.feedback.analysisId);
+              const html = fbPayload.feedback.feedbackType === "Applied"
+                ? buildApplyFeedbackEmail(fbPayload.feedback, analysis)
+                : buildProvideFeedbackEmail(fbPayload.feedback, analysis);
+              openHtmlEmailDraft(
+                html,
+                fbPayload.toPersonEmail ?? "",
+                fbPayload.feedback.feedbackSubject,
+                fbPayload.feedback.feedbackApplication,
+                (mailtoUrl) => {
+                  dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+                },
+              );
+            }
             // Stay open — wait for CLOSE from the success screen.
             break;
           }
