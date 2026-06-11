@@ -188,9 +188,11 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
 
   const ft = feedback.feedbackType;
   const isApplied = ft === "Applied";
-  const showLeft  = !!(feedback.toPerson?.trim());
-  const showRight = ft !== "Requested" && !!(feedback.fromPerson?.trim());
-  const showCa    = isApplied && !!(feedback.actualErrorSubstituted?.trim());
+  const showLeft   = !!(feedback.toPerson?.trim());
+  const showRight  = ft !== "Requested" && !!(feedback.fromPerson?.trim());
+  const showCa     = isApplied && !!(feedback.actualErrorSubstituted?.trim());
+  const entityText = (feedback.communicationFunction?.trim() || feedback.feedbackSubject?.trim() || "");
+  const showEntity = showLeft && !!entityText;
 
   const open = (title: string, opts: { htmlContent?: string; plainText?: string }) =>
     setPopup({ title, ...opts });
@@ -217,13 +219,13 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
           </marker>
         </defs>
 
-        {/* Left path: down from left box → rounded elbow right → into ECF left vertex */}
+        {/* Left return path: from ECF left → rounded elbow → up into bottom of left box (arrow points up) */}
         {showLeft && (
           <path
-            d={`M ${LP_CX} ${LP_BOT}
-                L ${LP_CX} ${FB_CY - R}
-                Q ${LP_CX} ${FB_CY} ${LP_CX + R} ${FB_CY}
-                L ${ECF_LEFT - 4} ${FB_CY}`}
+            d={`M ${ECF_LEFT - 4} ${FB_CY}
+                L ${LP_CX + R} ${FB_CY}
+                Q ${LP_CX} ${FB_CY} ${LP_CX} ${FB_CY - R}
+                L ${LP_CX} ${LP_BOT + 4}`}
             fill="none" stroke={LINE_COLOR} strokeWidth="1.8"
             strokeLinecap="round" markerEnd="url(#arr)"
           />
@@ -310,21 +312,35 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
         </div>
       )}
 
-      {/* Red dot — outside right edge of left box, clickable for entity-under-analysis */}
-      {showLeft && (
-        <button
-          onClick={() => open("Entity Under Analysis", {
-            plainText: feedback.communicationFunction || feedback.feedbackSubject || "—",
-          })}
-          title="Entity Under Analysis"
+      {/* Red dot (decorative) — outside right edge of left box, top */}
+      {showEntity && (
+        <div
+          aria-hidden
           style={{
             position: "absolute",
             left: LP_X + LP_W + 8,
             top: LP_Y + 14,
             width: 14, height: 14, borderRadius: "50%", background: "#df4d75",
-            border: "none", padding: 0, cursor: "pointer", zIndex: 6,
+            zIndex: 6,
           }}
         />
+      )}
+
+      {/* Message icon — click to view entity under analysis */}
+      {showEntity && (
+        <button
+          onClick={() => open("Entity Under Analysis", { plainText: entityText })}
+          title="Entity Under Analysis"
+          style={{
+            position: "absolute",
+            left: LP_X + LP_W + 28,
+            top: LP_Y + 10,
+            background: "none", border: "none", cursor: "pointer", padding: 0,
+            display: "flex", alignItems: "center", zIndex: 6,
+          }}
+        >
+          <ChatBubbleIcon color="#7a807c" size={18} />
+        </button>
       )}
 
       {/* Blue dot left — inside the U-curve, just inside the left vertical line */}
@@ -476,9 +492,11 @@ function Model2({ feedback }: { feedback: ProjectFeedback }) {
   const feedbackText = feedback.feedbackApplication || feedback.feedbackSubject || "";
   const textPreview  = feedbackText.length > 160 ? feedbackText.slice(0, 160) + "…" : feedbackText;
 
-  const cx = 230;
-  const leftX = 75;
-  const rightX = 385;
+  // Connector SVG uses viewBox of 564×62 (matches the dialog content width) so
+  // the arrow endpoints align with the 140px-wide person columns below.
+  const cx = 282;       // mid of 564
+  const leftX = 70;     // center of left column (140 wide, starts at x=0)
+  const rightX = 494;   // center of right column (564 - 70)
 
   return (
     <div style={{ padding: "20px 28px 28px" }}>
@@ -502,7 +520,7 @@ function Model2({ feedback }: { feedback: ProjectFeedback }) {
       <svg
         style={{ display: "block", width: "100%", overflow: "visible" }}
         height={62}
-        viewBox="0 0 460 62"
+        viewBox="0 0 564 62"
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
@@ -531,33 +549,33 @@ function Model2({ feedback }: { feedback: ProjectFeedback }) {
         )}
       </svg>
 
-      {/* Person icons row */}
+      {/* Person icons row — provider (LEFT), requester (RIGHT); names rendered as plain text */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         {showProvider ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 120 }}>
-            <InitialAvatar name={providerName} size={44} bg="#C8D9EC" color="#1B5E8A" />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140 }}>
+            <InitialAvatar name={providerName} size={56} bg="#C8B5DC" color="#5C3B7A" />
             <div style={{
-              marginTop: 6, fontSize: "10.5px", color: colors.grey11, textAlign: "center",
-              border: `1px solid ${colors.grey88}`, borderRadius: 4, padding: "2px 8px",
-              background: colors.grey96, maxWidth: 112, wordBreak: "break-word", lineHeight: "15px",
+              marginTop: 8, fontSize: "12px", fontWeight: 600,
+              color: colors.grey11, textAlign: "center",
+              maxWidth: 132, wordBreak: "break-word", lineHeight: "16px",
             }}>
               {providerName}
             </div>
           </div>
-        ) : <div style={{ width: 120 }} />}
+        ) : <div style={{ width: 140 }} />}
 
         {showRequester ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 120 }}>
-            <InitialAvatar name={requesterName} size={44} bg="#D4EDD0" color="#2D6B28" />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140 }}>
+            <InitialAvatar name={requesterName} size={56} bg="#86c6e9" color="#1B5E8A" />
             <div style={{
-              marginTop: 6, fontSize: "10.5px", color: colors.grey11, textAlign: "center",
-              border: `1px solid ${colors.grey88}`, borderRadius: 4, padding: "2px 8px",
-              background: colors.grey96, maxWidth: 112, wordBreak: "break-word", lineHeight: "15px",
+              marginTop: 8, fontSize: "12px", fontWeight: 600,
+              color: colors.grey11, textAlign: "center",
+              maxWidth: 132, wordBreak: "break-word", lineHeight: "16px",
             }}>
               {requesterName}
             </div>
           </div>
-        ) : <div style={{ width: 120 }} />}
+        ) : <div style={{ width: 140 }} />}
       </div>
     </div>
   );
