@@ -75,6 +75,15 @@ const ARTICLE_WIZARD_SIZE               = { height: 53, width: adaptiveWidth(27)
 
 let dbInitialized = false;
 
+// Thin passthrough kept so all call sites share one entry point for opening dialogs.
+function _trackDialogAsync(
+  url: string,
+  options: { height?: number; width?: number; displayInIframe?: boolean },
+  callback: (result: Office.AsyncResult<Office.Dialog>) => void
+): void {
+  Office.context.ui.displayDialogAsync(url, options, callback);
+}
+
 Office.onReady(() => {
   clearLog();
   dbg("HOST", "Office.onReady — commands.ts loaded, registering handlers");
@@ -243,7 +252,7 @@ function showNoSelectionMessage(
 ): void {
   const heightPct = estimateMessageDialogPct(text);
   const complete = makeEventCompleter(event);
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=message&title=${encodeURIComponent(title)}&text=${encodeURIComponent(text)}`,
     { height: heightPct, width: adaptiveWidth(26), displayInIframe: true },
     (result) => {
@@ -377,26 +386,42 @@ async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
 }
 
 async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; selectionHtml: string; documentTitle: string; documentName: string; pageNumber: string }> {
-  // Word for the web: a Word.run batch leaves the document locked (read-only until page refresh)
-  // when a dialog is opened in the same ribbon command. event.completed() fires and the dialog
-  // closes, but editing never re-enables. Confirmed by isolation: dialogs that never call
-  // Word.run (e.g. About) do not freeze; every selection-based dialog does. The legacy
-  // getSelectedDataAsync API does not take that lock, so on the web we read the selection
-  // through it instead. Trade-off on web: no paragraph-from-cursor (a real selection is required,
-  // same as selection mode), no document title, no page number. Desktop keeps Word.run (no freeze
-  // there) for full fidelity including paragraph-from-cursor and page number.
+  // Word for the web has no persistent runtime (no taskpane — every command is
+  // ExecuteFunction), so the paragraph cannot be pre-captured; it is read at command time.
   if (Office.context.platform === Office.PlatformType.OfficeOnline) {
-    const read = (coercion: Office.CoercionType) =>
-      new Promise<string>((resolve) => {
-        Office.context.document.getSelectedDataAsync(coercion, (r) =>
-          resolve(r.status === Office.AsyncResultStatus.Failed ? "" : ((r.value as string) ?? ""))
-        );
-      });
-    const text = (await read(Office.CoercionType.Text)).replace(/ /g, " ").trim();
-    const selectionHtml = text ? await read(Office.CoercionType.Html) : "";
     const url = (Office.context.document as { url?: string }).url ?? "";
     const documentName = url ? (url.split("/").pop()?.split("\\").pop() ?? "") : "";
-    return { text, selectionHtml, documentTitle: "", documentName, pageNumber: "" };
+
+    if (mode === "selection") {
+      // getSelectedDataAsync never takes the web edit-lock, so selection mode uses it.
+      const read = (coercion: Office.CoercionType) =>
+        new Promise<string>((resolve) => {
+          Office.context.document.getSelectedDataAsync(coercion, (r) =>
+            resolve(r.status === Office.AsyncResultStatus.Failed ? "" : ((r.value as string) ?? ""))
+          );
+        });
+      const text = (await read(Office.CoercionType.Text)).replace(/\u00A0/g, " ").trim();
+      const selectionHtml = text ? await read(Office.CoercionType.Html) : "";
+      return { text, selectionHtml, documentTitle: "", documentName, pageNumber: "" };
+    }
+
+    // Paragraph mode needs Word.run to expand the collapsed cursor to its paragraph — there
+    // is no Common-API equivalent. Keep this batch MINIMAL: a single context.sync() that reads
+    // only the paragraph text. Each extra sync (getHtml, document.title, pages) holds the web
+    // edit session open longer and is what leaves the document read-only/frozen after the
+    // dialog closes. Trade-off on web: paragraph mode has no rich HTML, title, or page number.
+    try {
+      return await Word.run(async (context) => {
+        const para = context.document.getSelection().paragraphs.getFirst();
+        para.load("text");
+        await context.sync();
+        const text = para.text.replace(/\u00A0/g, " ").trim();
+        return { text, selectionHtml: "", documentTitle: "", documentName, pageNumber: "" };
+      });
+    } catch (err) {
+      dbg("HOST", "web paragraph Word.run threw", String(err));
+      return { text: "", selectionHtml: "", documentTitle: "", documentName, pageNumber: "" };
+    }
   }
 
   try {
@@ -480,9 +505,13 @@ function buildEntityName(documentTitle: string, documentName: string, pageNumber
     const useName = cfg.titleAsApplicationName    !== false;
     const useFile = cfg.showFileNameInApplication !== false;
     const usePage = cfg.showPageNumberInFileName  !== false;
+    // Strip the Office file extension (e.g. ".docx") so the entity name reads cleanly.
+    // On the web the file name comes from the URL and carries its extension; desktop
+    // usually shows the document title instead, so this keeps both consistent.
+    const cleanName = documentName.replace(/\.(docx?|docm|dotx?|rtf|txt|odt)$/i, "");
     let result = "";
     if (useName && documentTitle) result = documentTitle;
-    if (useFile && documentName)  result = result ? result + "  File: " + documentName : "File: " + documentName;
+    if (useFile && cleanName)     result = result ? result + "  File: " + cleanName : "File: " + cleanName;
     if (usePage && pageNumber)    result = result ? result + "  Page: " + pageNumber : "Page: " + pageNumber;
     return result;
   } catch {
@@ -685,7 +714,7 @@ function openAnalyzeDialogWithPayload(
   attempt = 0
 ): void {
   const params = new URLSearchParams({ view: "analyze", mode: initPayload.mode });
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?${params.toString()}`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -913,7 +942,7 @@ async function openRequestFeedbackFromRibbon(event: Office.AddinCommands.Event):
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const meta = await fetchSelectionOrNotify(
     "paragraph",
-    "Text Selection Message",
+    "Paragraph Selection Message",
     "A feedback is requested to correct an identified error or solve an identified problem. " +
     "Let's assume that a selection is identified, where that selection points to a valid entity, " +
     "then it is possible for us to request a feedback in relationship with that selection to enable " +
@@ -950,7 +979,7 @@ async function openRequestFeedbackFromRibbon(event: Office.AddinCommands.Event):
 }
 
 function openRequestFeedbackDialog(initPayload: DialogInitPayload, addInEvent: Office.AddinCommands.Event, attempt = 0): void {
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=request-feedback`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -1041,7 +1070,7 @@ function openViewDialog(
 ): void {
   const params = new URLSearchParams({ view });
   if (mode) params.set("mode", mode);
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?${params.toString()}`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -1071,7 +1100,7 @@ function openViewDialog(
 }
 
 function openAboutDialog(addInEvent: Office.AddinCommands.Event, attempt = 0): void {
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=about`,
     { ...ABOUT_DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -1100,7 +1129,7 @@ function openAboutDialog(addInEvent: Office.AddinCommands.Event, attempt = 0): v
 }
 
 function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 0): void {
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=analysis-history`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -1283,7 +1312,7 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
 }
 
 function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 0): void {
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=feedback-history`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -1396,7 +1425,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
 }
 
 function openRetainedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0): void {
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=retained-history`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -1461,7 +1490,7 @@ function openRetainedHistoryDialog(event: Office.AddinCommands.Event, attempt = 
 }
 
 function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0): void {
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=flagged-history`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -1629,7 +1658,7 @@ async function openCreateArticleDialog(event: Office.AddinCommands.Event): Promi
   const personName = identityName || commConfig?.personName || "";
 
   // ── Step 1: open the small entry picker (260×163px) ───────────────────────
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=create-article-picker`,
     { ...CREATE_ARTICLE_PICKER_SIZE, displayInIframe: true },
     (result) => {
@@ -1680,7 +1709,7 @@ function openTemplatePickerDialog(
   personEmail: string,
   attempt     = 0,
 ): void {
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=template-picker`,
     { ...CREATE_ARTICLE_TEMPLATE_SIZE, displayInIframe: true },
     (result) => {
@@ -1760,7 +1789,7 @@ function openArticleWizardDialog(
     communicationPersonName: commConfig?.personName ?? "",
   };
 
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=article-wizard`,
     { ...ARTICLE_WIZARD_SIZE, displayInIframe: true },
     (result) => {
@@ -1840,7 +1869,7 @@ function openArticleFormDialog(
     projectName: "",
     peopleList: [],
   };
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=create-article`,
     { ...CREATE_ARTICLE_DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -1912,7 +1941,7 @@ async function openListArticlesDialog(event: Office.AddinCommands.Event): Promis
     publishers: getAllPublishers(),
   };
 
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=list-articles`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -2034,7 +2063,7 @@ async function openFlaggedArticlesDialog(event: Office.AddinCommands.Event): Pro
     articles: getAllArticles(),
   };
 
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=flagged-articles`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -2122,7 +2151,7 @@ function openFlagArticleDialog(
   const screenW = window.screen?.availWidth  || 1440;
   const flagHeight = Math.min(75, Math.max(28, Math.round((433 / (screenH * 0.93)) * 100) + 4));
   const flagWidth  = Math.min(80, Math.max(22, Math.round((380 / (screenW * 0.95)) * 100)));
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=flag`,
     { height: flagHeight, width: flagWidth, displayInIframe: true },
     (result) => {
@@ -2239,7 +2268,7 @@ function openEditArticleDialog(
     peopleList: [],
     editArticleData: article,
   };
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=create-article`,
     { ...CREATE_ARTICLE_DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -2293,7 +2322,7 @@ async function openListSelectionDialog(event: Office.AddinCommands.Event): Promi
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const { personName, personEmail } = getUserIdentity();
 
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=selection-history`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -2460,7 +2489,7 @@ async function openListIdentifiedPrincipleDialog(event: Office.AddinCommands.Eve
     };
   }
 
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=list-identified-principle`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -2518,7 +2547,7 @@ async function openListInterpretedPrincipleDialog(event: Office.AddinCommands.Ev
     };
   }
 
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=list-interpreted-principle`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -2569,7 +2598,7 @@ async function openListSelectionRelatedPrincipleDialog(event: Office.AddinComman
     };
   }
 
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=list-selection-related-principle`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -2600,7 +2629,7 @@ async function openListSelectionRelatedPrincipleDialog(event: Office.AddinComman
 }
 
 function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: Office.AddinCommands.Event, attempt = 0): void {
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=provide-feedback`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -2688,7 +2717,7 @@ async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const meta = await fetchSelectionOrNotify(
     mode,
-    "Text Selection Message",
+    mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
     "The feedback entity is an entity that enables us to make an adjustment to " +
     "to another entity where the other entity contains error.  In this case, " +
     "the feedback entity enables us to correct error in the other entity.  In " +
@@ -2724,7 +2753,7 @@ async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.
 }
 
 function openApplyDialog(initPayload: DialogInitPayload, addInEvent: Office.AddinCommands.Event, attempt = 0): void {
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=apply`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -2774,7 +2803,7 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const meta = await fetchSelectionOrNotify(
     mode,
-    "Text Selection Message",
+    mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
     "In order to apply an entity as feedback, that entity must exist. " +
     "If an entity does not exist, then that entity cannot be applied as " +
     "feedback.  In order for me to apply a paragraph or a selected text " +
@@ -2815,7 +2844,7 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
 }
 
 function openSelectionConfigDialog(addInEvent: Office.AddinCommands.Event): void {
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=selection-config`,
     { ...SELECTION_CONFIG_DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -2855,7 +2884,7 @@ function openFlagDialog(initPayload: DialogInitPayload, addInEvent: Office.Addin
   const screenW = window.screen?.availWidth  || 1440;
   const flagHeight = Math.min(75, Math.max(28, Math.round((433 / (screenH * 0.93)) * 100) + 4));
   const flagWidth  = Math.min(80, Math.max(22, Math.round((380 / (screenW * 0.95)) * 100)));
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=flag`,
     { height: flagHeight, width: flagWidth, displayInIframe: true },
     (result) => {
@@ -2902,7 +2931,7 @@ async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.Addin
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const meta = await fetchSelectionOrNotify(
     mode,
-    "Text Selection Message",
+    mode === "selection" ? "Text Selection Message" : "Paragraph Selection Message",
     "In order to flag an entity for analysis, that entity must exist. " +
     "In order to flag an entity for analysis, that entity must be identified. " +
     "It is not possible to flag an entity for analysis if that entity is not " +
@@ -2952,7 +2981,7 @@ async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Even
     communicationPersonEmail: commConfig?.personEmail ?? "",
   };
 
-  Office.context.ui.displayDialogAsync(
+  _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=request-sl-feedback`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
@@ -3113,7 +3142,7 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event, attemp
     const commConfigHeight = Math.min(75, Math.max(28, Math.round((TARGET_H_PX / (screenH * 0.93)) * 100) + 4));
     const commConfigWidth  = Math.min(80, Math.max(22, Math.round((TARGET_W_PX / (screenW * 0.95)) * 100)));
 
-    Office.context.ui.displayDialogAsync(
+    _trackDialogAsync(
       `${DIALOG_BASE}/dialog.html?view=communication-config`,
       { height: commConfigHeight, width: commConfigWidth, displayInIframe: true },
       (result) => {
@@ -3186,7 +3215,7 @@ function openPeopleDialog(event: Office.AddinCommands.Event): void {
     const h = Math.min(80, Math.max(30, Math.round((TARGET_H_PX / (screenH * 0.93)) * 100) + 4));
     const w = Math.min(80, Math.max(22, Math.round((TARGET_W_PX / (screenW * 0.95)) * 100)));
 
-    Office.context.ui.displayDialogAsync(
+    _trackDialogAsync(
       `${DIALOG_BASE}/dialog.html?view=people`,
       { height: h, width: w, displayInIframe: true },
       (result) => {

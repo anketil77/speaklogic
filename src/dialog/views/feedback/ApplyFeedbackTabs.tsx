@@ -267,6 +267,27 @@ export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
           </div>
         )}
 
+        {activeTab === "paragraph" && (
+          <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column" }}>
+            <div style={rowS}><span style={labelS}>Selection Type</span><span style={roStyle}>Paragraph</span></div>
+            <div style={rowS}><span style={labelS}>From Person</span><span style={roStyle}>{form.fromPerson}</span></div>
+            <div style={rowS}><span style={labelS}>To Person</span>
+              <input style={inputStyle} value={form.toPerson} onChange={(e) => updateForm("toPerson", e.target.value)} placeholder="To person" />
+            </div>
+            <div style={rowTopS}>
+              <span style={labelTopS}>Actual Paragraph</span>
+              {selectionHtml ? (
+                <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", wordBreak: "break-word", lineHeight: "18px" }}
+                  dangerouslySetInnerHTML={{ __html: selectionHtml }} />
+              ) : (
+                <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: "18px" }}>
+                  {initData.selection || <em>No paragraph captured.</em>}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {activeTab === "analysis" && analysisData && (
           <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column" }}>
             {analysisData.fromPerson && (

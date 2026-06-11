@@ -8,7 +8,7 @@ export type CompensatorDraft = Omit<ProjectCompensator, "id" | "analysisId">;
 export type FileDraft = Omit<AttachFileToProject, "id" | "analysisId" | "feedbackId" | "flagId" | "articleId">;
 export type { CorrectedItemDraft };
 
-export type TabValue = "feedback" | "analysis" | "selection" | "questions" | "errors" | "compensators" | "answers" | "files" | "corrected";
+export type TabValue = "feedback" | "analysis" | "selection" | "paragraph" | "questions" | "errors" | "compensators" | "answers" | "files" | "corrected";
 
 export type CtxMenu = { tab: TabValue; idx: number | null; x: number; y: number };
 

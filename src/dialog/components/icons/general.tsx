@@ -103,3 +103,18 @@ export function TrashCanIcon({ color = "#616161" }: { color?: string } = {}) {
     </svg>
   );
 }
+
+/** Feedback model/flowchart icon — two boxes feeding into a diamond then a bottom box (16px). */
+export function FeedbackModelIcon({ color = "#0078D4" }: { color?: string } = {}) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="0.5" y="1" width="5" height="3.5" rx="0.8" stroke={color} strokeWidth="1.1" />
+      <rect x="10.5" y="1" width="5" height="3.5" rx="0.8" stroke={color} strokeWidth="1.1" />
+      <line x1="3" y1="4.5" x2="6.2" y2="8" stroke={color} strokeWidth="1" />
+      <line x1="13" y1="4.5" x2="9.8" y2="8" stroke={color} strokeWidth="1" />
+      <path d="M8 6.5 L11.5 9.5 L8 12.5 L4.5 9.5 Z" stroke={color} strokeWidth="1.1" />
+      <line x1="8" y1="12.5" x2="8" y2="13.5" stroke={color} strokeWidth="1" />
+      <rect x="5" y="13.5" width="6" height="2.5" rx="0.8" stroke={color} strokeWidth="1.1" />
+    </svg>
+  );
+}

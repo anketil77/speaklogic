@@ -158,9 +158,8 @@ const TABS: { value: TabValue; label: string }[] = [
   { value: "files", label: "Attached Files" },
 ];
 
-// "Selection" tab is inserted at position #2 only when feedback is provided
-// from a selection/paragraph (i.e. raw selected text is present).
-const SELECTION_TAB: { value: TabValue; label: string } = { value: "selection", label: "Selection" };
+const SELECTION_TAB_SELECTION: { value: TabValue; label: string } = { value: "selection", label: "Selection" };
+const SELECTION_TAB_PARAGRAPH: { value: TabValue; label: string } = { value: "selection", label: "Paragraph" };
 
 const inputStyle: React.CSSProperties = {
   width: "100%", height: "32px", border: "1px solid #C7C7C7", borderRadius: "4px",
@@ -259,9 +258,10 @@ export default function ProvideFeedbackView() {
     () => (initData?.selectionHtml ? sanitizeWordHtml(initData.selectionHtml) : ""),
     [initData?.selectionHtml],
   );
+  const selectionTab = initData?.mode === "paragraph" ? SELECTION_TAB_PARAGRAPH : SELECTION_TAB_SELECTION;
   const visibleTabs = useMemo(
-    () => (hasSelection ? [TABS[0], SELECTION_TAB, ...TABS.slice(1)] : TABS),
-    [hasSelection],
+    () => (hasSelection ? [TABS[0], selectionTab, ...TABS.slice(1)] : TABS),
+    [hasSelection, selectionTab],
   );
 
   // Pre-fill from init data on first load
@@ -550,7 +550,7 @@ export default function ProvideFeedbackView() {
           </>
         )}
 
-        {/* ── Selection tab — read-only (selection/paragraph feedback) ─────── */}
+        {/* ── Selection/Paragraph tab — read-only (selection/paragraph feedback) */}
         {activeTab === "selection" && (
           <>
             <div style={rowStyle}>
@@ -566,7 +566,7 @@ export default function ProvideFeedbackView() {
               <div style={readonlyDisplayStyle}>{form.toPerson}</div>
             </div>
             <div style={rowTopStyle}>
-              <span style={labelTopStyle}>Actual Selection</span>
+              <span style={labelTopStyle}>{initData?.mode === "paragraph" ? "Actual Paragraph" : "Actual Selection"}</span>
               {selectionHtml ? (
                 <div
                   style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", wordBreak: "break-word", lineHeight: "18px" }}

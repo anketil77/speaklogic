@@ -15,12 +15,14 @@ import { ViewFileInformationDialog } from "@/dialog/components/ViewFileInformati
 import {
   CloseIcon,
   FeedbackHistoryHeaderIcon,
+  FeedbackModelIcon,
   SmallCaretDownIcon,
   DeleteSelectedIcon,
   EditSelectedAnalysisIcon,
   PfAnalysisListIcon,
   PfFeedbackListIcon,
 } from "@/dialog/components/Icons";
+import { FeedbackModelDialog } from "@/dialog/components/FeedbackModelDialog";
 import { colors } from "@/styles/tokens";
 import type { ProjectFeedback, ProjectQuestion, ProjectCompensator, ProjectAnswer, AttachFileToProject } from "@/types/db";
 
@@ -37,7 +39,8 @@ const VF_TABS: { value: VFTab; label: string }[] = [
   { value: "files", label: "Attached Files" },
 ];
 
-const VF_SELECTION_TAB: { value: VFTab; label: string } = { value: "selection", label: "Selection" };
+const VF_SELECTION_TAB_SELECTION: { value: VFTab; label: string } = { value: "selection", label: "Selection" };
+const VF_SELECTION_TAB_PARAGRAPH: { value: VFTab; label: string } = { value: "selection", label: "Paragraph" };
 
 // ─── Sub-tab column definitions ───────────────────────────────────────────────
 const Q_COLS: PanelTableCol<ProjectQuestion>[] = [
@@ -145,6 +148,7 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
   const [activeTab, setActiveTab] = useState<VFTab>("feedback");
   const [openDropId, setOpenDropId] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
+  const [showModel, setShowModel] = useState(false);
 
   const [qSelIdx, setQSelIdx] = useState<number | null>(null);
   const [qMenu, setQMenu] = useState<{ x: number; y: number } | null>(null);
@@ -169,9 +173,10 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
 
   // Selection tab appears only for selection/paragraph-applied feedback.
   const hasSelection = !!(feedback.actualSelection || feedback.selectionType);
+  const vfSelectionTab = feedback.selectionType === "Paragraph" ? VF_SELECTION_TAB_PARAGRAPH : VF_SELECTION_TAB_SELECTION;
   const visibleTabs = useMemo(
-    () => (hasSelection ? [VF_TABS[0], VF_SELECTION_TAB, ...VF_TABS.slice(1)] : VF_TABS),
-    [hasSelection],
+    () => (hasSelection ? [VF_TABS[0], vfSelectionTab, ...VF_TABS.slice(1)] : VF_TABS),
+    [hasSelection, vfSelectionTab],
   );
 
   const tabCount: Record<VFTab, number> = {
@@ -298,6 +303,14 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
           </button>
           <button className="sl-icon-btn" title="Edit Feedback" onClick={() => showInfo("editFeedback")} style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", borderRadius: 4, cursor: "pointer", padding: 0, flexShrink: 0 }}>
             <EditSelectedAnalysisIcon />
+          </button>
+          <button
+            className="sl-icon-btn"
+            title="View Feedback Model"
+            onClick={() => { setOpenDropId(null); setShowModel(true); }}
+            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: showModel ? colors.grey92 : "none", border: "none", borderRadius: 4, cursor: "pointer", padding: 0, flexShrink: 0 }}
+          >
+            <FeedbackModelIcon />
           </button>
 
           <VfCmdSep />
@@ -486,6 +499,9 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
       {viewC && <ViewCompensatorDialog compensator={viewC} onClose={() => setViewC(null)} />}
       {viewA && <ViewAnswerDialog answer={viewA} onClose={() => setViewA(null)} />}
       {viewF && <ViewFileInformationDialog file={viewF} onClose={() => setViewF(null)} />}
+
+      {/* Feedback model dialog */}
+      {showModel && <FeedbackModelDialog feedback={feedback} onClose={() => setShowModel(false)} />}
     </>,
     document.body
   );

@@ -109,7 +109,7 @@ export default function ApplyView() {
 
   const tabs = useMemo((): { value: TabValue; label: string }[] => {
     const mid = initData?.mode === "selection" ? { value: "selection" as TabValue, label: "Selection" } :
-      (initData?.mode === "paragraph" && initData?.analysisData) ? { value: "analysis" as TabValue, label: "Analysis" } : null;
+      initData?.mode === "paragraph" ? { value: "paragraph" as TabValue, label: "Paragraph" } : null;
     return [{ value: "feedback", label: "Feedback" }, ...(mid ? [mid] : []), { value: "questions", label: "Analysis Question" }, { value: "errors", label: "Errors" }, { value: "compensators", label: "Compensators" }, { value: "answers", label: "Answers" }, { value: "corrected", label: "Corrected Items" }, { value: "files", label: "Attached Files" }];
   }, [initData]);
 
