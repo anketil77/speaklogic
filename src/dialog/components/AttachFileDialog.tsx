@@ -347,7 +347,7 @@ export function AttachFileDialog({ onAdd, onClose }: AttachFileDialogProps) {
         </FooterBar>
       </div>
 
-      <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileChange} />
+      <input ref={fileInputRef} type="file" accept=".doc,.docx,.rtf,.odt" style={{ display: "none" }} onChange={handleFileChange} />
     </>
   );
 

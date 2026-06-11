@@ -28,7 +28,7 @@ const useStyles = makeStyles({
   titles: { flex: 1, display: "flex", flexDirection: "column", gap: "3px" },
   titleText: { fontSize: "15.6px", fontWeight: "700", lineHeight: "21px", letterSpacing: "-0.1px", color: colors.grey11 },
   subtitleText: { fontSize: "11.1px", fontWeight: "400", lineHeight: "17px", color: colors.grey38 },
-  commandBar: { height: "44px", background: F.bgCommandBar, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0, gap: "0" },
+  commandBar: { height: "44px", background: F.bgCommandBar, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0, gap: "0", overflowX: "auto" },
   applyMainBtn: { height: "28px", minWidth: "120px", background: "#0078D4", borderRadius: "4px", border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", cursor: "pointer", padding: "0 10px", flexShrink: 0, fontFamily: "inherit", ":hover": { background: "#106EBE" } },
   applyMainBtnText: { fontSize: "11.6px", fontWeight: "700", color: colors.white, lineHeight: "14px" },
   cmdSep: { width: "1px", height: "20px", background: F.sepColor, margin: "0 8px", flexShrink: 0 },

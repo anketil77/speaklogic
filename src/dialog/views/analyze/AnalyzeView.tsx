@@ -92,6 +92,7 @@ const useStyles = makeStyles({
     padding: "0 12px",
     flexShrink: 0,
     gap: "0",
+    overflowX: "auto",
   },
   applyMainBtn: {
     height: "28px",
@@ -146,6 +147,7 @@ const useStyles = makeStyles({
     flexShrink: 0,
     background: colors.white,
     gap: "0",
+    overflowX: "auto",
   },
   tabBtn: {
     position: "relative",
@@ -622,7 +624,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         />
       </div>
 
-      <div className={styles.tabBar} style={entityOnlyMode ? { display: "none" } : undefined}>
+      <div className={styles.tabBar} style={entityOnlyMode ? { display: "none" } : { overflowX: "auto" }}>
         {visibleTabs.map(({ value, label }) => {
           const count = tabCount[value] ?? 0;
           const isActive = activeTab === value;

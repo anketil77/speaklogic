@@ -183,6 +183,7 @@ export default function AttachFileView() {
       <input
         ref={fileInputRef}
         type="file"
+        accept=".doc,.docx,.rtf,.odt"
         style={{ display: "none" }}
         onChange={handleFileChange}
       />

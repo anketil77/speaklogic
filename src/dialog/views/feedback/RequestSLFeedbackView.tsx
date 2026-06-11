@@ -70,6 +70,7 @@ const useStyles = makeStyles({
     padding: "0 12px",
     flexShrink: 0,
     gap: "0",
+    overflowX: "auto",
   },
   applyMainBtn: {
     height: "28px",
@@ -110,6 +111,7 @@ const useStyles = makeStyles({
     padding: "0 20px",
     flexShrink: 0,
     background: colors.white,
+    overflowX: "auto",
   },
   tabBtn: {
     position: "relative",
