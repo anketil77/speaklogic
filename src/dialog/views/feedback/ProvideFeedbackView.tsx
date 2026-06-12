@@ -278,19 +278,21 @@ export default function ProvideFeedbackView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initData]);
 
-  const peopleEmailMap = initData?.peopleEmailMap ?? {};
-
   const updateForm = useCallback(<K extends keyof typeof form>(key: K, value: string) => {
-    setForm((prev) => {
-      const next = { ...prev, [key]: value };
-      // auto-fill email when a known person is picked from the dropdown
-      if (key === "toPerson" && value && peopleEmailMap[value] !== undefined) {
-        next.toPersonEmail = peopleEmailMap[value];
-      }
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [key]: value }));
     setValidationError(null);
-  }, [peopleEmailMap]);
+  }, []);
+
+  // Auto-fill name + email together when the user picks an existing contact.
+  // Email lookup must happen by contact id, not by name — duplicate names are allowed.
+  const handlePickPerson = useCallback((name: string, email?: string) => {
+    setForm((prev) => ({
+      ...prev,
+      toPerson: name,
+      toPersonEmail: email !== undefined ? email : prev.toPersonEmail,
+    }));
+    setValidationError(null);
+  }, []);
 
   const save = useCallback(() => {
     if (!initData) return;
@@ -381,6 +383,7 @@ export default function ProvideFeedbackView() {
   }
 
   const peopleList = initData.peopleList ?? [];
+  const contacts = initData.contacts ?? [];
 
   return (
     <div className={styles.root}>
@@ -482,9 +485,10 @@ export default function ProvideFeedbackView() {
               <span style={labelStyle}>To Person</span>
               <PersonComboBox
                 value={form.toPerson}
-                onChange={(name) => updateForm("toPerson", name)}
+                onChange={handlePickPerson}
+                contacts={contacts}
                 suggestions={peopleList}
-                placeholder={peopleList.length > 0 ? "Search or enter recipient name" : "Enter recipient name"}
+                placeholder={(contacts.length > 0 || peopleList.length > 0) ? "Search or enter recipient name" : "Enter recipient name"}
               />
             </div>
 

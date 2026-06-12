@@ -1,6 +1,6 @@
 // src/dialog/views/feedback/RequestFeedbackView.tsx
 
-import React, { useRef, useState, useCallback, useEffect } from "react";
+import React, { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { Spinner, makeStyles } from "@fluentui/react-components";
 import { CheckmarkRegular } from "@fluentui/react-icons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
@@ -12,7 +12,7 @@ import { ViewFileInformationDialog } from "@/dialog/components/ViewFileInformati
 import { MultiSelectDropdown } from "@/dialog/components/MultiSelectDropdown";
 import { HamburgerIcon, ViewListFeedbackIcon, ViewListAnalysisIcon } from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
-import type { AttachFileToProject, SaveRequestFeedbackPayload } from "@/types/db";
+import type { AttachFileToProject, ContactPerson, SaveRequestFeedbackPayload } from "@/types/db";
 
 type FileDraft = Omit<AttachFileToProject, "id" | "analysisId" | "feedbackId" | "flagId" | "articleId">;
 type TabValue = "feedback" | "selection" | "files";
@@ -223,7 +223,8 @@ export default function RequestFeedbackView() {
 
   const [form, setForm] = useState({
     fromPerson: "",
-    toPerson: [] as string[],
+    // Selected contact ids — keyed by id, not name, so duplicate names stay distinct.
+    toPerson: [] as number[],
     toPersonEmail: "",
     applicationName: "",
     communicationFunction: "",
@@ -244,29 +245,42 @@ export default function RequestFeedbackView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initData]);
 
-  const peopleEmailMap = initData?.peopleEmailMap ?? {};
+  const contactsList: ContactPerson[] = useMemo(() => {
+    if (initData?.contacts && initData.contacts.length > 0) return initData.contacts;
+    // Legacy fallback when the host didn't provide structured contacts:
+    // synthesize id-bearing items from peopleList so the picker still works.
+    const names = initData?.peopleList ?? [];
+    const emailMap = initData?.peopleEmailMap ?? {};
+    return names.map((name, i) => ({ id: -(i + 1), personName: name, emailAddress: emailMap[name] ?? "" }));
+  }, [initData?.contacts, initData?.peopleList, initData?.peopleEmailMap]);
+
+  const contactsById = useMemo(() => new Map(contactsList.map((c) => [c.id, c])), [contactsList]);
 
   const updateForm = useCallback(<K extends keyof typeof form>(key: K, value: typeof form[K]) => {
     setForm((prev) => {
       const next = { ...prev, [key]: value };
       if (key === "toPerson") {
-        const selections = value as string[];
-        if (selections.length === 1 && peopleEmailMap[selections[0]] !== undefined) {
-          next.toPersonEmail = peopleEmailMap[selections[0]];
-        } else if (selections.length !== 1) {
+        const selectedIds = value as number[];
+        if (selectedIds.length === 1) {
+          const picked = contactsById.get(selectedIds[0]);
+          next.toPersonEmail = picked?.emailAddress ?? "";
+        } else {
           next.toPersonEmail = "";
         }
       }
       return next;
     });
     setValidationError(null);
-  }, [peopleEmailMap]);
+  }, [contactsById]);
 
   const save = useCallback(() => {
     if (!initData) return;
 
     const requestText = form.actualCommunication.replace(/<[^>]*>/g, "").trim();
-    const toPersonStr = form.toPerson.join(", ");
+    const selectedContacts = form.toPerson
+      .map((id) => contactsById.get(id))
+      .filter((c): c is ContactPerson => !!c);
+    const toPersonStr = selectedContacts.map((c) => c.personName).join(", ");
 
     const missing: string[] = [];
     if (!form.fromPerson.trim()) missing.push("From Person");
@@ -296,7 +310,7 @@ export default function RequestFeedbackView() {
     };
 
     submitSave({ action: "SAVE_REQUEST_FEEDBACK", payload });
-  }, [form, attachedFiles, initData, submitSave]);
+  }, [form, attachedFiles, initData, submitSave, contactsById]);
 
   if (!initData) {
     return (
@@ -335,7 +349,11 @@ export default function RequestFeedbackView() {
     );
   }
 
-  const peopleList = initData.peopleList ?? [];
+  const personOptions = contactsList.map((c) => ({
+    id: c.id,
+    label: c.personName,
+    sublabel: c.emailAddress || undefined,
+  }));
 
   return (
     <div className={styles.root}>
@@ -447,7 +465,7 @@ export default function RequestFeedbackView() {
             <div style={rowStyle}>
               <span style={labelStyle}>To Person</span>
               <MultiSelectDropdown
-                options={peopleList}
+                options={personOptions}
                 value={form.toPerson}
                 onChange={(v) => updateForm("toPerson", v)}
               />

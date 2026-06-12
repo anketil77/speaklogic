@@ -98,9 +98,10 @@ type FormState = {
   name: string;
   email: string;
   nameError: boolean;
+  emailError: string | null;
 };
 
-const IDLE_FORM: FormState = { mode: "idle", id: null, name: "", email: "", nameError: false };
+const IDLE_FORM: FormState = { mode: "idle", id: null, name: "", email: "", nameError: false, emailError: null };
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function PeopleView() {
@@ -112,15 +113,23 @@ export default function PeopleView() {
 
   const myName = initData?.communicationPersonName ?? "";
   const myEmail = initData?.communicationPersonEmail ?? "";
+  const myEmailKey = myEmail.trim().toLowerCase();
 
   useEffect(() => {
     if (initData?.contacts) {
-      const filtered = myName
-        ? initData.contacts.filter((c) => c.personName !== myName)
-        : initData.contacts;
+      // Hide the "you" row from the Other Contacts list. Filter by email when
+      // possible because names are not unique — filtering on name alone would
+      // hide unrelated contacts who happen to share the user's name.
+      const filtered = initData.contacts.filter((c) => {
+        const emailKey = (c.emailAddress ?? "").trim().toLowerCase();
+        if (myEmailKey && emailKey) return emailKey !== myEmailKey;
+        // Fall back to name when one side has no email configured.
+        if (myName) return c.personName !== myName;
+        return true;
+      });
       setContacts(filtered);
     }
-  }, [initData?.contacts, myName]);
+  }, [initData?.contacts, myEmailKey, myName]);
 
   useEffect(() => {
     if (form.mode !== "idle") setTimeout(() => nameInputRef.current?.focus(), 60);
@@ -128,28 +137,46 @@ export default function PeopleView() {
 
   const openAdd = useCallback(() => {
     setDeleteConfirmId(null);
-    setForm({ mode: "add", id: null, name: "", email: "", nameError: false });
+    setForm({ mode: "add", id: null, name: "", email: "", nameError: false, emailError: null });
   }, []);
 
   const openEdit = useCallback((c: ContactPerson) => {
     setDeleteConfirmId(null);
-    setForm({ mode: "edit", id: c.id, name: c.personName, email: c.emailAddress, nameError: false });
+    setForm({ mode: "edit", id: c.id, name: c.personName, email: c.emailAddress, nameError: false, emailError: null });
   }, []);
 
   const cancelForm = useCallback(() => setForm(IDLE_FORM), []);
 
   const saveForm = useCallback(() => {
-    if (!form.name.trim()) {
+    const cleanName = form.name.trim();
+    const cleanEmail = form.email.trim();
+    if (!cleanName) {
       setForm((f) => ({ ...f, nameError: true }));
       return;
     }
+    // Email is the unique key — refuse client-side too so the user gets an
+    // immediate, specific message instead of a generic host error.
+    if (cleanEmail) {
+      const emailKey = cleanEmail.toLowerCase();
+      const allContacts = initData?.contacts ?? [];
+      const clash = allContacts.find(
+        (c) => (c.emailAddress ?? "").trim().toLowerCase() === emailKey && c.id !== form.id
+      );
+      if (clash) {
+        setForm((f) => ({
+          ...f,
+          emailError: `Already used by "${clash.personName}". Each contact needs a unique email.`,
+        }));
+        return;
+      }
+    }
     if (form.mode === "add") {
-      sendMessage({ action: "ADD_CONTACT", personName: form.name.trim(), emailAddress: form.email.trim() });
+      sendMessage({ action: "ADD_CONTACT", personName: cleanName, emailAddress: cleanEmail });
     } else if (form.mode === "edit" && form.id !== null) {
-      sendMessage({ action: "UPDATE_CONTACT", id: form.id, personName: form.name.trim(), emailAddress: form.email.trim() });
+      sendMessage({ action: "UPDATE_CONTACT", id: form.id, personName: cleanName, emailAddress: cleanEmail });
     }
     setForm(IDLE_FORM);
-  }, [form, sendMessage]);
+  }, [form, sendMessage, initData?.contacts]);
 
   const confirmDelete = useCallback((id: number) => {
     setForm(IDLE_FORM);
@@ -313,13 +340,18 @@ export default function PeopleView() {
               <div>
                 <label style={labelStyle}>Email</label>
                 <input
-                  style={inputStyle}
+                  style={form.emailError ? inputErrorStyle : inputStyle}
                   type="email"
                   value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value, emailError: null }))}
                   onKeyDown={handleKeyDown}
                   placeholder="email@example.com"
                 />
+                {form.emailError && (
+                  <span style={{ fontSize: "10.6px", color: "#D13438", marginTop: "3px", display: "block" }}>
+                    {form.emailError}
+                  </span>
+                )}
               </div>
             </div>
 

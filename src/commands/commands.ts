@@ -10,7 +10,7 @@ import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses,
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
-import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail, getAllPeople, updatePersonById, deletePersonById } from "@/db/queries/people";
+import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail, getAllPeople, updatePersonById, deletePersonById, addPersonContact } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { saveArticle, updateArticle, publishArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById } from "@/db/queries/article";
 import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
@@ -804,7 +804,7 @@ function openAnalyzeDialogWithPayload(
                 communicationSignal: payload.analysis.communicationSignal,
                 projectName: payload.analysis.projectName,
                 peopleList: getPeopleNames(),
-                peopleEmailMap: getPeopleEmailMap(),
+                peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(),
                 analysisData: {
                   id: savedId,
                   entityUnderAnalysis: payload.analysis.entityUnderAnalysis,
@@ -972,7 +972,7 @@ async function openRequestFeedbackFromRibbon(event: Office.AddinCommands.Event):
     communicationSignal: "",
     projectName: documentTitle,
     peopleList: buildPeopleList(commConfig?.personName),
-    peopleEmailMap: getPeopleEmailMap(),
+    peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(),
     communicationPersonName: commConfig?.personName ?? "",
     communicationPersonEmail: commConfig?.personEmail ?? "",
   }, event);
@@ -1247,7 +1247,7 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             communicationSignal: analysis.communicationSignal ?? "",
             projectName: analysis.projectName ?? "",
             peopleList: buildPeopleList(commConfig?.personName),
-            peopleEmailMap: getPeopleEmailMap(),
+            peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(),
             communicationPersonName: commConfig?.personName ?? "",
             communicationPersonEmail: commConfig?.personEmail ?? "",
           };
@@ -2244,7 +2244,7 @@ function openRequestFeedbackArticleDialog(
     communicationSignal: "",
     projectName: "",
     peopleList: buildPeopleList(commConfig?.personName),
-    peopleEmailMap: getPeopleEmailMap(),
+    peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(),
     communicationPersonName: commConfig?.personName ?? "",
     communicationPersonEmail: commConfig?.personEmail ?? "",
   }, event, attempt);
@@ -2748,7 +2748,7 @@ async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.
     communicationSignal: "",
     projectName: documentTitle,
     peopleList: buildPeopleList(commConfig?.personName),
-    peopleEmailMap: getPeopleEmailMap(),
+    peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(),
     communicationPersonName: commConfig?.personName ?? "",
     communicationPersonEmail: commConfig?.personEmail ?? "",
   }, event);
@@ -2837,7 +2837,7 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
     communicationSignal: "",
     projectName: documentTitle,
     peopleList: buildPeopleList(commConfig?.personName),
-    peopleEmailMap: getPeopleEmailMap(),
+    peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(),
     communicationPersonName: commConfig?.personName ?? "",
     communicationPersonEmail: commConfig?.personEmail ?? "",
     analyses,
@@ -3238,15 +3238,21 @@ function openPeopleDialog(event: Office.AddinCommands.Event): void {
               break;
             case "ADD_CONTACT":
               try {
-                upsertPersonWithEmail(m.personName ?? "", m.emailAddress ?? "");
+                addPersonContact(m.personName ?? "", m.emailAddress ?? "");
                 sendInit();
-              } catch (err) { replyError(dialog, `Failed to add contact: ${String(err)}`); }
+              } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                replyError(dialog, message);
+              }
               break;
             case "UPDATE_CONTACT":
               try {
                 updatePersonById(m.id ?? 0, m.personName ?? "", m.emailAddress ?? "");
                 sendInit();
-              } catch (err) { replyError(dialog, `Failed to update contact: ${String(err)}`); }
+              } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                replyError(dialog, message);
+              }
               break;
             case "DELETE_CONTACT":
               try {
