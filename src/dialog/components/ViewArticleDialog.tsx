@@ -10,7 +10,6 @@ import { ResizeHandles } from "@/dialog/components/ResizeHandles";
 import { ArticleHeaderIcon, ArticleCloseIcon } from "@/dialog/components/Icons";
 import { HtmlContent } from "@/dialog/components/HtmlContent";
 import { CategoryIcon } from "@/dialog/views/createarticle/CategoryPickerPanel";
-import type { ArticleCategory } from "@/dialog/views/createarticle/CategoryPickerPanel";
 import type { Article } from "@/types/db";
 
 interface Props {
@@ -511,7 +510,7 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
                   }}
                 >
                   <CategoryIcon
-                    category={article.category as ArticleCategory}
+                    category={article.category}
                     size={13}
                     color="#fff"
                   />

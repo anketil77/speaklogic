@@ -107,7 +107,7 @@ export function Step3Article({ data, onChange, onNext, onBack, onCancel, hidePro
             >
               {data.category && (
                 <CategoryIcon
-                  category={data.category as ArticleCategory}
+                  category={data.category}
                   size={14}
                   color="#1B1B1B"
                 />

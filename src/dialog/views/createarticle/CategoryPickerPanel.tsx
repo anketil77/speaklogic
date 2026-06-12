@@ -72,15 +72,17 @@ const CATEGORY_ICONS: Record<Exclude<ArticleCategory, "">, FluentIcon> = {
 };
 
 export interface CategoryIconProps {
-  category: ArticleCategory;
+  /** Accepts any string so callers can pass DB-stored values without a cast. */
+  category: string | null | undefined;
   size?:    number;
   color?:   string;
 }
 
-/** Renders the Fluent icon for a category. Returns null for the empty category. */
+/** Renders the Fluent icon for a category. Returns null when the value isn't a known category. */
 export function CategoryIcon({ category, size = 16, color }: CategoryIconProps) {
   if (!category) return null;
-  const Icon = CATEGORY_ICONS[category];
+  const Icon = CATEGORY_ICONS[category as Exclude<ArticleCategory, "">];
+  if (!Icon) return null;
   return (
     <Icon
       style={{
