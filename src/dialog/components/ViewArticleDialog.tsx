@@ -169,8 +169,8 @@ function WizardContent({ article }: { article: Article }) {
       {/* Pre/Post observations (Sport Template 1) */}
       {hasObs && (
         <WizardSection title="Observations">
-          <WizardField label="Pre-event Observation"  value={article.preEventObservation} />
-          <WizardField label="Post-event Observation" value={article.postEventObservation} />
+          <WizardField label="Pre-event Observation"  value={article.preEventObservation}  html />
+          <WizardField label="Post-event Observation" value={article.postEventObservation} html />
         </WizardSection>
       )}
 
@@ -186,14 +186,14 @@ function WizardContent({ article }: { article: Article }) {
         </WizardSection>
       )}
 
-      {/* Content sections */}
+      {/* Content sections — all authored via RichEditor so render as HTML */}
       {hasContent && (
         <WizardSection title="Content">
-          <WizardField label="Mother Nature Considerations" value={article.motherNatureConsiderations} />
-          <WizardField label="Negative Function Executed"  value={article.negativeFunction} />
-          <WizardField label="Problem Developed"           value={article.problemDetails} />
-          <WizardField label="Function Executed from Event" value={article.funcExecuteFromEvent} />
-          <WizardField label="Relationship"                value={article.relationshipDetails} />
+          <WizardField label="Mother Nature Considerations" value={article.motherNatureConsiderations} html />
+          <WizardField label="Negative Function Executed"   value={article.negativeFunction}           html />
+          <WizardField label="Problem Developed"            value={article.problemDetails}             html />
+          <WizardField label="Function Executed from Event" value={article.funcExecuteFromEvent}       html />
+          <WizardField label="Relationship"                 value={article.relationshipDetails}        html />
         </WizardSection>
       )}
 
@@ -218,14 +218,14 @@ function WizardContent({ article }: { article: Article }) {
 
       {isProduct && hasReview && (
         <WizardSection title="Review">
-          <WizardField label="Function During Review" value={article.functionExecutedDuringReview} />
+          <WizardField label="Function During Review" value={article.functionExecutedDuringReview} html />
           <WizardField label="Problem Solved by Product" value={article.isSolvedProblem === 1 ? "Yes" : article.isSolvedProblem === 0 ? "No" : null} />
         </WizardSection>
       )}
 
       {isProduct && hasAdditional && (
         <WizardSection title="Additional Information">
-          <WizardField label="Additional Information" value={article.additionalInformation} />
+          <WizardField label="Additional Information" value={article.additionalInformation} html />
           <WizardField label="Product URL"            value={article.productURL} />
         </WizardSection>
       )}

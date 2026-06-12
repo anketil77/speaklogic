@@ -4,6 +4,7 @@
 import React from "react";
 import { SectionBox }   from "../SectionBox";
 import { WizardFooter } from "../WizardFooter";
+import { RichField }    from "../RichField";
 import type { StepProps } from "../wizardTypes";
 
 export function StepAdditionalInfo({ data, onChange, onNext, onBack, onCancel }: StepProps) {
@@ -12,12 +13,10 @@ export function StepAdditionalInfo({ data, onChange, onNext, onBack, onCancel }:
       <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "10px 14px 6px", display: "flex", flexDirection: "column", gap: 9 }}>
 
         <SectionBox title="Additional Information" showHelp>
-          <textarea
-            rows={5}
+          <RichField
             placeholder="Enter any additional information about the product"
             value={data.additionalInformation}
-            onChange={(e) => onChange({ additionalInformation: e.target.value })}
-            style={TEXTAREA_STYLE}
+            onChange={(v) => onChange({ additionalInformation: v })}
           />
         </SectionBox>
 
@@ -64,9 +63,3 @@ function LabeledInput({ value, onChange, placeholder }: { value: string; onChang
   );
 }
 
-const TEXTAREA_STYLE: React.CSSProperties = {
-  boxSizing: "border-box", width: "100%", padding: "7px 9px",
-  background: "#FFFFFF", border: "1px solid #C7C7C7", borderRadius: 4,
-  fontFamily: "'Inter','Segoe UI',sans-serif", fontWeight: 400, fontSize: 11.1,
-  lineHeight: "18px", color: "#1B1B1B", outline: "none", resize: "vertical", minHeight: 78,
-};

@@ -35,6 +35,22 @@ export interface ContentConfig {
 export const WIZARD_FIRST_EDITABLE_STEP = 1;
 export const WIZARD_DONE_STEP           = 6;
 
+// ─── Info-entry model (Step 6 list + Step 7 verifications) ──────────────────
+
+export interface InfoEntry {
+  id:           string;  // stable id (uuid-ish) for React keys + edit/delete
+  html:         string;  // "Information existed/identified before event" body (HTML)
+  verification: string;  // Step 7 per-entry verification body (HTML)
+}
+
+export function makeInfoEntry(html: string = ""): InfoEntry {
+  return {
+    id:           `info-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    html,
+    verification: "",
+  };
+}
+
 // ─── Form data model ─────────────────────────────────────────────────────────
 
 export interface WizardData {
@@ -57,10 +73,14 @@ export interface WizardData {
   eventDate:     string;
   eventTime:     string;
 
-  // Step 6 — Info (rich text HTML)
-  infoBeforeEvent: string;
+  // Step 6 — Info (list of identified-information entries, each rich text HTML)
+  // Each entry pairs an "information identified before event" HTML body
+  // with a per-entry verification HTML body authored on Step 7.
+  infoBeforeEvent: InfoEntry[];
 
   // Step 7 — Content (configurable sections)
+  // motherNatureConsiderations is a free-form HTML body stored alongside
+  // the per-entry verifications inside infoBeforeEvent.
   motherNatureConsiderations: string;
   negativeFunction:           string;
   problemDetails:             string;
@@ -103,7 +123,7 @@ export const INITIAL_WIZARD_DATA: WizardData = {
   eventLocation:   "",
   eventDate:       "",
   eventTime:       "",
-  infoBeforeEvent: "",
+  infoBeforeEvent: [],
   motherNatureConsiderations: "",
   negativeFunction:           "",
   problemDetails:             "",

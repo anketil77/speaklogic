@@ -8,6 +8,7 @@
 import React, { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ArticleCloseIcon, WizardSearchIcon } from "@/dialog/components/Icons";
+import { useDraggable } from "@/dialog/hooks/useDraggable";
 
 export interface InfoItem {
   id:      number;
@@ -28,6 +29,7 @@ export function SelectInfoPanel({ userItems, speakLogicItems, onSelect, onClose 
   const [activeTab,    setActiveTab]    = useState<Tab>("user");
   const [search,       setSearch]       = useState("");
   const [selectedId,   setSelectedId]   = useState<number | null>(null);
+  const { pos, onHeaderMouseDown } = useDraggable();
 
   const items = activeTab === "user" ? userItems : speakLogicItems;
 
@@ -50,12 +52,15 @@ export function SelectInfoPanel({ userItems, speakLogicItems, onSelect, onClose 
     if (item) onSelect(item);
   }, [filtered, selectedId, onSelect]);
 
+  // Anchored to top-right at (12, 90); pos is the drag delta applied as offset.
+  // Dragging right grows pos.x → shrinks the `right` distance (panel moves right);
+  // dragging down grows pos.y → grows the `top` distance (panel moves down).
   const panel = (
     <div
       style={{
         position:     "fixed",
-        right:        12,
-        top:          90,
+        right:        12 - pos.x,
+        top:          90 + pos.y,
         width:        300,
         maxHeight:    431,
         background:   "#FFFFFF",
@@ -68,7 +73,7 @@ export function SelectInfoPanel({ userItems, speakLogicItems, onSelect, onClose 
         overflow:     "hidden",
       }}
     >
-      <PanelHeader onClose={onClose} />
+      <PanelHeader onClose={onClose} onDragStart={onHeaderMouseDown} />
       <TabBar activeTab={activeTab} onChange={handleTabChange} />
       <SearchBar value={search} onChange={setSearch} />
       <ItemList items={filtered} selectedId={selectedId} onSelect={setSelectedId} />
@@ -81,10 +86,11 @@ export function SelectInfoPanel({ userItems, speakLogicItems, onSelect, onClose 
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function PanelHeader({ onClose }: { onClose: () => void }) {
+function PanelHeader({ onClose, onDragStart }: { onClose: () => void; onDragStart: (e: React.MouseEvent) => void }) {
   const [hov, setHov] = useState(false);
   return (
     <div
+      onMouseDown={onDragStart}
       style={{
         display:        "flex",
         flexDirection:  "row",
@@ -94,6 +100,8 @@ function PanelHeader({ onClose }: { onClose: () => void }) {
         height:         43,
         flexShrink:     0,
         boxSizing:      "border-box",
+        cursor:         "grab",
+        userSelect:     "none",
       }}
     >
       <span style={{ fontWeight: 700, fontSize: 12.7, lineHeight: "15px", color: "#1B1B1B" }}>

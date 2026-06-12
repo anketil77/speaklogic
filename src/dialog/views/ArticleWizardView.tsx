@@ -101,6 +101,28 @@ export default function ArticleWizardView() {
     // Last real step before "done" — send save payload
     const doneIdx = steps.findIndex((s) => s.id === "done");
     if (stepIdx === doneIdx - 1) {
+      // Collapse the InfoEntry list into the legacy TEXT columns so existing
+      // readers (ViewArticleDialog, formatArticleForAnalysis) keep working.
+      //   • infoBeforeEvent         ← combined "identified" HTML
+      //   • motherNatureConsiderations ← combined "verification" HTML appended
+      //                                  to any free-form notes from Step 7
+      const combinedInfo = data.infoBeforeEvent
+        .map((e) => e.html)
+        .filter((h) => h && h.trim())
+        .join("");
+      const combinedVerifications = data.infoBeforeEvent
+        .map((e, i) => {
+          const v = (e.verification || "").trim();
+          if (!v) return "";
+          return `<p><strong>Verification #${i + 1}:</strong></p>${v}`;
+        })
+        .filter(Boolean)
+        .join("");
+      const combinedMotherNature = [
+        data.motherNatureConsiderations || "",
+        combinedVerifications,
+      ].filter((s) => s && s.trim()).join("");
+
       const payload: SaveArticleWizardPayload = {
         articleTitle:               data.articleTitle,
         category:                   data.category,
@@ -115,8 +137,8 @@ export default function ArticleWizardView() {
         eventLocation:              data.eventLocation,
         eventDate:                  data.eventDate,
         eventTime:                  data.eventTime,
-        infoBeforeEvent:            data.infoBeforeEvent,
-        motherNatureConsiderations: data.motherNatureConsiderations,
+        infoBeforeEvent:            combinedInfo,
+        motherNatureConsiderations: combinedMotherNature,
         negativeFunction:           data.negativeFunction,
         problemDetails:             data.problemDetails,
         relationshipDetails:        data.relationshipDetails,

@@ -1,5 +1,7 @@
 // src/dialog/components/RichEditor.tsx
 import React, { useEffect, useRef, useImperativeHandle } from "react";
+import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
+import "@/dialog/components/HtmlContent"; // injects .sl-html-content CSS so htmlContentStyling works
 
 const STYLE_ID = "__rte_placeholder__";
 
@@ -38,10 +40,23 @@ export interface RichEditorProps {
   onChange: (html: string) => void;
   style?: React.CSSProperties;
   placeholder?: string;
+  /**
+   * Opt in to the shared .sl-html-content CSS (paragraph margins, em-based
+   * heading sizes, list/blockquote/image styling). Use this for editors that
+   * accept pasted article content so headings and lists stay constrained to
+   * the editor width instead of rendering at raw browser default sizes.
+   */
+  htmlContentStyling?: boolean;
+  /**
+   * Strip Word/Office boilerplate from pasted HTML before it enters the
+   * editor (uses sanitizeWordHtml). Recommended whenever users may paste
+   * formatted content from a Word document or web article.
+   */
+  sanitizeOnPaste?: boolean;
 }
 
 export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
-  ({ value, onChange, style, placeholder }, ref) => {
+  ({ value, onChange, style, placeholder, htmlContentStyling, sanitizeOnPaste }, ref) => {
     const innerRef = useRef<HTMLDivElement>(null);
 
     useImperativeHandle(ref, () => innerRef.current!);
@@ -103,6 +118,22 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
       }
     }
 
+    function handlePaste(e: React.ClipboardEvent<HTMLDivElement>) {
+      if (!sanitizeOnPaste) return;
+      const html = e.clipboardData.getData("text/html");
+      const text = e.clipboardData.getData("text/plain");
+      if (!html && !text) return;
+      e.preventDefault();
+      const cleaned = html
+        ? sanitizeWordHtml(html)
+        : (text || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+      // execCommand("insertHTML") is deprecated but is the only reliable cross-browser
+      // way to insert HTML into a contentEditable at the current caret position.
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      document.execCommand("insertHTML", false, cleaned);
+      if (innerRef.current) onChange(innerRef.current.innerHTML);
+    }
+
     function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
       if (e.key !== "Tab") return;
       const sel = window.getSelection();
@@ -126,10 +157,11 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
         ref={innerRef}
         contentEditable
         suppressContentEditableWarning
-        className="rte-field"
+        className={htmlContentStyling ? "rte-field sl-html-content" : "rte-field"}
         data-placeholder={placeholder}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         onClick={handleClick}
         style={{
           minHeight: "96px",
