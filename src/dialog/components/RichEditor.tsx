@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useImperativeHandle } from "react";
 import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
 import "@/dialog/components/HtmlContent"; // injects .sl-html-content CSS so htmlContentStyling works
+import { useTableEditing } from "@/dialog/components/toolbar/useTableEditing";
 
 const STYLE_ID = "__rte_placeholder__";
 
@@ -21,6 +22,12 @@ function injectPlaceholderCSS() {
     ".rte-field ol.rte-outline>li{list-style-type:decimal;}" +
     ".rte-field ol.rte-outline ol>li{list-style-type:lower-alpha;}" +
     ".rte-field ol.rte-outline ol ol>li{list-style-type:lower-roman;}" +
+    // table-layout:fixed + width:100% keeps tables inside the narrow editor: columns
+    // share the available width and cell text wraps, instead of auto-layout expanding
+    // the table (and the whole horizontally-scrollable editor) to fit its content.
+    ".rte-field table{border-collapse:collapse;table-layout:fixed;width:100%;margin:0 0 0.85em;}" +
+    ".rte-field th,.rte-field td{border:1px solid #C7C7C7;padding:6px 9px;vertical-align:top;word-break:break-word;overflow-wrap:anywhere;}" +
+    ".rte-field th{background:#F3F4F6;font-weight:600;text-align:left;}" +
     ".sl-find-match{background:#FFF176;border-radius:1px;}" +
     ".sl-find-active{background:#FFB300;}" +
     ".sl-spell-error{text-decoration:underline wavy #D13438;text-underline-offset:2px;}" +
@@ -60,6 +67,8 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
     const innerRef = useRef<HTMLDivElement>(null);
 
     useImperativeHandle(ref, () => innerRef.current!);
+
+    const { onContextMenu, menuElement, overlayElement } = useTableEditing(innerRef);
 
     useEffect(() => {
       injectPlaceholderCSS();
@@ -126,7 +135,11 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
       e.preventDefault();
       const cleaned = html
         ? sanitizeWordHtml(html)
-        : (text || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+        : (text || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\n/g, "<br>");
       // execCommand("insertHTML") is deprecated but is the only reliable cross-browser
       // way to insert HTML into a contentEditable at the current caret position.
       // eslint-disable-next-line @typescript-eslint/no-deprecated
@@ -153,33 +166,38 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
     }
 
     return (
-      <div
-        ref={innerRef}
-        contentEditable
-        suppressContentEditableWarning
-        className={htmlContentStyling ? "rte-field sl-html-content" : "rte-field"}
-        data-placeholder={placeholder}
-        onInput={handleInput}
-        onKeyDown={handleKeyDown}
-        onPaste={handlePaste}
-        onClick={handleClick}
-        style={{
-          minHeight: "96px",
-          width: "100%",
-          border: "1px solid #C7C7C7",
-          borderRadius: "4px",
-          padding: "9px 11px",
-          fontSize: "12.3px",
-          fontFamily: "inherit",
-          color: "#1B1B1B",
-          background: "#FFFFFF",
-          outline: "none",
-          boxSizing: "border-box",
-          overflowY: "auto",
-          wordBreak: "break-word",
-          ...style,
-        }}
-      />
+      <>
+        <div
+          ref={innerRef}
+          contentEditable
+          suppressContentEditableWarning
+          className={htmlContentStyling ? "rte-field sl-html-content" : "rte-field"}
+          data-placeholder={placeholder}
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
+          onClick={handleClick}
+          onContextMenu={onContextMenu}
+          style={{
+            minHeight: "96px",
+            width: "100%",
+            border: "1px solid #C7C7C7",
+            borderRadius: "4px",
+            padding: "9px 11px",
+            fontSize: "12.3px",
+            fontFamily: "inherit",
+            color: "#1B1B1B",
+            background: "#FFFFFF",
+            outline: "none",
+            boxSizing: "border-box",
+            overflowY: "auto",
+            wordBreak: "break-word",
+            ...style,
+          }}
+        />
+        {menuElement}
+        {overlayElement}
+      </>
     );
   }
 );

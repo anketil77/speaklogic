@@ -40,7 +40,9 @@ const SL_HTML_CONTENT_CSS = `
   max-width: 100% !important; height: auto !important; display: block;
   margin: 0.85em 0; border-radius: 4px;
 }
-.sl-html-content table { border-collapse: collapse; max-width: 100%; }
+.sl-html-content table { border-collapse: collapse; table-layout: fixed; width: 100%; margin: 0 0 0.85em; }
+.sl-html-content th, .sl-html-content td { border: 1px solid #C7C7C7; padding: 6px 9px; vertical-align: top; word-break: break-word; overflow-wrap: anywhere; }
+.sl-html-content th { background: #F3F4F6; font-weight: 600; text-align: left; }
 .sl-html-content hr { margin: 1em 0; border: none; border-top: 1px solid #D0D0D0; }
 `;
 

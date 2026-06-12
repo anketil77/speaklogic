@@ -26,6 +26,7 @@ import {
   SpellCheckIcon,
   SubscriptIcon,
   SuperscriptIcon,
+  TableIcon,
 } from "@/dialog/components/toolbar/ToolbarIcons";
 import {
   FONT_COLORS,
@@ -61,8 +62,12 @@ import { useSpellCheck } from "@/dialog/components/toolbar/useSpellCheck";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type DropdownId = "font" | "alignment" | "clipboard" | "list" | "save";
+type DropdownId = "font" | "alignment" | "clipboard" | "list" | "table" | "save";
 type Alignment = "left" | "center" | "right" | "justify";
+
+// Grid-picker dimensions for the Table dropdown (max rows × cols a user can drag-select).
+const TABLE_GRID_ROWS = 8;
+const TABLE_GRID_COLS = 10;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -88,6 +93,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   const alignGroupRef = useRef<HTMLDivElement>(null);
   const clipboardGroupRef = useRef<HTMLDivElement>(null);
   const listGroupRef = useRef<HTMLDivElement>(null);
+  const tableGroupRef = useRef<HTMLDivElement>(null);
   const saveGroupRef = useRef<HTMLDivElement>(null);
   const portalPanelRef = useRef<HTMLDivElement | null>(null);
   const [panelAnchor, setPanelAnchor] = useState<{ top: number; left: number } | null>(null);
@@ -105,6 +111,8 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
   const [highlight, setHighlight] = useState<string | null>(null);
   const [alignment, setAlignment] = useState<Alignment>("left");
   const [saveStatus, setSaveStatus] = useState<"" | "empty" | "saved" | "copied" | "error">("");
+  // Highlighted block in the table grid picker: rows × cols the cursor is hovering.
+  const [tableHover, setTableHover] = useState<{ r: number; c: number } | null>(null);
 
   const {
     show: showFindReplace,
@@ -224,6 +232,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
       if (!inWrapper && !inPortal) {
         setOpenDropdown(null);
         setPanelAnchor(null);
+        setTableHover(null);
       }
     }
     document.addEventListener("mousedown", onOutside, true);
@@ -235,6 +244,7 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
     if (closeSignal !== undefined) {
       setOpenDropdown(null);
       setPanelAnchor(null);
+      setTableHover(null);
       closeFindReplace();
       hideSpellCheck();
     }
@@ -384,6 +394,51 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
       );
     }
     setOpenDropdown(null);
+  }
+
+  // ── Table insertion ───────────────────────────────────────────────────────
+  // execCommand has no table command, so we build semantic table HTML and drop
+  // it at the caret through the same insertHTML path the paste handler uses.
+  // Borders/padding are inline on every cell (not a CSS class) so the table
+  // survives the read-only HtmlContent view and .docx/.html/.rtf export, where
+  // class-based styling is stripped.
+  function buildTableHtml(rows: number, cols: number): string {
+    const cell =
+      '<td style="border:1px solid #C7C7C7;padding:6px 9px;vertical-align:top;">' +
+      "<br></td>";
+    const row = `<tr>${cell.repeat(cols)}</tr>`;
+    return (
+      '<table style="border-collapse:collapse;table-layout:fixed;width:100%;margin:0 0 0.85em;font-size:inherit;">' +
+      `<tbody>${row.repeat(rows)}</tbody>` +
+      "</table><p><br></p>"
+    );
+  }
+
+  function insertTable(rows: number, cols: number) {
+    if (rows < 1 || cols < 1) return;
+    const el = editorRef.current;
+    if (!el) return;
+
+    restoreSelection();
+    // If the caret was never inside this editor, restoreSelection is a no-op —
+    // focus and drop the caret at the end so the table lands somewhere sensible.
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !el.contains(sel.anchorNode)) {
+      el.focus();
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      r.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(r);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    document.execCommand("insertHTML", false, buildTableHtml(rows, cols));
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+
+    setTableHover(null);
+    setOpenDropdown(null);
+    setPanelAnchor(null);
   }
 
   // Paste button strategy:
@@ -1096,6 +1151,53 @@ export function RichTextToolbar({ editorRef, closeSignal, onOpen }: RichTextTool
                 <span>{label}</span>
               </button>
             ))}
+          </div>
+        , document.body)}
+      </div>
+
+      {/* ── Table button — grid picker ─────────────────────────────────────── */}
+      <div ref={tableGroupRef} style={{ position: "relative", height: "100%", display: "flex", alignItems: "center" }}>
+        <button
+          className="sl-icon-btn"
+          style={iconBtnBase}
+          title="Insert Table"
+          onClick={() => { setTableHover(null); toggleDd("table", tableGroupRef); }}
+        >
+          <TableIcon />
+        </button>
+
+        {openDropdown === "table" && panelAnchor && createPortal(
+          <div
+            ref={(el) => { portalPanelRef.current = el; }}
+            onMouseLeave={() => setTableHover(null)}
+            style={{ position: "fixed", top: panelAnchor.top, left: panelAnchor.left, zIndex: 9999, padding: "10px 12px 8px", background: "#FFFFFF", border: "1px solid #E0E0E0", boxShadow: "0px 4px 16px rgba(0,0,0,0.12), 0px 1px 4px rgba(0,0,0,0.06)", borderRadius: "4px" }}
+          >
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${TABLE_GRID_COLS}, 16px)`, gap: "2px" }}>
+              {Array.from({ length: TABLE_GRID_ROWS }).map((_, r) =>
+                Array.from({ length: TABLE_GRID_COLS }).map((__, c) => {
+                  const active = tableHover ? r <= tableHover.r && c <= tableHover.c : false;
+                  return (
+                    <div
+                      key={`${r}-${c}`}
+                      onMouseEnter={() => setTableHover({ r, c })}
+                      onClick={() => insertTable(r + 1, c + 1)}
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        boxSizing: "border-box",
+                        border: active ? "1px solid #0078D4" : "1px solid #D0D0D0",
+                        background: active ? "#CEE5FB" : "#FFFFFF",
+                        borderRadius: "2px",
+                        cursor: "pointer",
+                      }}
+                    />
+                  );
+                })
+              )}
+            </div>
+            <div style={{ marginTop: "8px", fontSize: "11px", color: "#616161", textAlign: "center", fontFamily: "inherit" }}>
+              {tableHover ? `${tableHover.r + 1} × ${tableHover.c + 1} table` : "Insert table"}
+            </div>
           </div>
         , document.body)}
       </div>

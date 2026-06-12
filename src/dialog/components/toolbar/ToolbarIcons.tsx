@@ -304,3 +304,16 @@ export function OutlineListIcon() {
     </svg>
   );
 }
+
+export function TableIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <rect x="0.6" y="0.6" width="11.8" height="11.8" rx="0.8" stroke="#1B1B1B" strokeWidth="1.2" />
+      <path
+        d="M0.6 4.5H12.4M0.6 8.5H12.4M4.5 0.6V12.4M8.5 0.6V12.4"
+        stroke="#1B1B1B"
+        strokeWidth="1"
+      />
+    </svg>
+  );
+}
