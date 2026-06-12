@@ -324,12 +324,17 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
     if (initData?.selectionHtml) {
       setEuaHtml(sanitizeWordHtml(initData.selectionHtml));
     } else if (initData?.selection) {
-      setEuaHtml(
-        initData.selection
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-      );
+      // Plain-text fallback: escape, split on blank lines into <p>, single \n → <br>.
+      // Keeps line breaks visible without needing white-space: pre-wrap on the container.
+      const escaped = initData.selection
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      const html = escaped
+        .split(/\r?\n\s*\r?\n/)
+        .map((p) => (p.trim() ? `<p>${p.replace(/\r?\n/g, "<br>")}</p>` : ""))
+        .join("");
+      setEuaHtml(html);
     }
   }, [initData?.selection, initData?.selectionHtml]);
 

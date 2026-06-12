@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { ResizeHandles } from "@/dialog/components/ResizeHandles";
 import { ArticleHeaderIcon, ArticleCloseIcon } from "@/dialog/components/Icons";
+import { HtmlContent } from "@/dialog/components/HtmlContent";
 import type { Article } from "@/types/db";
 
 interface Props {
@@ -631,30 +632,10 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
               ) : null}
             </div>
 
-            {/* Article body */}
-            <style>
-              {`
-                .sl-article-content { font-size: 15px; line-height: 1.8; color: #374151; word-break: break-word; }
-                .sl-article-content p { margin: 0 0 14px; }
-                .sl-article-content img { max-width: 100% !important; height: auto !important; display: block; margin: 14px 0; border-radius: 6px; }
-                .sl-article-content video { max-width: 100%; }
-                .sl-article-content h1, .sl-article-content h2, .sl-article-content h3 { color: #0F1419; margin: 20px 0 8px; line-height: 1.25; }
-                .sl-article-content h1 { font-size: 22px; }
-                .sl-article-content h2 { font-size: 18px; }
-                .sl-article-content h3 { font-size: 16px; }
-                .sl-article-content blockquote { border-left: 3px solid #0078D4; margin: 0 0 14px; padding: 6px 16px; color: #6B7280; font-style: italic; background: #F8FAFF; border-radius: 0 4px 4px 0; }
-                .sl-article-content a { color: #0078D4; }
-                .sl-article-content ul, .sl-article-content ol { padding-left: 22px; margin: 0 0 14px; }
-                .sl-article-content li { margin-bottom: 5px; }
-                .sl-article-content pre { background: #F3F4F6; border-radius: 4px; padding: 10px 14px; overflow-x: auto; font-size: 13px; margin: 0 0 14px; }
-              `}
-            </style>
-
             {article.articleContent ? (
-              <div
-                className="sl-article-content"
-                // eslint-disable-next-line react/no-danger
-                dangerouslySetInnerHTML={{ __html: article.articleContent }}
+              <HtmlContent
+                html={article.articleContent}
+                style={{ fontSize: 15, lineHeight: 1.7, color: "#374151", wordBreak: "break-word" }}
               />
             ) : !article.templateName ? (
               <div style={{ textAlign: "center", padding: "36px 0", color: "#D1D5DB" }}>

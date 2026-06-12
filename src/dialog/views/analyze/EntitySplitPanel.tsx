@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { colors } from "@/styles/tokens";
+import { HtmlContent } from "@/dialog/components/HtmlContent";
 
 type EntityViewMode = "both" | "analysis-only" | "entity-only";
 
@@ -89,27 +90,25 @@ export function EntitySplitPanel({
           }}>
             Entity Under Analysis
           </span>
-          <div
+          <HtmlContent
+            html={euaHtml}
             style={{
               flex: 1,
               margin: "0 20px",
               marginBottom: entityOnlyMode ? 12 : 0,
               border: "1px solid #E0E0E0",
               borderRadius: 4,
-              padding: "4px 14px 10px",
+              padding: "10px 14px",
               overflowY: "auto",
               fontSize: "14px",
-              lineHeight: "22px",
+              lineHeight: 1.7,
               color: colors.grey11,
-              whiteSpace: "pre-wrap",
               wordBreak: "break-word",
               userSelect: "text",
               fontFamily: "inherit",
               background: colors.white,
             }}
             onContextMenu={handleEntityContextMenu}
-            // eslint-disable-next-line react/no-danger
-            dangerouslySetInnerHTML={{ __html: euaHtml }}
           />
         </div>
       )}

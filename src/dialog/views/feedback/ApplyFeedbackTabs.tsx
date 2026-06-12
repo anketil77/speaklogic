@@ -1,6 +1,7 @@
 import React from "react";
 import { makeStyles } from "@fluentui/react-components";
 import { RichEditor } from "@/dialog/components/RichEditor";
+import { HtmlContent } from "@/dialog/components/HtmlContent";
 import { PanelTable } from "@/dialog/components/PanelTable";
 import type { PanelTableCol } from "@/dialog/components/PanelTable";
 import { formatDisplayDate } from "@/db/db";
@@ -256,8 +257,10 @@ export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
             <div style={rowTopS}>
               <span style={labelTopS}>Actual Selection</span>
               {selectionHtml ? (
-                <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", wordBreak: "break-word", lineHeight: "18px" }}
-                  dangerouslySetInnerHTML={{ __html: selectionHtml }} />
+                <HtmlContent
+                  html={selectionHtml}
+                  style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", wordBreak: "break-word", lineHeight: 1.7 }}
+                />
               ) : (
                 <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: "18px" }}>
                   {initData.selection || <em>No selection captured.</em>}
@@ -277,8 +280,10 @@ export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
             <div style={rowTopS}>
               <span style={labelTopS}>Actual Paragraph</span>
               {selectionHtml ? (
-                <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", wordBreak: "break-word", lineHeight: "18px" }}
-                  dangerouslySetInnerHTML={{ __html: selectionHtml }} />
+                <HtmlContent
+                  html={selectionHtml}
+                  style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", wordBreak: "break-word", lineHeight: 1.7 }}
+                />
               ) : (
                 <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: "18px" }}>
                   {initData.selection || <em>No paragraph captured.</em>}

@@ -9,6 +9,7 @@ import {
   type ArticleCategory,
 } from "@/dialog/views/createarticle/CategoryPickerPanel";
 import { ArticleEditorPanel } from "@/dialog/views/createarticle/ArticleEditorPanel";
+import "@/dialog/components/HtmlContent"; // injects .sl-html-content CSS
 
 export default function CreateArticleView() {
   const { initData, sendMessage, submitSave, saving } = useDialogComm();
@@ -482,6 +483,7 @@ export default function CreateArticleView() {
               ref={contentRef}
               suppressContentEditableWarning
               onInput={handleContentInput}
+              className="sl-html-content"
               style={{
                 boxSizing: "border-box",
                 padding: "12px 11px",
@@ -490,8 +492,8 @@ export default function CreateArticleView() {
                   ? "1.5px solid #D13438"
                   : "1px solid #E0E0E0",
                 borderRadius: 6,
-                fontSize: 11.1,
-                lineHeight: "15px",
+                fontSize: 11.8,
+                lineHeight: 1.7,
                 color: "#1B1B1B",
                 outline: "none",
                 fontFamily: "inherit",

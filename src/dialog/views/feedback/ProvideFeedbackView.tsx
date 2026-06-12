@@ -12,6 +12,7 @@ import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import { colors } from "@/styles/tokens";
 import type { SaveFeedbackPayload } from "@/types/db";
 import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
+import { HtmlContent } from "@/dialog/components/HtmlContent";
 import { PersonComboBox } from "@/dialog/components/PersonComboBox";
 
 const F = {
@@ -572,9 +573,9 @@ export default function ProvideFeedbackView() {
             <div style={rowTopStyle}>
               <span style={labelTopStyle}>{initData?.mode === "paragraph" ? "Actual Paragraph" : "Actual Selection"}</span>
               {selectionHtml ? (
-                <div
-                  style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", wordBreak: "break-word", lineHeight: "18px" }}
-                  dangerouslySetInnerHTML={{ __html: selectionHtml }}
+                <HtmlContent
+                  html={selectionHtml}
+                  style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", wordBreak: "break-word", lineHeight: 1.7 }}
                 />
               ) : (
                 <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "80px", maxHeight: "220px", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: "18px" }}>

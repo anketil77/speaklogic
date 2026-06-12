@@ -12,6 +12,7 @@ import React, {
 import { createPortal } from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { ResizeHandles } from "@/dialog/components/ResizeHandles";
+import "@/dialog/components/HtmlContent"; // injects .sl-html-content CSS
 
 // ── Paragraph style options ───────────────────────────────────────────────────
 const PARA_STYLES = [
@@ -536,9 +537,10 @@ export function ArticleEditorPanel({
             onMouseUp={updateState}
             onFocus={updateState}
             onBlur={saveSelection}
+            className="sl-html-content"
             style={{
               width: "100%", minHeight: 213,
-              outline: "none", fontSize: 11.8, lineHeight: "17px",
+              outline: "none", fontSize: 11.8, lineHeight: 1.7,
               color: "#1B1B1B", fontFamily: "'Inter',sans-serif",
               wordBreak: "break-word", userSelect: "text",
               overflowY: "auto", overflowX: "hidden",

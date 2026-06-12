@@ -24,6 +24,7 @@ import {
   PfFeedbackListIcon,
 } from "@/dialog/components/Icons";
 import { FeedbackModelDialog } from "@/dialog/components/FeedbackModelDialog";
+import { HtmlContent } from "@/dialog/components/HtmlContent";
 import { colors } from "@/styles/tokens";
 import type { ProjectFeedback, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, AttachFileToProject } from "@/types/db";
 
@@ -445,9 +446,9 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
               <VfFormRow label="To Person"><input style={vfReadonlyInput} value={feedback.toPerson || ""} readOnly /></VfFormRow>
               <VfFormRow label="Actual Selection" alignTop>
                 {feedback.actualSelection ? (
-                  <div
-                    style={{ minHeight: 120, maxHeight: 260, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey38, background: colors.grey96, lineHeight: "20px", overflowY: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-                    dangerouslySetInnerHTML={{ __html: feedback.actualSelection }}
+                  <HtmlContent
+                    html={feedback.actualSelection}
+                    style={{ minHeight: 120, maxHeight: 260, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey38, background: colors.grey96, lineHeight: 1.7, overflowY: "auto", wordBreak: "break-word" }}
                   />
                 ) : (
                   <div style={{ minHeight: 120, maxHeight: 260, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey38, background: colors.grey96, lineHeight: "20px", overflowY: "auto" }}>

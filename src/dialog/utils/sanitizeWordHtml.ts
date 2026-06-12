@@ -90,11 +90,37 @@ export function sanitizeWordHtml(html: string): string {
       }
       // else: dark non-highlight background → stripped.
     }
-    // Strip Word's page margins from direct children of body (outer wrapper divs).
-    if (el.parentElement === body) { el.style.margin = "0"; el.style.padding = "0"; }
+    // Strip Word's page margins from direct wrapper-div children of body
+    // (e.g. <div class=WordSection1>). Do NOT touch semantic block elements —
+    // their margins carry the article's intentional spacing (h1→byline→first p).
+    if (el.parentElement === body && el.tagName === "DIV") {
+      el.style.margin = "0";
+      el.style.padding = "0";
+    }
     for (const child of Array.from(el.children)) fix(child as HTMLElement);
   };
   fix(body);
+  // Collapse whitespace inside text nodes (skip <pre>/<code>) so the displayed text
+  // matches what window.getSelection().toString() returns — selection-based highlight
+  // lookups (applyEuaHighlight) can then find their target via indexOf without needing
+  // the container to use white-space: pre-wrap.
+  const collectTextNodes = (root: Node): Text[] => {
+    const out: Text[] = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let n = walker.nextNode() as Text | null;
+    while (n) { out.push(n); n = walker.nextNode() as Text | null; }
+    return out;
+  };
+  for (const node of collectTextNodes(body)) {
+    let inPreCode = false;
+    for (let a = node.parentElement; a && a !== body; a = a.parentElement) {
+      if (a.tagName === "PRE" || a.tagName === "CODE") { inPreCode = true; break; }
+    }
+    if (inPreCode) continue;
+    const value = node.nodeValue ?? "";
+    const collapsed = value.replace(/\s+/g, " ");
+    if (collapsed !== value) node.nodeValue = collapsed;
+  }
   // Remove leading empty block elements (e.g. empty <p> before actual content in Word's getHtml()).
   const stripLeadingEmpty = (parent: Element) => {
     while (parent.firstElementChild) {
