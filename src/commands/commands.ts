@@ -758,7 +758,7 @@ function openAnalyzeDialogWithPayload(
               });
               const applyFeedbacks = getAllFeedbacks().map((f) => {
                 if (!f.analysisId) return f;
-                return { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+                return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
               });
               const applyPayload: DialogInitPayload = {
                 selection: payload.analysis.entityUnderAnalysis,
@@ -1195,7 +1195,7 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           });
           const allFeedbacks = getAllFeedbacks().map((f) => {
             if (!f.analysisId) return f;
-            return { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+            return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
           });
           const navCommConfig = getCommunicationConfig();
           const applyPayload: DialogInitPayload = {
@@ -1338,6 +1338,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             return {
               ...f,
               questions: getQuestionsByAnalysis(f.analysisId),
+              errors: getErrorsByAnalysis(f.analysisId),
               compensators: getCompensatorsByAnalysis(f.analysisId),
               answers: getAnswersByAnalysis(f.analysisId),
               files: getFilesByAnalysis(f.analysisId),
@@ -1391,6 +1392,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             return {
               ...f,
               questions: getQuestionsByAnalysis(f.analysisId),
+              errors: getErrorsByAnalysis(f.analysisId),
               compensators: getCompensatorsByAnalysis(f.analysisId),
               answers: getAnswersByAnalysis(f.analysisId),
               files: getFilesByAnalysis(f.analysisId),
@@ -2821,7 +2823,7 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
   });
   const feedbacks = getAllFeedbacks().map((f) => {
     if (!f.analysisId) return f;
-    return { ...f, questions: getQuestionsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+    return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
   });
   openApplyDialog({
     selection,

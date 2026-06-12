@@ -106,6 +106,7 @@ export interface ProjectFeedback {
   personEmail: string;
   analysisId?: number;
   questions?: ProjectQuestion[];
+  errors?: ProjectError[];
   compensators?: ProjectCompensator[];
   answers?: ProjectAnswer[];
   files?: AttachFileToProject[];

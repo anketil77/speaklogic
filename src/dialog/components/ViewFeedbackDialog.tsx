@@ -9,6 +9,7 @@ import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { PanelContextMenu, type PanelMenuEntry } from "@/dialog/components/PanelContextMenu";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import { ViewQuestionDialog } from "@/dialog/components/ViewQuestionDialog";
+import { ViewErrorDialog } from "@/dialog/components/ViewErrorDialog";
 import { ViewCompensatorDialog } from "@/dialog/components/ViewCompensatorDialog";
 import { ViewAnswerDialog } from "@/dialog/components/ViewAnswerDialog";
 import { ViewFileInformationDialog } from "@/dialog/components/ViewFileInformationDialog";
@@ -24,17 +25,18 @@ import {
 } from "@/dialog/components/Icons";
 import { FeedbackModelDialog } from "@/dialog/components/FeedbackModelDialog";
 import { colors } from "@/styles/tokens";
-import type { ProjectFeedback, ProjectQuestion, ProjectCompensator, ProjectAnswer, AttachFileToProject } from "@/types/db";
+import type { ProjectFeedback, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, AttachFileToProject } from "@/types/db";
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
-type VFTab = "feedback" | "selection" | "questions" | "compensators" | "answers" | "files";
+type VFTab = "feedback" | "selection" | "errors" | "compensators" | "questions" | "answers" | "files";
 
 // Base tabs (always shown). The "Selection" tab is inserted at position #2 at
 // runtime only when the feedback was created from a selection/paragraph apply.
 const VF_TABS: { value: VFTab; label: string }[] = [
   { value: "feedback", label: "Feedback" },
-  { value: "questions", label: "Analysis Question" },
+  { value: "errors", label: "Errors" },
   { value: "compensators", label: "Compensators" },
+  { value: "questions", label: "Analysis Question" },
   { value: "answers", label: "Answers" },
   { value: "files", label: "Attached Files" },
 ];
@@ -48,6 +50,14 @@ const Q_COLS: PanelTableCol<ProjectQuestion>[] = [
   { header: "Actual Question", width: "38%", render: (q) => <span dangerouslySetInnerHTML={{ __html: q.actualQuestion }} />, truncate: true },
   { header: "Entity Question Point To", width: "30%", render: (q) => q.entityQuestionPointTo || "—", truncate: true },
   { header: "Question Date", width: "16%", render: (q) => formatDisplayDate(q.questionDate) || "—", truncate: true },
+];
+
+const E_COLS: PanelTableCol<ProjectError>[] = [
+  { header: "Error Number", width: "14%", render: (e) => e.errorNumber, truncate: true },
+  { header: "Actual Error", width: "32%", render: (e) => e.actualError || "—", truncate: true },
+  { header: "From Communication", width: "22%", render: (e) => e.fromActualCommunication || "—", truncate: true },
+  { header: "Points To", width: "18%", render: (e) => e.entityErrorPointTo || "—", truncate: true },
+  { header: "Error Date", width: "14%", render: (e) => formatDisplayDate(e.errorDate) || "—", truncate: true },
 ];
 
 const C_COLS: PanelTableCol<ProjectCompensator>[] = [
@@ -154,6 +164,10 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
   const [qMenu, setQMenu] = useState<{ x: number; y: number } | null>(null);
   const [viewQ, setViewQ] = useState<ProjectQuestion | null>(null);
 
+  const [eSelIdx, setESelIdx] = useState<number | null>(null);
+  const [eMenu, setEMenu] = useState<{ x: number; y: number } | null>(null);
+  const [viewE, setViewE] = useState<ProjectError | null>(null);
+
   const [cSelIdx, setCSelIdx] = useState<number | null>(null);
   const [cMenu, setCMenu] = useState<{ x: number; y: number } | null>(null);
   const [viewC, setViewC] = useState<ProjectCompensator | null>(null);
@@ -167,6 +181,7 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
   const [viewF, setViewF] = useState<AttachFileToProject | null>(null);
 
   const questions = feedback.questions ?? [];
+  const errors = feedback.errors ?? [];
   const compensators = feedback.compensators ?? [];
   const answers = feedback.answers ?? [];
   const files = feedback.files ?? [];
@@ -182,8 +197,9 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
   const tabCount: Record<VFTab, number> = {
     feedback: 0,
     selection: 0,
-    questions: questions.length,
+    errors: errors.length,
     compensators: compensators.length,
+    questions: questions.length,
     answers: answers.length,
     files: files.length,
   };
@@ -204,6 +220,17 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
       onClick: () => { if (qSelIdx !== null) { setViewQ(questions[qSelIdx]); setQMenu(null); } },
     },
   ], [qSelIdx, questions]);
+
+  const eMenuItems = useMemo<PanelMenuEntry[]>(() => [
+    { label: "Add Error", onClick: () => {}, disabled: true },
+    { label: "Remove Error", onClick: () => {}, disabled: true },
+    { isSep: true },
+    {
+      label: "View Error",
+      disabled: eSelIdx === null,
+      onClick: () => { if (eSelIdx !== null) { setViewE(errors[eSelIdx]); setEMenu(null); } },
+    },
+  ], [eSelIdx, errors]);
 
   const cMenuItems = useMemo<PanelMenuEntry[]>(() => [
     { label: "Add Compensator", onClick: () => {}, disabled: true },
@@ -239,6 +266,11 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
     e.preventDefault();
     if (idx !== null) setQSelIdx(idx);
     setQMenu({ x: e.clientX, y: e.clientY });
+  }, []);
+  const handleEContextMenu = useCallback((e: React.MouseEvent, idx: number | null) => {
+    e.preventDefault();
+    if (idx !== null) setESelIdx(idx);
+    setEMenu({ x: e.clientX, y: e.clientY });
   }, []);
   const handleCContextMenu = useCallback((e: React.MouseEvent, idx: number | null) => {
     e.preventDefault();
@@ -439,6 +471,19 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
             </div>
           )}
 
+          {activeTab === "errors" && (
+            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative" }}>
+              <PanelTable<ProjectError>
+                columns={E_COLS}
+                rows={errors}
+                emptyText="No errors."
+                selectedIndex={eSelIdx}
+                onRowClick={(idx) => setESelIdx((p) => (p === idx ? null : idx))}
+                onRowContextMenu={handleEContextMenu}
+              />
+            </div>
+          )}
+
           {activeTab === "compensators" && (
             <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative" }}>
               <PanelTable<ProjectCompensator>
@@ -490,12 +535,14 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
 
       {/* Context menus — outside the transform container so position:fixed anchors to viewport */}
       {qMenu && <PanelContextMenu x={qMenu.x} y={qMenu.y} items={qMenuItems} onClose={() => setQMenu(null)} />}
+      {eMenu && <PanelContextMenu x={eMenu.x} y={eMenu.y} items={eMenuItems} onClose={() => setEMenu(null)} />}
       {cMenu && <PanelContextMenu x={cMenu.x} y={cMenu.y} items={cMenuItems} onClose={() => setCMenu(null)} />}
       {aMenu && <PanelContextMenu x={aMenu.x} y={aMenu.y} items={aMenuItems} onClose={() => setAMenu(null)} />}
       {fMenu && <PanelContextMenu x={fMenu.x} y={fMenu.y} items={fMenuItems} onClose={() => setFMenu(null)} />}
 
       {/* Sub-view dialogs */}
       {viewQ && <ViewQuestionDialog question={viewQ} onClose={() => setViewQ(null)} />}
+      {viewE && <ViewErrorDialog error={viewE} onClose={() => setViewE(null)} />}
       {viewC && <ViewCompensatorDialog compensator={viewC} onClose={() => setViewC(null)} />}
       {viewA && <ViewAnswerDialog answer={viewA} onClose={() => setViewA(null)} />}
       {viewF && <ViewFileInformationDialog file={viewF} onClose={() => setViewF(null)} />}
