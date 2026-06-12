@@ -710,10 +710,10 @@ export default function FlaggedHistoryView() {
         <ViewSelectionDialog
           flag={viewSelection}
           onClose={() => setViewSelection(null)}
-          onAnalyze={() => { setViewSelection(null); showInfo(MSG_ANALYZE); }}
-          onProvideFeedback={() => { setViewSelection(null); showInfo(MSG_PROVIDE); }}
-          onApplyFeedback={() => { setViewSelection(null); showInfo(MSG_APPLY); }}
-          onRequestFeedback={() => { setViewSelection(null); showInfo(MSG_PROVIDE); }}
+          onAnalyze={() => { sendMessage({ action: "ANALYZE_FROM_HISTORY", flag: viewSelection }); setViewSelection(null); }}
+          onProvideFeedback={() => { sendMessage({ action: "PROVIDE_FROM_HISTORY", flag: viewSelection }); setViewSelection(null); }}
+          onApplyFeedback={() => { sendMessage({ action: "APPLY_FROM_HISTORY", flag: viewSelection }); setViewSelection(null); }}
+          onRequestFeedback={() => { sendMessage({ action: "PROVIDE_FROM_HISTORY", flag: viewSelection }); setViewSelection(null); }}
           onIdentifyPrinciple={() => { setIdentifyFlag(viewSelection); setViewSelection(null); }}
           onRelateWithPrinciple={() => { setRelateFlag(viewSelection); setViewSelection(null); }}
           onListIdentified={() => { setViewSelection(null); setShowIdentifiedList(true); }}

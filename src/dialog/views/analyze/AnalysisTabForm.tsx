@@ -1,5 +1,5 @@
 // src/dialog/views/sub/AnalysisTabForm.tsx
-import React, { useRef, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { makeStyles } from "@fluentui/react-components";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { colors } from "@/styles/tokens";
@@ -64,6 +64,16 @@ export interface AnalysisTabFormProps {
   onContextMenuQuestion?: (selectedText: string, range: Range | null) => void;
   onContextMenuCompensator?: (selectedText: string, range: Range | null) => void;
   onContextMenuGuideline?: (range: Range | null) => void;
+  onContextMenuInsertToDocument?: (selectedText: string, html: string) => void;
+}
+
+function getSelectionHtml(sel: Selection | null): string {
+  if (!sel || sel.rangeCount === 0) return "";
+  const range = sel.getRangeAt(0);
+  const fragment = range.cloneContents();
+  const wrapper = document.createElement("div");
+  wrapper.appendChild(fragment);
+  return wrapper.innerHTML;
 }
 
 const ctxItemStyle: React.CSSProperties = {
@@ -92,23 +102,46 @@ export function AnalysisTabForm({
   onContextMenuQuestion,
   onContextMenuCompensator,
   onContextMenuGuideline,
+  onContextMenuInsertToDocument,
 }: AnalysisTabFormProps) {
   const styles = useStyles();
-  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; text: string; html: string } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const compensatorRangeRef = useRef<Range | null>(null);
   const questionRangeRef = useRef<Range | null>(null);
   const guidelineRangeRef = useRef<Range | null>(null);
 
+  // After the menu mounts, clamp its position so it stays inside the viewport.
+  // Office dialogs have a small viewport, so a long menu near the bottom-right
+  // (raw clientX/Y from the right-click event) easily overflows.
+  useLayoutEffect(() => {
+    if (!ctxMenu || !menuRef.current) return;
+    const el = menuRef.current;
+    const rect = el.getBoundingClientRect();
+    const margin = 8;
+    let x = ctxMenu.x;
+    let y = ctxMenu.y;
+    if (x + rect.width + margin > window.innerWidth) {
+      x = Math.max(margin, window.innerWidth - rect.width - margin);
+    }
+    if (y + rect.height + margin > window.innerHeight) {
+      // Flip above the cursor first, else clamp to bottom of viewport.
+      y = Math.max(margin, ctxMenu.y - rect.height);
+    }
+    if (x !== ctxMenu.x || y !== ctxMenu.y) setCtxMenu({ ...ctxMenu, x, y });
+  }, [ctxMenu]);
+
   function handleEditorContextMenu(e: React.MouseEvent) {
-    if (!onContextMenuQuestion && !onContextMenuCompensator && !onContextMenuGuideline) return;
+    if (!onContextMenuQuestion && !onContextMenuCompensator && !onContextMenuGuideline && !onContextMenuInsertToDocument) return;
     e.preventDefault();
     const sel = window.getSelection();
     const text = sel?.toString().trim() ?? "";
+    const html = getSelectionHtml(sel);
     const cloned = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0).cloneRange() : null;
     compensatorRangeRef.current = cloned;
     questionRangeRef.current = cloned ? cloned.cloneRange() : null;
     guidelineRangeRef.current = cloned ? cloned.cloneRange() : null;
-    setCtxMenu({ x: e.clientX, y: e.clientY, text });
+    setCtxMenu({ x: e.clientX, y: e.clientY, text, html });
   }
 
   return (
@@ -154,6 +187,8 @@ export function AnalysisTabForm({
             value={actualAnalysis}
             onChange={onActualAnalysisChange}
             placeholder="Write actual analysis here..."
+            htmlContentStyling
+            sanitizeOnPaste
           />
         </div>
       </div>
@@ -165,6 +200,7 @@ export function AnalysisTabForm({
             onClick={() => setCtxMenu(null)}
           />
           <div
+            ref={menuRef}
             style={{
               position: "fixed",
               left: ctxMenu.x,
@@ -209,6 +245,17 @@ export function AnalysisTabForm({
                 onClick={() => { onContextMenuGuideline(guidelineRangeRef.current); setCtxMenu(null); }}
               >
                 Insert Analysis Guideline
+              </button>
+            )}
+            {onContextMenuInsertToDocument && (
+              <button
+                disabled={!ctxMenu.text}
+                style={{ ...ctxItemStyle, borderTop: "1px solid #E0E0E0", opacity: ctxMenu.text ? 1 : 0.4, cursor: ctxMenu.text ? "pointer" : "default" }}
+                onMouseEnter={(e) => { if (ctxMenu.text) (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                onClick={() => { onContextMenuInsertToDocument(ctxMenu.text, ctxMenu.html); setCtxMenu(null); }}
+              >
+                Insert Selected Text to Document
               </button>
             )}
           </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import { makeStyles } from "@fluentui/react-components";
 import { RichEditor } from "@/dialog/components/RichEditor";
+import { InsertToDocumentEditor } from "@/dialog/components/InsertToDocumentEditor";
 import { HtmlContent } from "@/dialog/components/HtmlContent";
 import { PanelTable } from "@/dialog/components/PanelTable";
 import type { PanelTableCol } from "@/dialog/components/PanelTable";
@@ -144,12 +145,13 @@ export interface ApplyFeedbackTabsProps {
   selectedRow: { tab: TabValue; idx: number } | null;
   onRowClick: (tab: TabValue, idx: number) => void;
   onCtx: (tab: TabValue, idx: number | null, x: number, y: number) => void;
+  onInsertToDocument: (text: string, html: string) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
   const s = useStyles();
-  const { activeTab, setActiveTab, tabs, validationError, initData, analysisData, selectionHtml, form, updateForm, errorOptions, compensatorOptions, editorRef, questions, errors, compensators, answers, files, correctedItems, selectedRow, onRowClick, onCtx } = p;
+  const { activeTab, setActiveTab, tabs, validationError, initData, analysisData, selectionHtml, form, updateForm, errorOptions, compensatorOptions, editorRef, questions, errors, compensators, answers, files, correctedItems, selectedRow, onRowClick, onCtx, onInsertToDocument } = p;
 
   return (
     <>
@@ -241,7 +243,13 @@ export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
             <div style={rowTopS}>
               <span style={labelTopS}>Feedback Application</span>
               <div style={{ flex: 1 }}>
-                <RichEditor ref={editorRef} value={form.feedbackApplication} onChange={(v) => updateForm("feedbackApplication", v)} placeholder="Describe how the feedback was applied..." />
+                <InsertToDocumentEditor
+                  editorRef={editorRef}
+                  value={form.feedbackApplication}
+                  onChange={(v) => updateForm("feedbackApplication", v)}
+                  placeholder="Describe how the feedback was applied..."
+                  onInsertToDocument={onInsertToDocument}
+                />
               </div>
             </div>
           </>

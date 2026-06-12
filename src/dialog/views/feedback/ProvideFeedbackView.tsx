@@ -6,6 +6,8 @@ import { CheckmarkRegular } from "@fluentui/react-icons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
+import { InsertToDocumentEditor } from "@/dialog/components/InsertToDocumentEditor";
+import { InsertConfirmToast } from "@/dialog/components/InsertConfirmToast";
 import { HamburgerIcon, PfFeedbackListIcon, PfAnalysisListIcon, PfFileInfoIcon } from "@/dialog/components/Icons";
 import { PanelTable, PanelTableCol } from "@/dialog/components/PanelTable";
 import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
@@ -14,6 +16,50 @@ import type { SaveFeedbackPayload } from "@/types/db";
 import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
 import { HtmlContent } from "@/dialog/components/HtmlContent";
 import { PersonComboBox } from "@/dialog/components/PersonComboBox";
+import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
+
+// Per-field validation messages — verbatim from C# ProvideFeedback.cs:183-246.
+const MSG_TO_PERSON_TITLE = "Person Selection Message";
+const MSG_TO_PERSON =
+  "A feedback is provided to a person, a feedback assumes the existence of a person " +
+  "for who the feedback is.  If a feedback is need to be provided to a person and " +
+  "that person does not exist, then the feedback does not exist either.  Here I " +
+  "need to select the person or people I am providing the feedback to.";
+
+const MSG_PROVIDE_APPLICATION_NAME_TITLE = "Application Name Message";
+const MSG_PROVIDE_APPLICATION_NAME =
+  "A feedback is provided to enable the correction of an error in an application; " +
+  "the feedback itself assumes the existence of that application.  A feedback exists " +
+  "to enable the correction in an application, the existence of a feedback assume " +
+  "the existence of that application.  For instance, while I am communicating with " +
+  "you, I repeat a sentence with error, where a word in that sentence is bad.  You " +
+  "give me a feedback to enable the correction of the bad word.  Here the existence " +
+  "of that feedback assumes the existence of a bad word in my sentence.  Here I need " +
+  "the name of the application where the feedback will be used.";
+
+const MSG_PROVIDE_COMMUNICATION_FUNCTION_TITLE = "Communication Function Message";
+const MSG_PROVIDE_COMMUNICATION_FUNCTION =
+  "The communication function of a feedback is the function of the application where " +
+  "the feedback is going to be used.  For instance if our application is to execute a " +
+  "function to solve a problem, then that function is being viewed as the application " +
+  "function.  As well as, if we provide a service to solve a problem.  The function of " +
+  "our service is Function One.  We execute Function One to solve a problem, we provide " +
+  "a service by executing Function One.  Now in our service, if someone provide us a " +
+  "feedback about our service related to Function One, then Function One is being viewed " +
+  "as the communication function of that feedback.  Here I need to sate the communication " +
+  "function of the feedback.";
+
+const MSG_PROVIDE_FEEDBACK_SUBJECT_TITLE = "Feedback Subject Message";
+const MSG_PROVIDE_FEEDBACK_SUBJECT =
+  "A feedback subject provides us with more information about that feedback.  Here I " +
+  "need to enter a subject for the feedback that I am about to provide.";
+
+const MSG_ACTUAL_FEEDBACK_TITLE = "Actual Feedback Message";
+const MSG_ACTUAL_FEEDBACK =
+  "A feedback cannot be provided to correct an error, if that feedback is not actual. " +
+  "The correction of the error that needs to be corrected assume the existence of an " +
+  "actual feedback.  Here I need to enter the actual feedback that needs to be provided " +
+  "to enable the correction of the identified error.";
 
 const F = {
   borderInput: `1px solid #C7C7C7`,
@@ -235,10 +281,12 @@ const PFV_FILE_COLS: PanelTableCol<string[]>[] = [
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function ProvideFeedbackView() {
   const styles = useStyles();
-  const { initData, submitSave, saving, closeDialog, mailtoUrl } = useDialogComm();
+  const { initData, sendMessage, submitSave, saving, closeDialog, mailtoUrl } = useDialogComm();
   const editorRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabValue>("feedback");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
+  const [insertToast, setInsertToast] = useState(false);
   const [footerBtnHover, setFooterBtnHover] = useState(false);
 
   const [form, setForm] = useState({
@@ -300,18 +348,34 @@ export default function ProvideFeedbackView() {
 
     const feedbackText = form.actualFeedbackProvided.replace(/<[^>]*>/g, "").trim();
 
-    const missing: string[] = [];
-    if (!form.toPerson.trim()) missing.push("To Person");
-    if (!form.applicationName.trim()) missing.push("Application Name");
-    if (!form.communicationFunction.trim()) missing.push("Communication Function");
-    if (!form.feedbackSubject.trim()) missing.push("Feedback Subject");
-    if (!feedbackText) missing.push("Actual Feedback Provided");
-
-    if (missing.length > 0) {
-      setValidationError(`Required: ${missing.join(", ")}`);
+    // Match C# ProvideFeedback.cs:183-246: check fields in order, fire one message
+    // per empty field, return on the first empty one.
+    if (!form.toPerson.trim()) {
       setActiveTab("feedback");
+      setInfoMsg({ title: MSG_TO_PERSON_TITLE, text: MSG_TO_PERSON });
       return;
     }
+    if (!form.applicationName.trim()) {
+      setActiveTab("feedback");
+      setInfoMsg({ title: MSG_PROVIDE_APPLICATION_NAME_TITLE, text: MSG_PROVIDE_APPLICATION_NAME });
+      return;
+    }
+    if (!form.communicationFunction.trim()) {
+      setActiveTab("feedback");
+      setInfoMsg({ title: MSG_PROVIDE_COMMUNICATION_FUNCTION_TITLE, text: MSG_PROVIDE_COMMUNICATION_FUNCTION });
+      return;
+    }
+    if (!form.feedbackSubject.trim()) {
+      setActiveTab("feedback");
+      setInfoMsg({ title: MSG_PROVIDE_FEEDBACK_SUBJECT_TITLE, text: MSG_PROVIDE_FEEDBACK_SUBJECT });
+      return;
+    }
+    if (!feedbackText) {
+      setActiveTab("feedback");
+      setInfoMsg({ title: MSG_ACTUAL_FEEDBACK_TITLE, text: MSG_ACTUAL_FEEDBACK });
+      return;
+    }
+    setValidationError(null);
 
     const payload: SaveFeedbackPayload = {
       feedback: {
@@ -544,11 +608,17 @@ export default function ProvideFeedbackView() {
             <div style={rowTopStyle}>
               <span style={labelTopStyle}>Actual Feedback Provided</span>
               <div style={{ flex: 1 }}>
-                <RichEditor
-                  ref={editorRef}
+                <InsertToDocumentEditor
+                  editorRef={editorRef}
                   value={form.actualFeedbackProvided}
                   onChange={(v) => updateForm("actualFeedbackProvided", v)}
                   placeholder="Enter the feedback to be provided..."
+                  onInsertToDocument={(text, html) => {
+                    if (text || html) {
+                      sendMessage({ action: "INSERT_TEXT_AT_CURSOR", text, html });
+                      setInsertToast(true);
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -646,6 +716,21 @@ export default function ProvideFeedbackView() {
           {saving ? "Saving…" : "Provide Feedback"}
         </button>
       </div>
+
+      {infoMsg && (
+        <InfoMessageCard
+          title={infoMsg.title}
+          text={infoMsg.text}
+          onClose={() => setInfoMsg(null)}
+        />
+      )}
+
+      {insertToast && (
+        <InsertConfirmToast
+          message="Inserted"
+          onDismiss={() => setInsertToast(false)}
+        />
+      )}
     </div>
   );
 }

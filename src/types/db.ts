@@ -773,6 +773,10 @@ export type DialogAction =
   | { action: "DELETE_PUBLISHER"; id: number }
   | { action: "DELETE_COMM_SIGNAL_REQUEST"; id: number }
   | { action: "DELETE_SELECTION_HISTORY"; id: number }
+  | { action: "ANALYZE_FROM_HISTORY"; flag: FlagEntityForAnalysis }
+  | { action: "APPLY_FROM_HISTORY"; flag: FlagEntityForAnalysis }
+  | { action: "PROVIDE_FROM_HISTORY"; flag: FlagEntityForAnalysis }
+  | { action: "INSERT_TEXT_AT_CURSOR"; text: string; html?: string }
   | { action: "LIST_FEEDBACK_REQUESTED" }
   | { action: "LIST_FEEDBACK_APPLIED" }
   | { action: "LIST_FEEDBACK_PROVIDED" }

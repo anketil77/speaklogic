@@ -16,7 +16,55 @@ import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
 import type { SaveFeedbackPayload, ProjectAnalysis, ProjectFeedback } from "@/types/db";
 import { ApplyFeedbackTabs } from "./ApplyFeedbackTabs";
 import { ApplyFeedbackSubDialogs } from "./ApplyFeedbackSubDialogs";
+import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
+import { InsertConfirmToast } from "@/dialog/components/InsertConfirmToast";
 import type { QuestionDraft, AnswerDraft, ErrorDraft, CompensatorDraft, FileDraft, CorrectedItemDraft, TabValue, CtxMenu, OpenDialog, FeedbackForm } from "./applyFeedbackTypes";
+
+// Per-field validation messages — verbatim from C# ApplyFeedback.cs:169-233.
+// Each empty field fires its own dialog (matches MyXtraMessageBox.Show in the legacy app).
+const MSG_APPLICATION_NAME_TITLE = "Application Name Message";
+const MSG_APPLICATION_NAME =
+  "By applying a feedback, we correct an error that needs to be.  In this case, we " +
+  "view the application as the actual entity to which the correction is being made. " +
+  "Since the application of the feedback to the actual entity must show the corrected " +
+  "version of that entity, the actual entity must be named.  Here I enter the name of " +
+  "the application to which the feedback is being applied.";
+
+const MSG_COMMUNICATION_FUNCTION_TITLE = "Communication Function Message";
+const MSG_COMMUNICATION_FUNCTION =
+  "The communication function itself is the function of the application that contains " +
+  "the entity that we are correcting.  Since the application of the feedback is being " +
+  "viewed as the corrected version of that entity, the communication function is needed " +
+  "to enable that correction.  Here I enter the communication function of the application " +
+  "to which the feedback is being applied.";
+
+const MSG_FEEDBACK_SUBJECT_TITLE = "Feedback Subject Message";
+const MSG_FEEDBACK_SUBJECT =
+  "The subject of our feedback is what our feedback is about.  For instance if we apply " +
+  "the feedback for Entity One, the subject of our feedback about Entity One reflects " +
+  "what our feedback is about.  Here I enter a subject of my feedback to show what it " +
+  "is about.";
+
+const MSG_ERROR_TO_SUBSTITUTE_TITLE = "Error To Be Corrected";
+const MSG_ERROR_TO_SUBSTITUTE =
+  "In order for a correction to be made, the error must be identified and must be " +
+  "specified.  The error is being viewed as the entity that needs to be substituted by " +
+  "the compensator.  Here I select the error that needs to be substituted.";
+
+const MSG_COMPENSATOR_REPLACED_TITLE = "Compensator Replaced Message";
+const MSG_COMPENSATOR_REPLACED =
+  "In order for an error to be corrected, that error itself must be substituted by " +
+  "another entity.  In this case, the entity that replaces the error to correct that " +
+  "error is being viewed as the compensator.  Here I select the compensator that is " +
+  "used to replace the error.";
+
+const MSG_FEEDBACK_APPLICATION_TITLE = "Feedback Application Message";
+const MSG_FEEDBACK_APPLICATION =
+  "The feedback application is being view as the description of the application of the " +
+  "feedback.  Since the application of the feedback to an entity that contains an error " +
+  "must enable us to correct that error, the application of the feedback to that entity " +
+  "must be described.  Here I describe my feedback application by writing the description " +
+  "of the application of the feedback.";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const F = { borderInput: `1px solid #C7C7C7`, borderBox: `1px solid #E0E0E0`, bgCommandBar: "#F5F5F5", sepColor: "#E0E0E0" } as const;
@@ -48,6 +96,8 @@ export default function ApplyView() {
   const lastSelectionRef = useRef<string>("");
   const [activeTab, setActiveTab] = useState<TabValue>("feedback");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
+  const [insertToast, setInsertToast] = useState(false);
   const [footerBtnHover, setFooterBtnHover] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<SaveFeedbackPayload | null>(null);
@@ -205,14 +255,39 @@ export default function ApplyView() {
     dbg("APPLY", "save() called", { form, hasInitData: !!initData });
     if (!initData) return;
     const feedbackApplicationText = form.feedbackApplication.replace(/<[^>]*>/g, "").trim();
-    const missing: string[] = [];
-    if (!form.applicationName.trim()) missing.push("Application Name");
-    if (!form.communicationFunction.trim()) missing.push("Communication Function");
-    if (!form.feedbackSubject.trim()) missing.push("Feedback Subject");
-    if (!form.errorSubstituted.trim()) missing.push("Error Substituted");
-    if (!form.compensatorReplaced.trim()) missing.push("Compensator Replaced");
-    if (!feedbackApplicationText) missing.push("Feedback Application");
-    if (missing.length > 0) { setValidationError(`Required: ${missing.join(", ")}`); setActiveTab("feedback"); return; }
+    // Match C# ApplyFeedback.cs:169-233: check fields in order, fire one message per
+    // empty field, return on the first empty one.
+    if (!form.applicationName.trim()) {
+      setActiveTab("feedback");
+      setInfoMsg({ title: MSG_APPLICATION_NAME_TITLE, text: MSG_APPLICATION_NAME });
+      return;
+    }
+    if (!form.communicationFunction.trim()) {
+      setActiveTab("feedback");
+      setInfoMsg({ title: MSG_COMMUNICATION_FUNCTION_TITLE, text: MSG_COMMUNICATION_FUNCTION });
+      return;
+    }
+    if (!form.feedbackSubject.trim()) {
+      setActiveTab("feedback");
+      setInfoMsg({ title: MSG_FEEDBACK_SUBJECT_TITLE, text: MSG_FEEDBACK_SUBJECT });
+      return;
+    }
+    if (!form.errorSubstituted.trim()) {
+      setActiveTab("feedback");
+      setInfoMsg({ title: MSG_ERROR_TO_SUBSTITUTE_TITLE, text: MSG_ERROR_TO_SUBSTITUTE });
+      return;
+    }
+    if (!form.compensatorReplaced.trim()) {
+      setActiveTab("feedback");
+      setInfoMsg({ title: MSG_COMPENSATOR_REPLACED_TITLE, text: MSG_COMPENSATOR_REPLACED });
+      return;
+    }
+    if (!feedbackApplicationText) {
+      setActiveTab("feedback");
+      setInfoMsg({ title: MSG_FEEDBACK_APPLICATION_TITLE, text: MSG_FEEDBACK_APPLICATION });
+      return;
+    }
+    setValidationError(null);
 
     const originalCICount = analysisData?.correctedItems?.length ?? 0;
     const newCorrectedItems = correctedItems.slice(originalCICount);
@@ -281,6 +356,12 @@ export default function ApplyView() {
         editorRef={editorRef} questions={questions} errors={errors} compensators={compensators}
         answers={answers} files={files} correctedItems={correctedItems}
         selectedRow={selectedRow} onRowClick={onRowClick} onCtx={onCtx}
+        onInsertToDocument={(text, html) => {
+          if (text || html) {
+            sendMessage({ action: "INSERT_TEXT_AT_CURSOR", text, html });
+            setInsertToast(true);
+          }
+        }}
       />
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
@@ -310,6 +391,21 @@ export default function ApplyView() {
         availableAnalyses={availableAnalyses} availableFeedbacks={availableFeedbacks}
         sendMessage={sendMessage}
       />
+
+      {infoMsg && (
+        <InfoMessageCard
+          title={infoMsg.title}
+          text={infoMsg.text}
+          onClose={() => setInfoMsg(null)}
+        />
+      )}
+
+      {insertToast && (
+        <InsertConfirmToast
+          message="Inserted"
+          onDismiss={() => setInsertToast(false)}
+        />
+      )}
     </div>
   );
 }

@@ -22,6 +22,31 @@ import { AnalyzeSubDialogs } from "@/dialog/views/analyze/AnalyzeSubDialogs";
 import { SaveSplitButton } from "@/dialog/views/analyze/SaveSplitButton";
 import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
 import { GuidelineReferenceDialog } from "@/dialog/components/GuidelineReferenceDialog";
+import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
+import { InsertConfirmToast } from "@/dialog/components/InsertConfirmToast";
+
+// Per-field validation messages — verbatim from the C# AnalysisDialog.cs:242-275.
+// Each empty field fires its own dialog (matching MyXtraMessageBox.Show in the legacy app).
+const MSG_FROM_PERSON_TITLE = "Analysis From Person";
+const MSG_FROM_PERSON =
+  "An analysis is performed on an entity by a person.  The person who performs that " +
+  "analysis must have a name.  Here all that I need to do is to select the name of " +
+  "the person who perform the analysis.";
+
+const MSG_ANALYSIS_SUBJECT_TITLE = "Analysis Subject Message";
+const MSG_ANALYSIS_SUBJECT =
+  "The subject of an analysis is what that analysis is about.  For instance if we " +
+  "analyze Entity One, then the subject of our analysis about Entity One reflects " +
+  "what our analysis is about.  Here I enter a subject of my analysis to show what " +
+  "it is about.";
+
+const MSG_ACTUAL_ANALYSIS_TITLE = "Actual Analysis Message";
+const MSG_ACTUAL_ANALYSIS =
+  "The analysis about an entity must include the analysis itself.  For instance, if " +
+  "we analyze Entity One, then that analysis must exist.  Here I enter the analysis " +
+  "of the entity that is currently under analysis.  Since in order for that entity " +
+  "to be analyzed, the actual analysis must exist, the analysis itself is needed to " +
+  "enable the correction of the error.";
 
 const F = {
   borderInput: `1px solid #C7C7C7`,
@@ -318,6 +343,8 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
 
   const [form, setForm] = useState({ fromPerson: "", analysisSubject: "", actualAnalysis: "" });
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
+  const [insertToast, setInsertToast] = useState(false);
   const [euaHtml, setEuaHtml] = useState("");
 
   useEffect(() => {
@@ -499,14 +526,22 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
     (action: "ApplyAnalysisAsFeedback" | "ProvideFeedbackWithAnalysis" | "RetainAnalysisAsNeed") => {
       if (!initData) return;
 
-      const missing: string[] = [];
-      if (!form.fromPerson.trim()) missing.push("From Person");
-      if (!form.analysisSubject.trim()) missing.push("Analysis Subject");
-      const plainAnalysis = form.actualAnalysis.replace(/<[^>]*>/g, "").trim();
-      if (!plainAnalysis) missing.push("Actual Analysis");
-      if (missing.length > 0) {
-        setValidationError(`Required: ${missing.join(", ")}`);
+      // Match C# AnalysisDialog.cs:242-275: check each field in order, fire the
+      // matching MyXtraMessageBox per empty field, return after the first one.
+      if (!form.fromPerson.trim()) {
         setActiveTab("analysis");
+        setInfoMsg({ title: MSG_FROM_PERSON_TITLE, text: MSG_FROM_PERSON });
+        return;
+      }
+      if (!form.analysisSubject.trim()) {
+        setActiveTab("analysis");
+        setInfoMsg({ title: MSG_ANALYSIS_SUBJECT_TITLE, text: MSG_ANALYSIS_SUBJECT });
+        return;
+      }
+      const plainAnalysis = form.actualAnalysis.replace(/<[^>]*>/g, "").trim();
+      if (!plainAnalysis) {
+        setActiveTab("analysis");
+        setInfoMsg({ title: MSG_ACTUAL_ANALYSIS_TITLE, text: MSG_ACTUAL_ANALYSIS });
         return;
       }
       setValidationError(null);
@@ -705,6 +740,12 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
                 analysisGuidelineRangeRef.current = range;
                 setGuidelineDialogOpen(true);
               }}
+              onContextMenuInsertToDocument={(text, html) => {
+                if (text || html) {
+                  sendMessage({ action: "INSERT_TEXT_AT_CURSOR", text, html });
+                  setInsertToast(true);
+                }
+              }}
             />
           </EntitySplitPanel>
         )}
@@ -796,6 +837,21 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
         onAddCompensator={() => applyAnalysisHighlight()}
         onAddQuestion={() => applyQuestionHighlight()}
       />
+
+      {infoMsg && (
+        <InfoMessageCard
+          title={infoMsg.title}
+          text={infoMsg.text}
+          onClose={() => setInfoMsg(null)}
+        />
+      )}
+
+      {insertToast && (
+        <InsertConfirmToast
+          message="Inserted"
+          onDismiss={() => setInsertToast(false)}
+        />
+      )}
 
       {retainSaved && (
         <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.18)", zIndex: 300 }}>

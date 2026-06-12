@@ -534,6 +534,58 @@ function plainText(html: string | undefined | null): string {
     .trim();
 }
 
+// Replaces the current host selection with the user's selected editor content.
+// Prefers HTML (preserves bold/heading/etc) when the host supports it:
+//  - Word: Word.run → Range.insertHtml when html, else insertText
+//  - PowerPoint: setSelectedDataAsync (Text only — PPT API does not accept HTML
+//    for setSelectedDataAsync; HTML is ignored, plain text used)
+//  - Outlook compose: setSelectedDataAsync with CoercionType.Html when html
+// Best-effort; failures are swallowed because the dialog stays open and the user can retry.
+function insertTextAtCursor(text: string, html?: string): void {
+  if (!text && !html) return;
+  try {
+    if (Office.context.host === Office.HostType.Word) {
+      Word.run(async (ctx) => {
+        const range = ctx.document.getSelection();
+        if (html) {
+          range.insertHtml(html, Word.InsertLocation.replace);
+        } else {
+          range.insertText(text, Word.InsertLocation.replace);
+        }
+        await ctx.sync();
+      }).catch((err) => dbg("HOST", "insertTextAtCursor Word.run failed", String(err)));
+    } else if (Office.context.host === Office.HostType.PowerPoint) {
+      // PowerPoint setSelectedDataAsync supports Text only — no HTML option.
+      Office.context.document.setSelectedDataAsync(
+        text,
+        { coercionType: Office.CoercionType.Text },
+        (result) => {
+          if (result.status === Office.AsyncResultStatus.Failed) {
+            dbg("HOST", "insertTextAtCursor PPT failed", result.error?.message);
+          }
+        }
+      );
+    } else if (Office.context.host === Office.HostType.Outlook) {
+      const item = Office.context.mailbox?.item as Office.MessageCompose | undefined;
+      if (!item?.body?.setSelectedDataAsync) {
+        dbg("HOST", "insertTextAtCursor Outlook: not in compose mode");
+        return;
+      }
+      item.body.setSelectedDataAsync(
+        html ?? text,
+        { coercionType: html ? Office.CoercionType.Html : Office.CoercionType.Text },
+        (result) => {
+          if (result.status === Office.AsyncResultStatus.Failed) {
+            dbg("HOST", "insertTextAtCursor Outlook failed", result.error?.message);
+          }
+        }
+      );
+    }
+  } catch (err) {
+    dbg("HOST", "insertTextAtCursor threw", String(err));
+  }
+}
+
 // Returns true if the compose window was opened; false if unavailable (caller should pass the
 // URL to the dialog instead so the user can click the link natively).
 function openMailtoUrl(url: string): boolean {
@@ -918,6 +970,9 @@ function openAnalyzeDialogWithPayload(
             }
             break;
           }
+          case "INSERT_TEXT_AT_CURSOR":
+            insertTextAtCursor((m as { action: string; text: string; html?: string }).text, (m as { action: string; text: string; html?: string }).html);
+            break;
           case "CLOSE":
             dbg("HOST", "CLOSE received — closing dialog, completing event");
             try { dialog.close(); } catch { }
@@ -1506,8 +1561,9 @@ function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
       }
       const dialog = result.value;
       const complete = makeEventCompleter(event);
+      let transitioning = false;
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        complete();
+        if (!transitioning) complete();
       });
       // Builds a fresh INIT payload from the DB. Re-sent after every principle
       // save/delete so the inline list portals stay in sync (mirrors C#, where
@@ -1567,6 +1623,30 @@ function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
         if (m.action === "DELETE_FLAG") {
           try { deleteFlag((m as { action: string; id: number }).id); }
           catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+        }
+        if (m.action === "ANALYZE_FROM_HISTORY") {
+          const flag = (m as { action: string; flag: FlagEntityForAnalysis }).flag;
+          const { personName, personEmail } = getUserIdentity();
+          transitioning = true;
+          try { dialog.close(); } catch { }
+          openAnalyzeFromHistory(flag, personName, personEmail, event);
+          return;
+        }
+        if (m.action === "APPLY_FROM_HISTORY") {
+          const flag = (m as { action: string; flag: FlagEntityForAnalysis }).flag;
+          const { personName, personEmail } = getUserIdentity();
+          transitioning = true;
+          try { dialog.close(); } catch { }
+          openApplyFromHistory(flag, personName, personEmail, event);
+          return;
+        }
+        if (m.action === "PROVIDE_FROM_HISTORY") {
+          const flag = (m as { action: string; flag: FlagEntityForAnalysis }).flag;
+          const { personName, personEmail } = getUserIdentity();
+          transitioning = true;
+          try { dialog.close(); } catch { }
+          openProvideFromHistory(flag, personName, personEmail, event);
+          return;
         }
         if (m.action === "DELETE_INTERPRETED_PRINCIPLE") {
           try { deleteInterpretation((m as { action: string; id: number }).id); sendInit(); }
@@ -2199,6 +2279,102 @@ function openFlagArticleDialog(
   );
 }
 
+// Returns HTML for the EUA only when the saved actualSelection already looks like
+// HTML (older flows store the rich-text selection here). For plain text, return ""
+// and let the dialog's existing plain-text fallback wrap it correctly — wrapping
+// here would double-escape pre-existing tags and show them as literal text.
+function flagSelectionToHtml(text: string | undefined | null): string {
+  if (!text) return "";
+  return /<\w+[^>]*>/.test(text) ? text : "";
+}
+
+function openAnalyzeFromHistory(
+  flag: FlagEntityForAnalysis,
+  personName: string,
+  personEmail: string,
+  event: Office.AddinCommands.Event
+): void {
+  const commConfig = getCommunicationConfig();
+  const initPayload: DialogInitPayload = {
+    selection: flag.actualSelection,
+    selectionHtml: flagSelectionToHtml(flag.actualSelection),
+    mode: flag.selectionType === "Selection" ? "selection" : "paragraph",
+    source: flag.source,
+    personName,
+    personEmail,
+    applicationName: flag.applicationName,
+    communicationFunction: flag.communicationFunction,
+    communicationSignal: flag.communicationSignal,
+    projectName: flag.projectName,
+    peopleList: buildPeopleList(commConfig?.personName),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+  };
+  openAnalyzeDialogWithPayload(initPayload, commConfig?.personName ?? "", commConfig?.personEmail ?? "", event);
+}
+
+function openApplyFromHistory(
+  flag: FlagEntityForAnalysis,
+  personName: string,
+  personEmail: string,
+  event: Office.AddinCommands.Event
+): void {
+  const commConfig = getCommunicationConfig();
+  const analyses = getAllAnalyses().map((a) => {
+    if (!a.id) return a;
+    return { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) };
+  });
+  const feedbacks = getAllFeedbacks().map((f) => {
+    if (!f.analysisId) return f;
+    return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+  });
+  openApplyDialog({
+    selection: flag.actualSelection,
+    selectionHtml: flagSelectionToHtml(flag.actualSelection),
+    mode: flag.selectionType === "Selection" ? "selection" : "paragraph",
+    source: flag.source,
+    personName,
+    personEmail,
+    applicationName: flag.applicationName,
+    communicationFunction: flag.communicationFunction,
+    communicationSignal: flag.communicationSignal,
+    projectName: flag.projectName,
+    peopleList: buildPeopleList(commConfig?.personName),
+    peopleEmailMap: getPeopleEmailMap(),
+    contacts: getAllPeople(),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+    analyses,
+    feedbacks,
+  }, event);
+}
+
+function openProvideFromHistory(
+  flag: FlagEntityForAnalysis,
+  personName: string,
+  personEmail: string,
+  event: Office.AddinCommands.Event
+): void {
+  const commConfig = getCommunicationConfig();
+  openProvideFeedbackDialog({
+    selection: flag.actualSelection,
+    selectionHtml: flagSelectionToHtml(flag.actualSelection),
+    mode: flag.selectionType === "Selection" ? "selection" : "paragraph",
+    source: flag.source,
+    personName,
+    personEmail,
+    applicationName: flag.applicationName,
+    communicationFunction: flag.communicationFunction,
+    communicationSignal: flag.communicationSignal,
+    projectName: flag.projectName,
+    peopleList: buildPeopleList(commConfig?.personName),
+    peopleEmailMap: getPeopleEmailMap(),
+    contacts: getAllPeople(),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+  }, event);
+}
+
 function openAnalyzeArticleDialog(
   event: Office.AddinCommands.Event,
   personName: string,
@@ -2334,8 +2510,9 @@ async function openListSelectionDialog(event: Office.AddinCommands.Event): Promi
       }
       const dialog = result.value;
       const complete = makeEventCompleter(event);
+      let transitioning = false;
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        complete();
+        if (!transitioning) complete();
       });
 
       // Builds a fresh INIT payload from the DB. Re-sent after every principle
@@ -2394,6 +2571,27 @@ async function openListSelectionDialog(event: Office.AddinCommands.Event): Promi
           case "DELETE_SELECTION_HISTORY": {
             try { deleteSelectionHistory((m as { action: string; id: number }).id); }
             catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+            break;
+          }
+          case "ANALYZE_FROM_HISTORY": {
+            const flag = (m as { action: string; flag: FlagEntityForAnalysis }).flag;
+            transitioning = true;
+            try { dialog.close(); } catch { }
+            openAnalyzeFromHistory(flag, personName, personEmail, event);
+            break;
+          }
+          case "APPLY_FROM_HISTORY": {
+            const flag = (m as { action: string; flag: FlagEntityForAnalysis }).flag;
+            transitioning = true;
+            try { dialog.close(); } catch { }
+            openApplyFromHistory(flag, personName, personEmail, event);
+            break;
+          }
+          case "PROVIDE_FROM_HISTORY": {
+            const flag = (m as { action: string; flag: FlagEntityForAnalysis }).flag;
+            transitioning = true;
+            try { dialog.close(); } catch { }
+            openProvideFromHistory(flag, personName, personEmail, event);
             break;
           }
           case "DELETE_INTERPRETED_PRINCIPLE": {
@@ -2703,6 +2901,9 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
             try { dialog.close(); } catch { }
             complete();
             break;
+          case "INSERT_TEXT_AT_CURSOR":
+            insertTextAtCursor((m as { action: string; text: string; html?: string }).text, (m as { action: string; text: string; html?: string }).html);
+            break;
           case "CLOSE":
             try { dialog.close(); } catch { }
             complete();
@@ -2788,6 +2989,9 @@ function openApplyDialog(initPayload: DialogInitPayload, addInEvent: Office.Addi
             }
             try { dialog.close(); } catch { }
             complete();
+            break;
+          case "INSERT_TEXT_AT_CURSOR":
+            insertTextAtCursor((m as { action: string; text: string; html?: string }).text, (m as { action: string; text: string; html?: string }).html);
             break;
           case "CLOSE":
             try { dialog.close(); } catch { }

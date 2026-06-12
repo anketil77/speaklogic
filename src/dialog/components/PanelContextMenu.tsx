@@ -1,6 +1,6 @@
 // src/dialog/components/PanelContextMenu.tsx
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export interface PanelMenuItem {
   label: string;
@@ -22,6 +22,7 @@ interface PanelContextMenuProps {
 
 export function PanelContextMenu({ x, y, items, onClose, width }: PanelContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number }>({ left: x, top: y });
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -38,10 +39,26 @@ export function PanelContextMenu({ x, y, items, onClose, width }: PanelContextMe
     };
   }, [onClose]);
 
-  // clamp so menu doesn't go off right/bottom edge
+  // Measure the menu after first paint and clamp into the viewport. Flips
+  // upward / leftward when the menu would otherwise overflow.
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const margin = 8;
+    let left = x;
+    let top = y;
+    if (left + rect.width + margin > window.innerWidth) {
+      left = Math.max(margin, window.innerWidth - rect.width - margin);
+    }
+    if (top + rect.height + margin > window.innerHeight) {
+      top = Math.max(margin, y - rect.height);
+    }
+    if (left !== pos.left || top !== pos.top) setPos({ left, top });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [x, y, items]);
+
   const menuW = width ?? 220;
-  const left = Math.min(x, window.innerWidth - menuW - 8);
-  const top = Math.min(y, window.innerHeight - 200);
+  const { left, top } = pos;
 
   return (
     <div
