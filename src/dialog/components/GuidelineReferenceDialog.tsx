@@ -77,7 +77,7 @@ export function GuidelineReferenceDialog({ onInsert, onClose }: Props) {
     const referenceText = `${reference.trim()} ${num}`;
     if (useLink) {
       const href = `${link.trim()}#${num}`;
-      onInsert(`<a href="${escapeHtml(href)}">${escapeHtml(referenceText)}</a>`);
+      onInsert(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(referenceText)}</a>`);
     } else {
       onInsert(escapeHtml(referenceText));
     }
@@ -165,11 +165,11 @@ export function GuidelineReferenceDialog({ onInsert, onClose }: Props) {
 
           <div style={{ display: "flex", gap: 20, marginTop: 4, marginBottom: 4 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.2, color: C.grey11, cursor: "pointer" }}>
-              <input type="checkbox" checked={!useLink} onChange={() => setUseLink(false)} />
+              <input type="radio" name="sl-guideline-mode" checked={!useLink} onChange={() => setUseLink(false)} />
               Use Guideline Text
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.2, color: C.grey11, cursor: "pointer" }}>
-              <input type="checkbox" checked={useLink} onChange={() => setUseLink(true)} />
+              <input type="radio" name="sl-guideline-mode" checked={useLink} onChange={() => setUseLink(true)} />
               Use Guideline Link
             </label>
           </div>

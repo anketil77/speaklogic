@@ -23,6 +23,7 @@ function injectPlaceholderCSS() {
     ".sl-find-active{background:#FFB300;}" +
     ".sl-spell-error{text-decoration:underline wavy #D13438;text-underline-offset:2px;}" +
     ".sl-spell-current{background:#FDE8E8;text-decoration:underline wavy #D13438;text-underline-offset:2px;outline:1px solid #D13438;border-radius:1px;}" +
+    ".rte-field.rte-mod-down a{cursor:pointer;}" +
     "@media print{" +
     "body *{visibility:hidden;}" +
     ".sl-print-region{visibility:visible;position:absolute;top:0;left:0;width:100%;border:none!important;padding:0!important;outline:none!important;box-shadow:none!important;}" +
@@ -49,6 +50,29 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
       injectPlaceholderCSS();
     }, []);
 
+    useEffect(() => {
+      function isMod(e: KeyboardEvent) {
+        return e.ctrlKey || e.metaKey || e.key === "Control" || e.key === "Meta";
+      }
+      function onKeyDown(e: KeyboardEvent) {
+        if (isMod(e)) innerRef.current?.classList.add("rte-mod-down");
+      }
+      function onKeyUp(e: KeyboardEvent) {
+        if (!e.ctrlKey && !e.metaKey) innerRef.current?.classList.remove("rte-mod-down");
+      }
+      function onBlur() {
+        innerRef.current?.classList.remove("rte-mod-down");
+      }
+      window.addEventListener("keydown", onKeyDown);
+      window.addEventListener("keyup", onKeyUp);
+      window.addEventListener("blur", onBlur);
+      return () => {
+        window.removeEventListener("keydown", onKeyDown);
+        window.removeEventListener("keyup", onKeyUp);
+        window.removeEventListener("blur", onBlur);
+      };
+    }, []);
+
     // Sync DOM when value changes externally.
     // Setting innerHTML programmatically does NOT fire input events, so no loop risk.
     useEffect(() => {
@@ -60,6 +84,22 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
     function handleInput() {
       if (innerRef.current) {
         onChange(innerRef.current.innerHTML);
+      }
+    }
+
+    function handleClick(e: React.MouseEvent<HTMLDivElement>) {
+      let node: HTMLElement | null = e.target as HTMLElement;
+      while (node && node !== innerRef.current) {
+        if (node.tagName === "A") {
+          const href = (node as HTMLAnchorElement).getAttribute("href");
+          if (href) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.open(href, "_blank", "noopener,noreferrer");
+          }
+          return;
+        }
+        node = node.parentElement;
       }
     }
 
@@ -90,6 +130,7 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
         data-placeholder={placeholder}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onClick={handleClick}
         style={{
           minHeight: "96px",
           width: "100%",

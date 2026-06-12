@@ -63,6 +63,7 @@ export interface AnalysisTabFormProps {
   editorRef: React.RefObject<HTMLDivElement>;
   onContextMenuQuestion?: (selectedText: string, range: Range | null) => void;
   onContextMenuCompensator?: (selectedText: string, range: Range | null) => void;
+  onContextMenuGuideline?: (range: Range | null) => void;
 }
 
 const ctxItemStyle: React.CSSProperties = {
@@ -90,20 +91,23 @@ export function AnalysisTabForm({
   editorRef,
   onContextMenuQuestion,
   onContextMenuCompensator,
+  onContextMenuGuideline,
 }: AnalysisTabFormProps) {
   const styles = useStyles();
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; text: string } | null>(null);
   const compensatorRangeRef = useRef<Range | null>(null);
   const questionRangeRef = useRef<Range | null>(null);
+  const guidelineRangeRef = useRef<Range | null>(null);
 
   function handleEditorContextMenu(e: React.MouseEvent) {
-    if (!onContextMenuQuestion && !onContextMenuCompensator) return;
+    if (!onContextMenuQuestion && !onContextMenuCompensator && !onContextMenuGuideline) return;
     e.preventDefault();
     const sel = window.getSelection();
     const text = sel?.toString().trim() ?? "";
     const cloned = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0).cloneRange() : null;
     compensatorRangeRef.current = cloned;
     questionRangeRef.current = cloned ? cloned.cloneRange() : null;
+    guidelineRangeRef.current = cloned ? cloned.cloneRange() : null;
     setCtxMenu({ x: e.clientX, y: e.clientY, text });
   }
 
@@ -195,6 +199,16 @@ export function AnalysisTabForm({
                 onClick={() => { onContextMenuCompensator(ctxMenu.text, compensatorRangeRef.current); setCtxMenu(null); }}
               >
                 Identify Selection as Compensator
+              </button>
+            )}
+            {onContextMenuGuideline && (
+              <button
+                style={{ ...ctxItemStyle, borderTop: "1px solid #E0E0E0" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                onClick={() => { onContextMenuGuideline(guidelineRangeRef.current); setCtxMenu(null); }}
+              >
+                Insert Analysis Guideline
               </button>
             )}
           </div>

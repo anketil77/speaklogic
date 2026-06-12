@@ -21,6 +21,7 @@ import { useAnalyzePanels } from "@/dialog/views/analyze/useAnalyzePanels";
 import { AnalyzeSubDialogs } from "@/dialog/views/analyze/AnalyzeSubDialogs";
 import { SaveSplitButton } from "@/dialog/views/analyze/SaveSplitButton";
 import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
+import { GuidelineReferenceDialog } from "@/dialog/components/GuidelineReferenceDialog";
 
 const F = {
   borderInput: `1px solid #C7C7C7`,
@@ -362,6 +363,8 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
 
   const analysisCompensatorRangeRef = useRef<Range | null>(null);
   const analysisQuestionRangeRef = useRef<Range | null>(null);
+  const analysisGuidelineRangeRef = useRef<Range | null>(null);
+  const [guidelineDialogOpen, setGuidelineDialogOpen] = useState(false);
 
   function insertHighlightSpan(rangeRef: React.MutableRefObject<Range | null>, bg: string, fg: string) {
     const range = rangeRef.current;
@@ -390,6 +393,24 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
 
   const applyQuestionHighlight = useCallback(() => {
     insertHighlightSpan(analysisQuestionRangeRef, "#FFFF00", "#000");
+  }, []);
+
+  const insertGuidelineHtml = useCallback((html: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const range = analysisGuidelineRangeRef.current;
+    const temp = document.createElement("div");
+    temp.innerHTML = html;
+    const frag = document.createDocumentFragment();
+    while (temp.firstChild) frag.appendChild(temp.firstChild);
+    if (range && editor.contains(range.startContainer)) {
+      range.collapse(false);
+      range.insertNode(frag);
+    } else {
+      editor.appendChild(frag);
+    }
+    updateForm("actualAnalysis", editor.innerHTML);
+    analysisGuidelineRangeRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -675,6 +696,10 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
                 analysisCompensatorRangeRef.current = range;
                 panels.handleContextMenuCompensator(text);
               }}
+              onContextMenuGuideline={(range) => {
+                analysisGuidelineRangeRef.current = range;
+                setGuidelineDialogOpen(true);
+              }}
             />
           </EntitySplitPanel>
         )}
@@ -749,6 +774,13 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
 
         <SaveSplitButton onSave={save} saving={saving} />
       </div>
+
+      {guidelineDialogOpen && (
+        <GuidelineReferenceDialog
+          onInsert={insertGuidelineHtml}
+          onClose={() => setGuidelineDialogOpen(false)}
+        />
+      )}
 
       {/* submitSave (not sendMessage): the sub-dialog's only message is a SAVE — route it through the double-submit guard. */}
       <AnalyzeSubDialogs
