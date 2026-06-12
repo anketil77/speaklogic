@@ -11,7 +11,7 @@ import React, { useState, useCallback, useRef } from "react";
 import { SectionBox }  from "../SectionBox";
 import { FormInput }   from "../FormInput";
 import { WizardFooter } from "../WizardFooter";
-import { CategoryPickerPanel } from "@/dialog/views/createarticle/CategoryPickerPanel";
+import { CategoryPickerPanel, CategoryIcon } from "@/dialog/views/createarticle/CategoryPickerPanel";
 import type { StepProps } from "../wizardTypes";
 import type { ArticleCategory } from "@/dialog/views/createarticle/CategoryPickerPanel";
 
@@ -93,7 +93,7 @@ export function Step3Article({ data, onChange, onNext, onBack, onCancel, hidePro
               style={{
                 display:    "flex",
                 alignItems: "center",
-                gap:        3,
+                gap:        6,
                 background: "none",
                 border:     "none",
                 padding:    0,
@@ -105,6 +105,13 @@ export function Step3Article({ data, onChange, onNext, onBack, onCancel, hidePro
                 color:       data.category ? "#1B1B1B" : "#0078D4",
               }}
             >
+              {data.category && (
+                <CategoryIcon
+                  category={data.category as ArticleCategory}
+                  size={14}
+                  color="#1B1B1B"
+                />
+              )}
               {data.category || "Select category"}
               <span style={{ color: "#0078D4", fontSize: 12, lineHeight: "1" }}>›</span>
             </button>

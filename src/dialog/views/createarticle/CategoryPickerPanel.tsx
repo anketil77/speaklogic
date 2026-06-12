@@ -13,6 +13,23 @@ import React, {
 import ReactDOM from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { ArticleCloseIcon } from "@/dialog/components/Icons";
+import {
+  AirplaneRegular,
+  BeakerRegular,
+  BriefcaseRegular,
+  BuildingGovernmentRegular,
+  FoodRegular,
+  HatGraduationRegular,
+  HeartPulseRegular,
+  LaptopRegular,
+  LeafOneRegular,
+  MoneyRegular,
+  MoviesAndTvRegular,
+  PaintBrushRegular,
+  ShoppingBagRegular,
+  TrophyRegular,
+} from "@fluentui/react-icons";
+import type { FluentIcon } from "@fluentui/react-icons";
 
 // ─── Category list ─────────────────────────────────────────────────────────────
 
@@ -34,6 +51,48 @@ export const ALL_ARTICLE_CATEGORIES = [
 ] as const;
 
 export type ArticleCategory = (typeof ALL_ARTICLE_CATEGORIES)[number] | "";
+
+// ─── Category icons ────────────────────────────────────────────────────────────
+
+const CATEGORY_ICONS: Record<Exclude<ArticleCategory, "">, FluentIcon> = {
+  Art:           PaintBrushRegular,
+  Business:      BriefcaseRegular,
+  Technology:    LaptopRegular,
+  Health:        HeartPulseRegular,
+  Education:     HatGraduationRegular,
+  Finance:       MoneyRegular,
+  Entertainment: MoviesAndTvRegular,
+  Travel:        AirplaneRegular,
+  Food:          FoodRegular,
+  Fashion:       ShoppingBagRegular,
+  Sports:        TrophyRegular,
+  Science:       BeakerRegular,
+  Environment:   LeafOneRegular,
+  Politics:      BuildingGovernmentRegular,
+};
+
+export interface CategoryIconProps {
+  category: ArticleCategory;
+  size?:    number;
+  color?:   string;
+}
+
+/** Renders the Fluent icon for a category. Returns null for the empty category. */
+export function CategoryIcon({ category, size = 16, color }: CategoryIconProps) {
+  if (!category) return null;
+  const Icon = CATEGORY_ICONS[category];
+  return (
+    <Icon
+      style={{
+        fontSize:  size,
+        width:     size,
+        height:    size,
+        color,
+        flexShrink: 0,
+      }}
+    />
+  );
+}
 
 // ─── Panel ─────────────────────────────────────────────────────────────────────
 
@@ -287,7 +346,7 @@ export function CategoryPickerPanel({
           filtered.map((cat, idx) => (
             <CategoryItem
               key={cat}
-              label={cat}
+              category={cat}
               selected={cat === selectedCategory}
               onSelect={() => handleSelect(cat)}
               onKeyDown={(e) => handleItemKeyDown(e, idx, cat)}
@@ -304,15 +363,16 @@ export function CategoryPickerPanel({
 // ─── List item ─────────────────────────────────────────────────────────────────
 
 interface CategoryItemProps {
-  label:    string;
+  category: Exclude<ArticleCategory, "">;
   selected: boolean;
   onSelect: () => void;
   onKeyDown:(e: React.KeyboardEvent<HTMLDivElement>) => void;
   itemRef:  (el: HTMLDivElement | null) => void;
 }
 
-function CategoryItem({ label, selected, onSelect, onKeyDown, itemRef }: CategoryItemProps) {
+function CategoryItem({ category, selected, onSelect, onKeyDown, itemRef }: CategoryItemProps) {
   const [hovered, setHovered] = useState(false);
+  const textColor = selected ? "#0078D4" : "#616161";
 
   return (
     <div
@@ -327,6 +387,7 @@ function CategoryItem({ label, selected, onSelect, onKeyDown, itemRef }: Categor
       style={{
         display:       "flex",
         alignItems:    "center",
+        gap:           10,
         padding:       "10px 6px 11px",
         cursor:        "pointer",
         background:    selected ? "#EBF3FC" : hovered ? "#F5F5F5" : "transparent",
@@ -336,15 +397,16 @@ function CategoryItem({ label, selected, onSelect, onKeyDown, itemRef }: Categor
         userSelect:    "none",
       }}
     >
+      <CategoryIcon category={category} size={16} color={textColor} />
       <span
         style={{
           fontSize:   12.3,
           lineHeight: "15px",
-          color:      selected ? "#0078D4" : "#616161",
+          color:      textColor,
           fontWeight: selected ? 600 : 400,
         }}
       >
-        {label}
+        {category}
       </span>
     </div>
   );

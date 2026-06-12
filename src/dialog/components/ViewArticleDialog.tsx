@@ -9,6 +9,8 @@ import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { ResizeHandles } from "@/dialog/components/ResizeHandles";
 import { ArticleHeaderIcon, ArticleCloseIcon } from "@/dialog/components/Icons";
 import { HtmlContent } from "@/dialog/components/HtmlContent";
+import { CategoryIcon } from "@/dialog/views/createarticle/CategoryPickerPanel";
+import type { ArticleCategory } from "@/dialog/views/createarticle/CategoryPickerPanel";
 import type { Article } from "@/types/db";
 
 interface Props {
@@ -495,6 +497,9 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
               {article.category ? (
                 <span
                   style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
                     background: "rgba(255,255,255,0.2)",
                     color: "#fff",
                     borderRadius: 20,
@@ -505,6 +510,11 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
                     letterSpacing: 0.2,
                   }}
                 >
+                  <CategoryIcon
+                    category={article.category as ArticleCategory}
+                    size={13}
+                    color="#fff"
+                  />
                   {article.category}
                 </span>
               ) : null}
