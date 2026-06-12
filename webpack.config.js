@@ -89,7 +89,10 @@ module.exports = async (env, options) => {
       new HtmlWebpackPlugin({
         filename: "taskpane.html",
         template: "./src/taskpane/index.html",
-        chunks: ["polyfill", "taskpane", "react"],
+        // `commands` is bundled here so the shared runtime (Word/PowerPoint)
+        // loads command handlers when the document opens. Outlook still uses
+        // commands.html via Commands.Url since it can't use a shared runtime.
+        chunks: ["polyfill", "taskpane", "react", "commands"],
       }),
       new CopyWebpackPlugin({
         patterns: [
