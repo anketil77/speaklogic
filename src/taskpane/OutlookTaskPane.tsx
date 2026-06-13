@@ -1261,6 +1261,9 @@ export function OutlookTaskPane() {
 
   // ── render ────────────────────────────────────────────────────────────────
 
+  // Comm Context fields are editable only while composing/replying; read-only when reading a received email.
+  const composeMode = isComposeMode();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#FAFAFA" }}>
       {!dbReady && (
@@ -1277,7 +1280,7 @@ export function OutlookTaskPane() {
         </div>
       )}
 
-      {/* Communication Context Panel */}
+      {/* Communication Context Panel — fields editable only in compose/reply, read-only when reading a received email */}
       <div style={{ borderBottom: "1px solid #E0E0E0", background: "#FFFFFF", flexShrink: 0 }}>
         <button
           onClick={() => setCommCtxOpen((o) => !o)}
@@ -1295,7 +1298,8 @@ export function OutlookTaskPane() {
           <div>
             <div style={{ fontSize: 10, color: "#616161", marginBottom: 3, fontWeight: 500 }}>App Name</div>
             <input
-              style={{ width: "100%", height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 6px", background: "#FFFFFF", fontFamily: "inherit", boxSizing: "border-box", color: "#1B1B1B" }}
+              disabled={!composeMode}
+              style={{ width: "100%", height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 6px", background: composeMode ? "#FFFFFF" : "#F2F2F2", fontFamily: "inherit", boxSizing: "border-box", color: composeMode ? "#1B1B1B" : "#616161", cursor: composeMode ? "text" : "not-allowed" }}
               value={commCtx.appName}
               onChange={(e) => updateCommCtx("appName", e.target.value)}
               placeholder="App name"
@@ -1304,7 +1308,8 @@ export function OutlookTaskPane() {
           <div>
             <div style={{ fontSize: 10, color: "#616161", marginBottom: 3, fontWeight: 500 }}>Project Name</div>
             <input
-              style={{ width: "100%", height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 6px", background: "#FFFFFF", fontFamily: "inherit", boxSizing: "border-box", color: "#1B1B1B" }}
+              disabled={!composeMode}
+              style={{ width: "100%", height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 6px", background: composeMode ? "#FFFFFF" : "#F2F2F2", fontFamily: "inherit", boxSizing: "border-box", color: composeMode ? "#1B1B1B" : "#616161", cursor: composeMode ? "text" : "not-allowed" }}
               value={commCtx.projectName}
               onChange={(e) => updateCommCtx("projectName", e.target.value)}
               placeholder="Project"
@@ -1313,7 +1318,8 @@ export function OutlookTaskPane() {
           <div>
             <div style={{ fontSize: 10, color: "#616161", marginBottom: 3, fontWeight: 500 }}>Comm. Function</div>
             <input
-              style={{ width: "100%", height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 6px", background: "#FFFFFF", fontFamily: "inherit", boxSizing: "border-box", color: "#1B1B1B" }}
+              disabled={!composeMode}
+              style={{ width: "100%", height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 6px", background: composeMode ? "#FFFFFF" : "#F2F2F2", fontFamily: "inherit", boxSizing: "border-box", color: composeMode ? "#1B1B1B" : "#616161", cursor: composeMode ? "text" : "not-allowed" }}
               value={commCtx.commFunction}
               onChange={(e) => updateCommCtx("commFunction", e.target.value)}
               placeholder="Function"
@@ -1324,7 +1330,8 @@ export function OutlookTaskPane() {
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: commCtx.commSignal === "Red" ? "#D13438" : commCtx.commSignal === "Blue" ? "#0078D4" : commCtx.commSignal === "Green" ? "#107C10" : "#BDBDBD" }} />
               <select
-                style={{ flex: 1, height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 2px", background: "#FFFFFF", fontFamily: "inherit", color: "#1B1B1B" }}
+                disabled={!composeMode}
+                style={{ flex: 1, height: 26, border: "1px solid #C7C7C7", fontSize: "11px", borderRadius: 3, padding: "0 2px", background: composeMode ? "#FFFFFF" : "#F2F2F2", fontFamily: "inherit", color: composeMode ? "#1B1B1B" : "#616161", cursor: composeMode ? "pointer" : "not-allowed" }}
                 value={commCtx.commSignal}
                 onChange={(e) => updateCommCtx("commSignal", e.target.value)}
               >
