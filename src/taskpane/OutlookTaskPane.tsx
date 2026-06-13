@@ -89,10 +89,14 @@ function plainText(html: string | undefined | null): string {
   return html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
 }
 
-// Compose mode: item.subject is an object (getAsync/setAsync); read mode: a plain string.
+// Compose mode: subject exposes setAsync (compose-only API); read mode: subject is a plain string.
 function isComposeMode(): boolean {
-  const subject = (Office.context.mailbox.item as { subject?: unknown }).subject;
-  return subject !== null && typeof subject === "object";
+  try {
+    const item = Office.context.mailbox?.item as { subject?: { setAsync?: unknown } } | undefined;
+    return typeof item?.subject?.setAsync === "function";
+  } catch {
+    return false;
+  }
 }
 
 // ── Comm Context email marker (visible block, parsed by recipient's sidebar) ──
@@ -127,6 +131,22 @@ function buildCtxMarker(ctx: CommCtxValues): string {
 
 const CTX_MARKER_STRIP_RE = /<div[^>]*id=["']?sl-comm-ctx["']?[^>]*>[\s\S]*?<\/div>/gi;
 const CTX_MARKER_DATA_RE = /<span[^>]*id=["']?sl-comm-ctx-data["']?[^>]*>([\s\S]*?)<\/span>/i;
+
+// Subject stamp — readable fallback so recipients WITHOUT the add-in still see the
+// context (the body marker only auto-fills the panel if both sides have the add-in).
+// Format (per client): "<subject>; Application[App] Communication Function [Func] Communication Signal [Signal]"
+function buildSubjectStamp(ctx: CommCtxValues): string {
+  return `Application[${ctx.appName}] Communication Function [${ctx.commFunction}] Communication Signal [${ctx.commSignal}]`;
+}
+// Strip a previously appended stamp (and its "; " separator) so re-attaching never duplicates it.
+const SUBJECT_STAMP_RE = /\s*;\s*Application\[[^\]]*\]\s*Communication Function\s*\[[^\]]*\]\s*Communication Signal\s*\[[^\]]*\]\s*$/i;
+// Parse a stamped subject back into context values (final fallback on receive — appName + commFunction + commSignal only; projectName isn't carried in the subject).
+const SUBJECT_STAMP_PARSE_RE = /Application\[([^\]]*)\]\s*Communication Function\s*\[([^\]]*)\]\s*Communication Signal\s*\[([^\]]*)\]/i;
+function parseSubjectStamp(subject: string): CommCtxValues | null {
+  const m = subject.match(SUBJECT_STAMP_PARSE_RE);
+  if (!m) return null;
+  return { appName: (m[1] ?? "").trim(), commFunction: (m[2] ?? "").trim(), commSignal: (m[3] ?? "").trim(), projectName: "" };
+}
 
 function parseCtxMarker(bodyHtml: string): CommCtxValues | null {
   const match = bodyHtml.match(CTX_MARKER_DATA_RE);
@@ -379,6 +399,8 @@ export function OutlookTaskPane() {
     initDb()
       .then(() => setDbReady(true))
       .catch(() => setStatus({ msg: "Failed to initialize database.", ok: false }));
+
+    // Load the Communication Context for this item: saved props → body marker → subject stamp.
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (Office.context.mailbox.item as any).loadCustomPropertiesAsync((result: Office.AsyncResult<Office.CustomProperties>) => {
@@ -407,6 +429,15 @@ export function OutlookTaskPane() {
                   if (fromBody) {
                     commCtxRef.current = fromBody;
                     setCommCtx(fromBody);
+                    return;
+                  }
+                  // Final fallback: parse the context stamp off the subject line
+                  // (recipient without the add-in still carried the stamp through).
+                  const rawSubject = (Office.context.mailbox.item as { subject?: string }).subject;
+                  const fromSubject = typeof rawSubject === "string" ? parseSubjectStamp(rawSubject) : null;
+                  if (fromSubject) {
+                    commCtxRef.current = fromSubject;
+                    setCommCtx(fromSubject);
                   }
                 }
               );
@@ -506,6 +537,16 @@ export function OutlookTaskPane() {
           }
         });
     });
+
+    // Also stamp the subject so recipients without the add-in still see the context.
+    if (item.subject?.getAsync) {
+      item.subject.getAsync((subRes: Office.AsyncResult<string>) => {
+        if (subRes.status !== Office.AsyncResultStatus.Succeeded) return;
+        const base = (subRes.value || "").replace(SUBJECT_STAMP_RE, "").trim();
+        const stamped = base ? `${base}; ${buildSubjectStamp(ctx)}` : buildSubjectStamp(ctx);
+        item.subject.setAsync(stamped);
+      });
+    }
   }, []);
 
   const handleAnalyze = useCallback(async (mode: SelectionMode) => {
