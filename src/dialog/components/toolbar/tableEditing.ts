@@ -58,10 +58,12 @@ export interface Grid {
 }
 
 function getBodyRows(table: HTMLTableElement): HTMLTableRowElement[] {
-  // Flatten thead/tbody/tfoot into a single visual row list.
-  return Array.from(table.querySelectorAll("tr")).filter(
-    (tr) => getTable(tr, table) === table // skip rows of nested tables
-  );
+  // Flatten thead/tbody/tfoot into a single visual row list, skipping rows that
+  // belong to a nested table. NOTE: use `.closest("table")` here, NOT
+  // `getTable(tr, table)` — `getTable`/`closestWithin` stop *before* the root
+  // element, so `getTable(tr, table)` is always null and would filter out every
+  // row (empty grid → no handles, all cell ops become no-ops).
+  return Array.from(table.querySelectorAll("tr")).filter((tr) => tr.closest("table") === table);
 }
 
 export function buildGrid(table: HTMLTableElement): Grid {
@@ -262,8 +264,10 @@ export function getSelectedCells(root: Element): Cell[] {
   const range = sel.getRangeAt(0);
   const table = getTable(range.commonAncestorContainer, root);
   if (!table) return [];
+  // `.closest("table")` (not `getTable(c, table)`, which is always null for the
+  // root table — see getBodyRows) so we keep this table's own cells.
   const cells = Array.from(table.querySelectorAll<Cell>("td,th")).filter(
-    (c) => getTable(c, table) === table
+    (c) => c.closest("table") === table
   );
   return cells.filter((c) => range.intersectsNode(c));
 }

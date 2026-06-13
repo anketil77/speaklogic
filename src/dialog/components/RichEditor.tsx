@@ -68,7 +68,8 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
 
     useImperativeHandle(ref, () => innerRef.current!);
 
-    const { onContextMenu, menuElement, overlayElement } = useTableEditing(innerRef);
+    const { onContextMenu, onMouseDown, menuElement, overlayElement, selectionElement } =
+      useTableEditing(innerRef);
 
     useEffect(() => {
       injectPlaceholderCSS();
@@ -177,6 +178,7 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           onClick={handleClick}
+          onMouseDown={onMouseDown}
           onContextMenu={onContextMenu}
           style={{
             minHeight: "96px",
@@ -197,6 +199,7 @@ export const RichEditor = React.forwardRef<HTMLDivElement, RichEditorProps>(
         />
         {menuElement}
         {overlayElement}
+        {selectionElement}
       </>
     );
   }
