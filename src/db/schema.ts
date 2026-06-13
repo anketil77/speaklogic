@@ -227,6 +227,16 @@ CREATE TABLE IF NOT EXISTS Publisher (
   logoBase64 TEXT DEFAULT ''
 );
 
+-- User-defined "information" items for the Article Wizard "Select Information"
+-- panel (Point 14). The "Speak Logic" list is constant/built-in (see
+-- speakLogicInfoData.ts); only these user-identified items are editable.
+CREATE TABLE IF NOT EXISTS UserInformationItem (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  html TEXT DEFAULT '',
+  createdDate TEXT
+);
+
 CREATE TABLE IF NOT EXISTS AttachFileToProject (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   fileName TEXT,

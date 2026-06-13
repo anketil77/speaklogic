@@ -1,9 +1,16 @@
 // src/dialog/views/createarticle/wizard/SelectInfoPanel.tsx
 //
-// Floating "Select Information" side panel for wizard Step 6.
+// Floating "Select Information" side panel for the Article Wizard (Point 14).
 // Rendered via createPortal to document.body (position: fixed).
-// Tabs: "User Identified" | "Speak Logic"
-// Spec: width 300px; box-shadow + border-radius: 8px
+//
+// Two tabs:
+//   • "User Identified" — editable: user can ADD and REMOVE items (persisted
+//     in the DB via the host round-trip).
+//   • "Speak Logic"     — CONSTANT/built-in: read-only, no add, no remove.
+//
+// Each item holds rich `html` (text, inline SVG diagram, or LaTeX math).
+// Selecting an item inserts its full html into the Step Info list, where the
+// math-aware HtmlContent renders it.
 
 import React, { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -11,24 +18,42 @@ import { ArticleCloseIcon, WizardSearchIcon } from "@/dialog/components/Icons";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 
 export interface InfoItem {
-  id:      number;
-  name:    string;
-  formula: string;
+  id:   string;   // "sl-…" for Speak Logic, "user-<dbId>" for user items
+  name: string;
+  html: string;
 }
 
 interface Props {
-  userItems:       InfoItem[];
-  speakLogicItems: InfoItem[];
-  onSelect:        (item: InfoItem) => void;
-  onClose:         () => void;
+  userItems:        InfoItem[];
+  speakLogicItems:  InfoItem[];
+  onSelect:         (item: InfoItem) => void;
+  onClose:          () => void;
+  onAddUserItem?:   (name: string, html: string) => void;
+  onRemoveUserItem?: (id: string) => void;
 }
 
 type Tab = "user" | "sl";
 
-export function SelectInfoPanel({ userItems, speakLogicItems, onSelect, onClose }: Props) {
-  const [activeTab,    setActiveTab]    = useState<Tab>("user");
-  const [search,       setSearch]       = useState("");
-  const [selectedId,   setSelectedId]   = useState<number | null>(null);
+function htmlToText(html: string, max = 80): string {
+  if (typeof document === "undefined") return "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  const text = (tmp.textContent || "").replace(/\s+/g, " ").trim();
+  return text.length > max ? text.slice(0, max).trim() + "…" : text;
+}
+
+export function SelectInfoPanel({
+  userItems,
+  speakLogicItems,
+  onSelect,
+  onClose,
+  onAddUserItem,
+  onRemoveUserItem,
+}: Props) {
+  const [activeTab,  setActiveTab]  = useState<Tab>("user");
+  const [search,     setSearch]     = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [adding,     setAdding]     = useState(false);
   const { pos, onHeaderMouseDown } = useDraggable();
 
   const items = activeTab === "user" ? userItems : speakLogicItems;
@@ -37,7 +62,7 @@ export function SelectInfoPanel({ userItems, speakLogicItems, onSelect, onClose 
     ? items.filter(
         (i) =>
           i.name.toLowerCase().includes(search.toLowerCase()) ||
-          i.formula.toLowerCase().includes(search.toLowerCase())
+          htmlToText(i.html, 9999).toLowerCase().includes(search.toLowerCase())
       )
     : items;
 
@@ -45,6 +70,7 @@ export function SelectInfoPanel({ userItems, speakLogicItems, onSelect, onClose 
     setActiveTab(tab);
     setSelectedId(null);
     setSearch("");
+    setAdding(false);
   }, []);
 
   const handleConfirm = useCallback(() => {
@@ -52,32 +78,49 @@ export function SelectInfoPanel({ userItems, speakLogicItems, onSelect, onClose 
     if (item) onSelect(item);
   }, [filtered, selectedId, onSelect]);
 
-  // Anchored to top-right at (12, 90); pos is the drag delta applied as offset.
-  // Dragging right grows pos.x → shrinks the `right` distance (panel moves right);
-  // dragging down grows pos.y → grows the `top` distance (panel moves down).
+  const handleSaveNew = useCallback((name: string, html: string) => {
+    onAddUserItem?.(name, html);
+    setAdding(false);
+  }, [onAddUserItem]);
+
   const panel = (
     <div
       style={{
-        position:     "fixed",
-        right:        12 - pos.x,
-        top:          90 + pos.y,
-        width:        300,
-        maxHeight:    431,
-        background:   "#FFFFFF",
-        boxShadow:    "0px 8px 32px rgba(0,0,0,0.14), 0px 2px 8px rgba(0,0,0,0.06)",
-        borderRadius: 8,
-        display:      "flex",
+        position:      "fixed",
+        right:         12 - pos.x,
+        top:           90 + pos.y,
+        width:         300,
+        maxHeight:     460,
+        background:    "#FFFFFF",
+        boxShadow:     "0px 8px 32px rgba(0,0,0,0.14), 0px 2px 8px rgba(0,0,0,0.06)",
+        borderRadius:  8,
+        display:       "flex",
         flexDirection: "column",
-        zIndex:       200,
-        fontFamily:   "'Inter','Segoe UI',sans-serif",
-        overflow:     "hidden",
+        zIndex:        200,
+        fontFamily:    "'Inter','Segoe UI',sans-serif",
+        overflow:      "hidden",
       }}
     >
       <PanelHeader onClose={onClose} onDragStart={onHeaderMouseDown} />
       <TabBar activeTab={activeTab} onChange={handleTabChange} />
-      <SearchBar value={search} onChange={setSearch} />
-      <ItemList items={filtered} selectedId={selectedId} onSelect={setSelectedId} />
-      <ConfirmBtn disabled={selectedId === null} onClick={handleConfirm} />
+      {adding && activeTab === "user" ? (
+        <AddItemForm onSave={handleSaveNew} onCancel={() => setAdding(false)} />
+      ) : (
+        <>
+          <SearchBar value={search} onChange={setSearch} />
+          {activeTab === "user" && onAddUserItem && (
+            <AddItemButton onClick={() => setAdding(true)} />
+          )}
+          <ItemList
+            items={filtered}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            removable={activeTab === "user" && !!onRemoveUserItem}
+            onRemove={onRemoveUserItem}
+          />
+          <ConfirmBtn disabled={selectedId === null} onClick={handleConfirm} />
+        </>
+      )}
     </div>
   );
 
@@ -92,16 +135,9 @@ function PanelHeader({ onClose, onDragStart }: { onClose: () => void; onDragStar
     <div
       onMouseDown={onDragStart}
       style={{
-        display:        "flex",
-        flexDirection:  "row",
-        justifyContent: "space-between",
-        alignItems:     "center",
-        padding:        "13px 14px 11px",
-        height:         43,
-        flexShrink:     0,
-        boxSizing:      "border-box",
-        cursor:         "grab",
-        userSelect:     "none",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "13px 14px 11px", height: 43, flexShrink: 0, boxSizing: "border-box",
+        cursor: "grab", userSelect: "none",
       }}
     >
       <span style={{ fontWeight: 700, fontSize: 12.7, lineHeight: "15px", color: "#1B1B1B" }}>
@@ -113,17 +149,10 @@ function PanelHeader({ onClose, onDragStart }: { onClose: () => void; onDragStar
         onMouseLeave={() => setHov(false)}
         aria-label="Close"
         style={{
-          display:        "flex",
-          alignItems:     "center",
-          justifyContent: "center",
-          width:          17,
-          height:         17,
-          padding:        3,
-          border:         "none",
-          background:     hov ? "#F0F0F0" : "transparent",
-          borderRadius:   3,
-          cursor:         "pointer",
-          flexShrink:     0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          width: 17, height: 17, padding: 3, border: "none",
+          background: hov ? "#F0F0F0" : "transparent", borderRadius: 3,
+          cursor: "pointer", flexShrink: 0,
         }}
       >
         <ArticleCloseIcon />
@@ -136,16 +165,9 @@ function TabBar({ activeTab, onChange }: { activeTab: Tab; onChange: (t: Tab) =>
   return (
     <div
       style={{
-        display:      "flex",
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems:    "flex-start",
-        margin:        "0 12px",
-        padding:       2,
-        height:        26,
-        background:    "#F5F5F5",
-        borderRadius:  5,
-        flexShrink:    0,
+        display: "flex", justifyContent: "center", alignItems: "flex-start",
+        margin: "0 12px", padding: 2, height: 26, background: "#F5F5F5",
+        borderRadius: 5, flexShrink: 0,
       }}
     >
       <TabButton label="User Identified" active={activeTab === "user"} onClick={() => onChange("user")} />
@@ -159,22 +181,12 @@ function TabButton({ label, active, onClick }: { label: string; active: boolean;
     <button
       onClick={onClick}
       style={{
-        display:        "flex",
-        alignItems:     "center",
-        justifyContent: "center",
-        flex:           1,
-        height:         22,
-        background:     active ? "#FFFFFF" : "transparent",
-        boxShadow:      active ? "0px 1px 3px rgba(0,0,0,0.1)" : "none",
-        borderRadius:   4,
-        border:         "none",
-        cursor:         "pointer",
-        fontFamily:     "'Inter','Segoe UI',sans-serif",
-        fontWeight:     700,
-        fontSize:       9.8,
-        lineHeight:     "12px",
-        color:          active ? "#1B1B1B" : "#616161",
-        transition:     "background 0.1s",
+        display: "flex", alignItems: "center", justifyContent: "center", flex: 1, height: 22,
+        background: active ? "#FFFFFF" : "transparent",
+        boxShadow: active ? "0px 1px 3px rgba(0,0,0,0.1)" : "none",
+        borderRadius: 4, border: "none", cursor: "pointer",
+        fontFamily: "'Inter','Segoe UI',sans-serif", fontWeight: 700, fontSize: 9.8,
+        lineHeight: "12px", color: active ? "#1B1B1B" : "#616161", transition: "background 0.1s",
       }}
     >
       {label}
@@ -186,18 +198,9 @@ function SearchBar({ value, onChange }: { value: string; onChange: (v: string) =
   return (
     <div
       style={{
-        display:      "flex",
-        flexDirection: "row",
-        alignItems:   "center",
-        margin:       "8px 12px 0",
-        padding:      "5px 9px",
-        gap:          7,
-        height:       25,
-        background:   "#F5F5F5",
-        border:       "1px solid #E0E0E0",
-        borderRadius: 4,
-        boxSizing:    "border-box",
-        flexShrink:   0,
+        display: "flex", alignItems: "center", margin: "8px 12px 0", padding: "5px 9px",
+        gap: 7, height: 25, background: "#F5F5F5", border: "1px solid #E0E0E0",
+        borderRadius: 4, boxSizing: "border-box", flexShrink: 0,
       }}
     >
       <WizardSearchIcon />
@@ -207,52 +210,107 @@ function SearchBar({ value, onChange }: { value: string; onChange: (v: string) =
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{
-          flex:       1,
-          border:     "none",
-          background: "transparent",
-          outline:    "none",
-          fontFamily: "'Inter','Segoe UI',sans-serif",
-          fontWeight: 400,
-          fontSize:   9.5,
-          lineHeight: "11px",
-          color:      "#1B1B1B",
+          flex: 1, border: "none", background: "transparent", outline: "none",
+          fontFamily: "'Inter','Segoe UI',sans-serif", fontWeight: 400, fontSize: 9.5,
+          lineHeight: "11px", color: "#1B1B1B",
         }}
       />
     </div>
   );
 }
 
+function AddItemButton({ onClick }: { onClick: () => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+        margin: "8px 12px 0", height: 28, flexShrink: 0,
+        background: hov ? "#F0F6FF" : "#FFFFFF", border: "1px dashed #0078D4",
+        borderRadius: 4, cursor: "pointer", color: "#0078D4",
+        fontFamily: "'Inter','Segoe UI',sans-serif", fontWeight: 700, fontSize: 10,
+      }}
+    >
+      + Add information
+    </button>
+  );
+}
+
+function AddItemForm({ onSave, onCancel }: { onSave: (name: string, html: string) => void; onCancel: () => void }) {
+  const [name, setName] = useState("");
+  const [body, setBody] = useState("");
+  const canSave = name.trim().length > 0;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 12px 12px", flex: 1, minHeight: 0 }}>
+      <label style={{ fontSize: 10, fontWeight: 700, color: "#5B5B5B" }}>Title</label>
+      <input
+        type="text"
+        value={name}
+        autoFocus
+        onChange={(e) => setName(e.target.value)}
+        placeholder="e.g. Prior weather report"
+        style={{
+          height: 28, padding: "0 9px", border: "1px solid #C7C7C7", borderRadius: 4,
+          fontSize: 11, fontFamily: "'Inter','Segoe UI',sans-serif", outline: "none",
+        }}
+      />
+      <label style={{ fontSize: 10, fontWeight: 700, color: "#5B5B5B" }}>Content (text, HTML, or LaTeX math)</label>
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        placeholder={"Type or paste content.\nMath example: \\[ a^2 + b^2 = c^2 \\]"}
+        style={{
+          flex: 1, minHeight: 90, padding: "7px 9px", border: "1px solid #C7C7C7", borderRadius: 4,
+          fontSize: 11, fontFamily: "'Inter','Segoe UI',sans-serif", resize: "none", outline: "none",
+        }}
+      />
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        <button
+          onClick={onCancel}
+          style={{
+            height: 28, padding: "0 12px", border: "1px solid #C7C7C7", borderRadius: 4,
+            background: "#FFFFFF", cursor: "pointer", fontSize: 10.5, fontWeight: 700, color: "#1B1B1B",
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={canSave ? () => onSave(name.trim(), body) : undefined}
+          disabled={!canSave}
+          style={{
+            height: 28, padding: "0 14px", border: "none", borderRadius: 4,
+            background: canSave ? "#0078D4" : "#B0B0B0", color: "#FFFFFF",
+            cursor: canSave ? "pointer" : "default", fontSize: 10.5, fontWeight: 700,
+          }}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ItemList({
-  items,
-  selectedId,
-  onSelect,
+  items, selectedId, onSelect, removable, onRemove,
 }: {
-  items:      InfoItem[];
-  selectedId: number | null;
-  onSelect:   (id: number) => void;
+  items: InfoItem[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  removable: boolean;
+  onRemove?: (id: string) => void;
 }) {
   return (
     <div
       style={{
-        display:       "flex",
-        flexDirection: "column",
-        padding:       "4px 12px 4px",
-        flex:          1,
-        overflowY:     "auto",
-        minHeight:     0,
-        marginTop:     4,
+        display: "flex", flexDirection: "column", padding: "4px 12px 4px",
+        flex: 1, overflowY: "auto", minHeight: 0, marginTop: 4,
       }}
     >
       {items.length === 0 && (
-        <div
-          style={{
-            padding:    "16px 0",
-            fontFamily: "'Inter','Segoe UI',sans-serif",
-            fontSize:   10,
-            color:      "#ADADAD",
-            textAlign:  "center",
-          }}
-        >
+        <div style={{ padding: "16px 0", fontSize: 10, color: "#ADADAD", textAlign: "center" }}>
           No items found
         </div>
       )}
@@ -262,6 +320,8 @@ function ItemList({
           item={item}
           selected={item.id === selectedId}
           onClick={() => onSelect(item.id)}
+          removable={removable}
+          onRemove={onRemove}
         />
       ))}
     </div>
@@ -269,57 +329,60 @@ function ItemList({
 }
 
 function InfoItemRow({
-  item,
-  selected,
-  onClick,
+  item, selected, onClick, removable, onRemove,
 }: {
-  item:     InfoItem;
+  item: InfoItem;
   selected: boolean;
-  onClick:  () => void;
+  onClick: () => void;
+  removable: boolean;
+  onRemove?: (id: string) => void;
 }) {
+  const preview = htmlToText(item.html);
   return (
-    <button
-      onClick={onClick}
+    <div
       style={{
-        display:       "flex",
-        flexDirection: "column",
-        alignItems:    "flex-start",
-        padding:       "8px 0",
-        gap:           2,
-        width:         "100%",
-        border:        "none",
-        borderRadius:  4,
-        background:    selected ? "#F0FFF4" : "transparent",
-        cursor:        "pointer",
-        textAlign:     "left",
-        boxSizing:     "border-box",
+        display: "flex", alignItems: "flex-start", gap: 6, padding: "8px 6px",
+        borderRadius: 4, background: selected ? "#F0FFF4" : "transparent",
       }}
     >
-      <span
+      <button
+        onClick={onClick}
         style={{
-          fontFamily: "'Inter','Segoe UI',sans-serif",
-          fontWeight:  700,
-          fontSize:    10.8,
-          lineHeight:  "13px",
-          color:       "#1B1B1B",
-          alignSelf:   "stretch",
+          display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2,
+          flex: 1, minWidth: 0, border: "none", background: "transparent", cursor: "pointer",
+          textAlign: "left", padding: 0,
         }}
       >
-        {item.name}
-      </span>
-      <span
-        style={{
-          fontFamily: "'Inter','Segoe UI',sans-serif",
-          fontWeight:  400,
-          fontSize:    9.2,
-          lineHeight:  "11px",
-          color:       "#616161",
-          alignSelf:   "stretch",
-        }}
-      >
-        {item.formula}
-      </span>
-    </button>
+        <span style={{ fontWeight: 700, fontSize: 10.8, lineHeight: "13px", color: "#1B1B1B", alignSelf: "stretch" }}>
+          {item.name}
+        </span>
+        <span style={{
+          fontWeight: 400, fontSize: 9.2, lineHeight: "12px", color: "#616161", alignSelf: "stretch",
+          overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box",
+          WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+        }}>
+          {preview}
+        </span>
+      </button>
+      {removable && onRemove && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
+          title="Remove"
+          aria-label="Remove"
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center",
+            width: 22, height: 22, flexShrink: 0, border: "1px solid transparent",
+            background: "transparent", borderRadius: 4, cursor: "pointer", padding: 0,
+          }}
+          onMouseEnter={(e) => { (e.currentTarget.style.borderColor = "#E0E0E0"); }}
+          onMouseLeave={(e) => { (e.currentTarget.style.borderColor = "transparent"); }}
+        >
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <path d="M2 3h8M4.5 3V2h3v1M3.5 3l.5 7h4l.5-7" stroke="#D13438" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -333,21 +396,11 @@ function ConfirmBtn({ disabled, onClick }: { disabled: boolean; onClick: () => v
         onMouseEnter={() => !disabled && setHov(true)}
         onMouseLeave={() => setHov(false)}
         style={{
-          display:        "flex",
-          alignItems:     "center",
-          justifyContent: "center",
-          width:          "100%",
-          height:         31,
-          background:     disabled ? "#B0B0B0" : hov ? "#106EBE" : "#0078D4",
-          borderRadius:   4,
-          border:         "none",
-          cursor:         disabled ? "default" : "pointer",
-          fontFamily:     "'Inter','Segoe UI',sans-serif",
-          fontWeight:     700,
-          fontSize:       10.7,
-          lineHeight:     "13px",
-          color:          "#FFFFFF",
-          transition:     "background 0.1s",
+          display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 31,
+          background: disabled ? "#B0B0B0" : hov ? "#106EBE" : "#0078D4",
+          borderRadius: 4, border: "none", cursor: disabled ? "default" : "pointer",
+          fontFamily: "'Inter','Segoe UI',sans-serif", fontWeight: 700, fontSize: 10.7,
+          lineHeight: "13px", color: "#FFFFFF", transition: "background 0.1s",
         }}
       >
         Select Information

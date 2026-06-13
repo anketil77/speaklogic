@@ -9,6 +9,14 @@
 // nodes so the visible text matches what window.getSelection().toString() returns.
 
 import React from "react";
+import { MathJax } from "better-react-mathjax";
+
+// Cheap guard: only pay the MathJax typeset cost when the content actually
+// contains TeX delimiters (\( \) or \[ \]). Plain HTML — the common case —
+// renders untouched. We don't match "$" so currency is never typeset.
+function hasMath(html: string): boolean {
+  return /\\\(|\\\[/.test(html);
+}
 
 const SL_HTML_CONTENT_CSS = `
 .sl-html-content > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
@@ -68,12 +76,20 @@ interface HtmlContentProps extends React.HTMLAttributes<HTMLDivElement> {
 export function HtmlContent({ html, className, ...rest }: HtmlContentProps) {
   ensureSlHtmlContentStyleInjected();
   const cls = `sl-html-content${className ? ` ${className}` : ""}`;
-  return (
+  const content = (
     <div
       {...rest}
       className={cls}
       // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: html }}
     />
+  );
+  // Only wrap in MathJax when the HTML has TeX — `dynamic` re-typesets whenever
+  // `html` changes. Diagrams (inline SVG) need no MathJax and render via the div.
+  if (!hasMath(html)) return content;
+  return (
+    <MathJax dynamic hideUntilTypeset="first">
+      {content}
+    </MathJax>
   );
 }

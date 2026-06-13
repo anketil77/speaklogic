@@ -15,6 +15,7 @@ import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/co
 import { saveArticle, updateArticle, publishArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById } from "@/db/queries/article";
 import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
 import { saveProblemSolution } from "@/db/queries/problem";
+import { getUserInformationItems, addUserInformationItem, deleteUserInformationItem } from "@/db/queries/information";
 import { dbg, clearLog } from "@/debug/log";
 import { openInterpretedPrincipleReport, openIdentifiedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
 import { formatArticleForAnalysis } from "@/dialog/utils/formatArticleForAnalysis";
@@ -1855,21 +1856,6 @@ function openArticleWizardDialog(
   attempt       = 0,
 ): void {
   const commConfig = getCommunicationConfig();
-  const initPayload: DialogInitPayload = {
-    selection:             "",
-    mode:                  "selection",
-    source:                getSource(),
-    personName,
-    personEmail,
-    applicationName:       "",
-    communicationFunction: "",
-    communicationSignal:   "",
-    projectName:           "",
-    peopleList:            [],
-    templateName,
-    wizardCategory,
-    communicationPersonName: commConfig?.personName ?? "",
-  };
 
   _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=article-wizard`,
@@ -1891,6 +1877,29 @@ function openArticleWizardDialog(
       const complete = makeEventCompleter(event);
       let transitioning = false;
 
+      // Rebuilds + re-sends INIT. Re-reads user "Select Information" items so
+      // the panel refreshes after every add/remove. templateName/wizardCategory
+      // are unchanged, so the wizard's category/personName effects don't re-fire.
+      const sendInit = () => {
+        const initPayload: DialogInitPayload = {
+          selection:             "",
+          mode:                  "selection",
+          source:                getSource(),
+          personName,
+          personEmail,
+          applicationName:       "",
+          communicationFunction: "",
+          communicationSignal:   "",
+          projectName:           "",
+          peopleList:            [],
+          templateName,
+          wizardCategory,
+          communicationPersonName: commConfig?.personName ?? "",
+          userInfoItems:           getUserInformationItems(),
+        };
+        wzDialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+      };
+
       wzDialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
         if (!transitioning) complete();
       });
@@ -1900,7 +1909,17 @@ function openArticleWizardDialog(
 
         switch (m.action) {
           case "READY":
-            wzDialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            sendInit();
+            break;
+
+          case "SAVE_USER_INFO_ITEM":
+            try { addUserInformationItem(m.name, m.html); } catch { /* title required — ignore */ }
+            sendInit();
+            break;
+
+          case "DELETE_USER_INFO_ITEM":
+            deleteUserInformationItem(m.id);
+            sendInit();
             break;
 
           case "SAVE_ARTICLE_WIZARD": {

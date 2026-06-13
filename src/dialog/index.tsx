@@ -11,6 +11,7 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { FluentProvider, Spinner, webLightTheme } from "@fluentui/react-components";
+import { MathJaxContext } from "better-react-mathjax";
 import { ErrorBoundary } from "@/dialog/components/ErrorBoundary";
 import { DialogCommContext } from "@/dialog/hooks/useDialogComm";
 import MessageDialog from "@/dialog/components/MessageDialog";
@@ -51,6 +52,28 @@ const ListSelectionRelatedPrincipleView = lazy(() => import("@/dialog/views/List
 const PeopleView = lazy(() => import("@/dialog/views/PeopleView"));
 import type { DialogInitPayload, HostMessage } from "@/types/db";
 import { dbg } from "@/debug/log";
+
+// MathJax v3, loaded from our OWN origin (never a CDN — keeps the add-in offline-safe).
+// webpack copies node_modules/mathjax/es5 → dist/mathjax, so this resolves to
+// <origin>/mathjax/tex-mml-chtml.js and its fonts load relative to it.
+const MATHJAX_SRC =
+  typeof window !== "undefined"
+    ? `${window.location.origin}/mathjax/tex-mml-chtml.js`
+    : "/mathjax/tex-mml-chtml.js";
+
+const MATHJAX_CONFIG = {
+  tex: {
+    // Only backslash delimiters (\( \) inline, \[ \] display) — the form the
+    // client's files use. We deliberately do NOT enable "$…$" so plain prices
+    // like "$5" are never mistaken for math (MathJax's own safe default).
+    inlineMath: [["\\(", "\\)"]],
+    displayMath: [["\\[", "\\]"]],
+  },
+  options: {
+    // Don't typeset inside editors / code blocks.
+    skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+  },
+};
 
 function DialogApp() {
   const params = new URLSearchParams(window.location.search);
@@ -238,18 +261,20 @@ function DialogApp() {
   return (
     <DialogCommContext.Provider value={{ initData, sendMessage, submitSave, saving, closeDialog, mailtoUrl, retainSaved }}>
       <ErrorBoundary>
-        <FluentProvider
-          theme={webLightTheme}
-          style={{ height: "100vh", display: "flex", flexDirection: "column" }}
-        >
-          <Suspense fallback={
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-              <Spinner />
-            </div>
-          }>
-            {renderView()}
-          </Suspense>
-        </FluentProvider>
+        <MathJaxContext version={3} src={MATHJAX_SRC} config={MATHJAX_CONFIG}>
+          <FluentProvider
+            theme={webLightTheme}
+            style={{ height: "100vh", display: "flex", flexDirection: "column" }}
+          >
+            <Suspense fallback={
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+                <Spinner />
+              </div>
+            }>
+              {renderView()}
+            </Suspense>
+          </FluentProvider>
+        </MathJaxContext>
       </ErrorBoundary>
     </DialogCommContext.Provider>
   );

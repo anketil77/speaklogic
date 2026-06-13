@@ -102,11 +102,10 @@ function WizardField({ label, value, html }: { label: string; value?: string | n
     <div style={{ display: "flex", gap: 16, padding: "8px 0", borderBottom: "1px solid #F3F4F6" }}>
       <div style={{ width: 200, minWidth: 200, fontSize: 12.5, color: "#9CA3AF", flexShrink: 0 }}>{label}</div>
       {html ? (
-        <div
+        <HtmlContent
           className="sl-article-content"
           style={{ flex: 1, fontSize: 14 }}
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: value }}
+          html={value}
         />
       ) : (
         <div style={{ flex: 1, fontSize: 12.5, fontWeight: 500, color: "#374151", wordBreak: "break-word" }}>{value}</div>
@@ -178,11 +177,10 @@ function WizardContent({ article }: { article: Article }) {
       {/* Info before event */}
       {article.infoBeforeEvent && (
         <WizardSection title="Information Before Event">
-          <div
+          <HtmlContent
             className="sl-article-content"
             style={{ fontSize: 14, paddingBottom: 4 }}
-            // eslint-disable-next-line react/no-danger
-            dangerouslySetInnerHTML={{ __html: article.infoBeforeEvent }}
+            html={article.infoBeforeEvent}
           />
         </WizardSection>
       )}

@@ -113,6 +113,14 @@ module.exports = async (env, options) => {
             to: "assets/sql-wasm.wasm",
           },
           {
+            // MathJax v3 (local copy) so equation rendering works OFFLINE —
+            // never load it from a CDN (breaks the add-in's offline model).
+            // Served at <origin>/mathjax/tex-mml-chtml.js; fonts resolve from
+            // mathjax/output/chtml/fonts/woff-v2 relative to that file.
+            from: "node_modules/mathjax/es5",
+            to: "mathjax",
+          },
+          {
             from: "manifest*.xml",
             to: "[name][ext]",
             transform(content) {

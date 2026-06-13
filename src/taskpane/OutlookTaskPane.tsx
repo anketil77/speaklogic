@@ -28,6 +28,7 @@ import {
   deleteCommSignalRequest,
 } from "@/db/queries/feedback";
 import { saveArticle, updateArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById, publishArticle } from "@/db/queries/article";
+import { getUserInformationItems, addUserInformationItem, deleteUserInformationItem } from "@/db/queries/information";
 import { saveProblemSolution } from "@/db/queries/problem";
 import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
 import { deleteFlag, getAllFlaggedSelections, saveFlag, getAllSelectionHistories, deleteSelectionHistory } from "@/db/queries/flag";
@@ -1073,10 +1074,17 @@ export function OutlookTaskPane() {
     }
 
     function openWizard(templateName: string, wizardCategory: string) {
+      // Re-send INIT with the latest user "Select Information" items (Point 14)
+      // so the panel refreshes after each add/remove. Mirrors commands.ts.
+      const reinit = (wzDlg: Office.Dialog) =>
+        wzDlg.messageChild(JSON.stringify({
+          type: "INIT",
+          payload: basePayload({ templateName, wizardCategory, userInfoItems: getUserInformationItems() }),
+        } as HostMessage));
       openDlg(
         `${DIALOG_BASE}/dialog.html?view=article-wizard`,
         ARTICLE_WIZARD_SIZE,
-        basePayload({ templateName, wizardCategory }),
+        basePayload({ templateName, wizardCategory, userInfoItems: getUserInformationItems() }),
         (wzDlg, action) => {
           if (action.action === "SAVE_ARTICLE_WIZARD") {
             const p = action.payload as SaveArticleWizardPayload;
@@ -1086,6 +1094,14 @@ export function OutlookTaskPane() {
             } catch (err) {
               wzDlg.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
             }
+          }
+          if (action.action === "SAVE_USER_INFO_ITEM") {
+            try { addUserInformationItem(action.name, action.html); } catch { /* title required */ }
+            reinit(wzDlg);
+          }
+          if (action.action === "DELETE_USER_INFO_ITEM") {
+            deleteUserInformationItem(action.id);
+            reinit(wzDlg);
           }
           if (action.action === "BACK_TO_PICKER") {
             wzDlg.close();

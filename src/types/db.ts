@@ -684,6 +684,17 @@ export interface DialogInitPayload {
   /** Passed when editing an existing article from the list view. */
   editArticleData?: Article;
   contacts?: ContactPerson[];
+  /** User-defined "Select Information" items (Article Wizard Step Info). */
+  userInfoItems?: UserInformationItem[];
+}
+
+// User-defined "information" item shown in the wizard's "Select Information"
+// panel (User Identified tab). The Speak Logic tab is constant/built-in.
+export interface UserInformationItem {
+  id: number;
+  name: string;
+  html: string;       // rich content (text, inline SVG, or LaTeX math)
+  createdDate?: string;
 }
 
 export interface SaveFeedbackPayload {
@@ -726,6 +737,8 @@ export type DialogAction =
   | { action: "SAVE_REQUEST_SL_FEEDBACK"; payload: SaveRequestSLFeedbackPayload }
   | { action: "SAVE_COMMUNICATION_CONFIG"; payload: SaveCommunicationConfigPayload }
   | { action: "SAVE_FLAG"; payload: FlagEntityForAnalysis }
+  | { action: "SAVE_USER_INFO_ITEM"; name: string; html: string }
+  | { action: "DELETE_USER_INFO_ITEM"; id: number }
   | { action: "QUERY_ANALYSES" }
   | { action: "QUERY_FLAGS" }
   | { action: "QUERY_FEEDBACK" }
