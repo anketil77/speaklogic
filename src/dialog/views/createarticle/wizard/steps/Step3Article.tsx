@@ -120,7 +120,11 @@ export function Step3Article({ data, onChange, onNext, onBack, onCancel, hidePro
 
         {/* ── Provider Information (hidden for Product Reviews) ── */}
         {!hideProviderSection && (
-          <SectionBox title="Provider Information" showHelp>
+          <SectionBox
+            title="Provider Information"
+            showHelp
+            helpText="Specify the name of the provider, the person who writes the article and the location of that person."
+          >
             <FormInput
               placeholder="Provider Name"
               value={data.providerName}

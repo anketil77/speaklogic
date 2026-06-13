@@ -68,7 +68,11 @@ export function Step5Event({ data, onChange, onNext, onBack, onCancel }: StepPro
           overflow:      "visible",
         }}
       >
-        <SectionBox title="About Event" showHelp>
+        <SectionBox
+          title="About Event"
+          showHelp
+          helpText="Specify the name of the event, the location of the event and the date the event occurred. For example, an accident at an intersection, the date of that accident, and the location which is the street name or cross street. The time is optional."
+        >
           <FormInput
             placeholder="Event Name"
             value={data.eventName}

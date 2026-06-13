@@ -20,7 +20,11 @@ export function StepProductProvider({ data, onChange, onNext, onBack, onCancel }
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
       <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "10px 14px 6px", display: "flex", flexDirection: "column", gap: 9 }}>
 
-        <SectionBox title="About The Given Set" showHelp>
+        <SectionBox
+          title="About The Given Set"
+          showHelp
+          helpText="Specify whether the information provider uses The Given Set to provide the information. The Given Set includes principles that are used to provide information. Also identify the basis of that information. The basis of the information is related to the principles used by the information provider to provide the information."
+        >
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "2px 0", width: "100%" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 11.1, color: "#616161", flex: 1 }}>
@@ -38,7 +42,11 @@ export function StepProductProvider({ data, onChange, onNext, onBack, onCancel }
           </div>
         </SectionBox>
 
-        <SectionBox title="Product Informations">
+        <SectionBox
+          title="Product Informations"
+          showHelp
+          helpText="Product function, this is the function of the product. Consider a telephone or car has a function, during the review, the reviewer can identify the function of the item being reviewed. Problem solved is simply problem solved by the function of the item."
+        >
           <LabeledInput value={data.productName}     onChange={(v) => onChange({ productName: v })}     placeholder="Product Name"     error={nextDisabled && data.productName === ""} />
           <LabeledInput value={data.modelNumber}     onChange={(v) => onChange({ modelNumber: v })}     placeholder="Model Number" />
           <LabeledInput value={data.productType}     onChange={(v) => onChange({ productType: v })}     placeholder="Product Type" />

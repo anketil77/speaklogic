@@ -11,14 +11,22 @@ export function StepPrePostObs({ data, onChange, onNext, onBack, onCancel }: Ste
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
       <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "10px 14px 6px", display: "flex", flexDirection: "column", gap: 9 }}>
-        <SectionBox title="Pre-event observation" showHelp>
+        <SectionBox
+          title="Pre-event observation"
+          showHelp
+          helpText="This is the information observed before the event. For example, before a football game or basketball game, the information observed. Things can be any information like fans interaction, players shaking hands and so forth."
+        >
           <RichField
             placeholder="Describe observations before the event"
             value={data.preEventObservation}
             onChange={(v) => onChange({ preEventObservation: v })}
           />
         </SectionBox>
-        <SectionBox title="Post-event observation" showHelp>
+        <SectionBox
+          title="Post-event observation"
+          showHelp
+          helpText="Post-event information includes fans interaction after the game, any abnormality and normality observed, for example players shaking hands and so forth."
+        >
           <RichField
             placeholder="Describe observations after the event"
             value={data.postEventObservation}

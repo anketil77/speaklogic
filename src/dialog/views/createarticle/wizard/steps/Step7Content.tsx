@@ -53,7 +53,11 @@ export function Step7Content({ data, onChange, onNext, onBack, onCancel, config,
         {config.motherNature && (
           <>
             {entries.length === 0 && (
-              <SectionBox title="Mother nature into consideration" showHelp>
+              <SectionBox
+                title="Mother nature into consideration"
+                showHelp
+                helpText="This is the verification of the information identified before event. For example, I am informing you about an event. I have identified the information you are aware of before the event, here I verify that information. Here, I provide an example that I have properly identified that information."
+              >
                 <EmptyVerificationHint />
               </SectionBox>
             )}
@@ -67,7 +71,11 @@ export function Step7Content({ data, onChange, onNext, onBack, onCancel, config,
             ))}
 
             {entries.length > 0 && (
-              <SectionBox title="Additional considerations" showHelp>
+              <SectionBox
+                title="Additional considerations"
+                showHelp
+                helpText="This is the verification of the information identified before event. For example, I am informing you about an event. I have identified the information you are aware of before the event, here I verify that information. Here, I provide an example that I have properly identified that information."
+              >
                 <RichField
                   placeholder="Add considerations"
                   value={data.motherNatureConsiderations}
@@ -79,7 +87,11 @@ export function Step7Content({ data, onChange, onNext, onBack, onCancel, config,
         )}
 
         {config.negFunc && (
-          <SectionBox title="Negative function executed from event" showHelp>
+          <SectionBox
+            title="Negative function executed from event"
+            showHelp
+            helpText="This is where you provide all information about the event. For example, if there is a negative function executed, then you describe the negative function here which is simply what occurred in the event."
+          >
             <RichField
               placeholder="Add negative function details"
               value={data.negativeFunction}
@@ -89,7 +101,11 @@ export function Step7Content({ data, onChange, onNext, onBack, onCancel, config,
         )}
 
         {config.problem && (
-          <SectionBox title="Problem developed from negative function execution" showHelp>
+          <SectionBox
+            title="Problem developed from negative function execution"
+            showHelp
+            helpText="Identify problems developed from the negative function executed in the event. For example, if the negative function is Shoot a Person, then the problem identify can be a Person Died, Person Injured. Another example, if the negative function is Shoplift, then the problem is Item Taken from Store, Specific Items Taken from The Store and so forth."
+          >
             <RichField
               placeholder="Add problem details"
               value={data.problemDetails}
@@ -99,7 +115,11 @@ export function Step7Content({ data, onChange, onNext, onBack, onCancel, config,
         )}
 
         {config.funcExec && (
-          <SectionBox title="Function executed from event" showHelp>
+          <SectionBox
+            title="Function executed from event"
+            showHelp
+            helpText="Here identify the functions executed from the event. This is a positive function executed from the event. For example, during a car accident at an intersection, firefighters or police officers help people trapped inside the car out is viewed as a possible function executed from the event."
+          >
             <RichField
               placeholder="Add function execution details"
               value={data.funcExecuteFromEvent}
@@ -112,6 +132,7 @@ export function Step7Content({ data, onChange, onNext, onBack, onCancel, config,
           <SectionBox
             title="Relationship if any between information existed before event & negative function executed from event"
             showHelp
+            helpText="Specify whether there is a relationship between information identified before event and negative function executed from the event. Usually, the information identified before event is natural and there is no relationship between that information and negative function executed."
           >
             <RichField
               placeholder="Add relationship details"
@@ -143,7 +164,12 @@ interface VerificationPairProps {
 
 function VerificationPair({ entry, index, onVerificationChange }: VerificationPairProps) {
   return (
-    <SectionBox title={`Information #${index + 1} — verification`} showHelp bodyPadding="10px">
+    <SectionBox
+      title={`Information #${index + 1} — verification`}
+      showHelp
+      helpText="This is the verification of the information identified before event. For example, I am informing you about an event. I have identified the information you are aware of before the event, here I verify that information. Here, I provide an example that I have properly identified that information."
+      bodyPadding="10px"
+    >
       {/* Read-only identified-information block (top) */}
       <div
         style={{

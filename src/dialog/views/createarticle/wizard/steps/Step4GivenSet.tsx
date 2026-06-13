@@ -41,7 +41,11 @@ export function Step4GivenSet({ data, onChange, onNext, onBack, onCancel }: Step
         }}
       >
         {/* ── About The Given Set ── */}
-        <SectionBox title="About The Given Set" showHelp>
+        <SectionBox
+          title="About The Given Set"
+          showHelp
+          helpText="Specify whether the information provider uses The Given Set to provide the information. The Given Set includes principles that are used to provide information. Also identify the basis of that information. The basis of the information is related to the principles used by the information provider to provide the information."
+        >
           {/* Toggle row */}
           <div
             style={{
@@ -141,7 +145,11 @@ export function Step4GivenSet({ data, onChange, onNext, onBack, onCancel }: Step
         </SectionBox>
 
         {/* ── About People Information Directed To ── */}
-        <SectionBox title="About People Information Directed To" showHelp>
+        <SectionBox
+          title="About People Information Directed To"
+          showHelp
+          helpText="Specify the location of the people the information directed to. For example, the information can be directed to people in specific state, where it can be emphasized to people in a city. The information can be directed to people in a city, where the consideration can be people in a specific neighborhood."
+        >
           <FormInput
             placeholder="People Location"
             value={data.peopleLocation}

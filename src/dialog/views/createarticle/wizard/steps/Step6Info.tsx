@@ -146,7 +146,12 @@ export function Step6Info({ data, onChange, onNext, onBack, onCancel }: StepProp
           gap:           9,
         }}
       >
-        <SectionBox title="Information existed/identified before event" showHelp bodyPadding="11px">
+        <SectionBox
+          title="Information existed/identified before event"
+          showHelp
+          helpText="This is the information that is aware by the person or people before being informed. For example, I am informing you about an event, this is the information you are aware before I inform you about the event."
+          bodyPadding="11px"
+        >
           {/* ── Active editor ───────────────────────────────────────────── */}
           <div
             style={{

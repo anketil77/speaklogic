@@ -12,7 +12,11 @@ export function StepFuncDuringReview({ data, onChange, onNext, onBack, onCancel 
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
       <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "10px 14px 6px", display: "flex", flexDirection: "column", gap: 9 }}>
 
-        <SectionBox title="Function executed during review" showHelp>
+        <SectionBox
+          title="Function Executed During Review"
+          showHelp
+          helpText="This is the function executed during the review. For example, if a reviewer is reviewing a telephone, then here provide information about functions executed during the review."
+        >
           <RichField
             placeholder="Describe the function executed during the product review"
             value={data.functionExecutedDuringReview}
@@ -21,10 +25,14 @@ export function StepFuncDuringReview({ data, onChange, onNext, onBack, onCancel 
           />
         </SectionBox>
 
-        <SectionBox title="Problem solved by product?" showHelp>
+        <SectionBox
+          title="Product Functions"
+          showHelp
+          helpText="Specify whether the function executed during the review solved the problem solved by the product. For example, a product has a function to solve a problem. During the review, the reviewer executes that function. Here the reviewer specifies whether or not the function solves the problem."
+        >
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0" }}>
             <span style={{ fontSize: 11.1, color: "#616161", flex: 1 }}>
-              Is the identified problem solved by this product?
+              Is function executed during review solved problem solved by product?
             </span>
             <Toggle
               value={data.isSolvedProblem}
