@@ -69,6 +69,9 @@ const MATHJAX_CONFIG = {
     inlineMath: [["\\(", "\\)"]],
     displayMath: [["\\[", "\\]"]],
   },
+  // Left-align display equations (MathJax centers them by default) so they sit
+  // with the surrounding text — matches the client's left-bordered .eq cards.
+  chtml: { displayAlign: "left", displayIndent: "0" },
   options: {
     // Don't typeset inside editors / code blocks.
     skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"],

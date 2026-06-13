@@ -337,33 +337,42 @@ function InfoItemRow({
   removable: boolean;
   onRemove?: (id: string) => void;
 }) {
-  const preview = htmlToText(item.html);
+  const [hov, setHov] = useState(false);
+  // One clean text line for EVERY item (math, diagram, text alike). LaTeX
+  // delimiters are stripped so math reads as "a^2" not "\[a^2\]". The full
+  // content (typeset math / drawn diagram) renders once the item is selected.
+  const preview = htmlToText(item.html).replace(/\\\(|\\\)|\\\[|\\\]/g, "").trim();
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
       style={{
-        display: "flex", alignItems: "flex-start", gap: 6, padding: "8px 6px",
-        borderRadius: 4, background: selected ? "#F0FFF4" : "transparent",
+        display: "flex", alignItems: "center", gap: 6, padding: "7px 8px",
+        borderRadius: 5, cursor: "pointer", boxSizing: "border-box",
+        border: `1px solid ${selected ? "#0078D4" : "transparent"}`,
+        background: selected ? "#F2F9F4" : (hov ? "#F7F7F7" : "transparent"),
+        transition: "background 0.1s, border-color 0.1s",
       }}
     >
-      <button
-        onClick={onClick}
-        style={{
-          display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2,
-          flex: 1, minWidth: 0, border: "none", background: "transparent", cursor: "pointer",
-          textAlign: "left", padding: 0,
-        }}
-      >
-        <span style={{ fontWeight: 700, fontSize: 10.8, lineHeight: "13px", color: "#1B1B1B", alignSelf: "stretch" }}>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+        <span style={{
+          fontWeight: 700, fontSize: 10.8, lineHeight: "13px", color: "#1B1B1B",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
           {item.name}
         </span>
         <span style={{
-          fontWeight: 400, fontSize: 9.2, lineHeight: "12px", color: "#616161", alignSelf: "stretch",
-          overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box",
-          WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+          fontWeight: 400, fontSize: 9.2, lineHeight: "12px", color: preview ? "#616161" : "#ADADAD",
+          fontStyle: preview ? "normal" : "italic",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>
-          {preview}
+          {preview || "(no content)"}
         </span>
-      </button>
+      </div>
       {removable && onRemove && (
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
@@ -371,11 +380,11 @@ function InfoItemRow({
           aria-label="Remove"
           style={{
             display: "flex", alignItems: "center", justifyContent: "center",
-            width: 22, height: 22, flexShrink: 0, border: "1px solid transparent",
+            width: 20, height: 20, flexShrink: 0, border: "1px solid transparent",
             background: "transparent", borderRadius: 4, cursor: "pointer", padding: 0,
           }}
-          onMouseEnter={(e) => { (e.currentTarget.style.borderColor = "#E0E0E0"); }}
-          onMouseLeave={(e) => { (e.currentTarget.style.borderColor = "transparent"); }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#E0E0E0"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "transparent"; }}
         >
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
             <path d="M2 3h8M4.5 3V2h3v1M3.5 3l.5 7h4l.5-7" stroke="#D13438" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
