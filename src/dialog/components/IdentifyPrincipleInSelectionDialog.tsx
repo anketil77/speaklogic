@@ -8,11 +8,14 @@ import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/co
 import ReactDOM from "react-dom";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
+import { AttachFileDialog } from "@/dialog/components/AttachFileDialog";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
+import { SetDerivedFromPicker } from "@/dialog/components/SetDerivedFromPicker";
 import {
   IdentifyPrincipleHeaderIcon,
   ListIdentifiedCmdIcon,
   ListInterpretedCmdIcon,
+  AttachFileIcon,
 } from "@/dialog/components/Icons";
 import type {
   AttachFileToProject,
@@ -35,17 +38,6 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "principle", label: "About Principle" },
   { id: "comm-principle", label: "About Communication Principle" },
   { id: "files", label: "Attached Files" },
-];
-
-const SET_DERIVED_OPTIONS = [
-  "The Given Set of Communication Principle",
-  "The Given Set of Information Principle",
-  "The Given Set of Instrumentation Principle",
-  "The Given Set of Marketing Principle",
-  "The Given Set of Exchange Principle",
-  "The Given Set of Gaming Principle",
-  "The Given Set of Work Principle",
-  "The Overall Set Combined",
 ];
 
 const FILE_COLUMNS: PanelTableCol<AttachFileToProject>[] = [
@@ -106,17 +98,6 @@ const inputStyle: React.CSSProperties = {
   outline: "none",
 };
 
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  appearance: "none",
-  WebkitAppearance: "none",
-  paddingRight: 28,
-  cursor: "pointer",
-  backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23616161' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E")`,
-  backgroundRepeat: "no-repeat",
-  backgroundPosition: "right 10px center",
-};
-
 export function IdentifyPrincipleInSelectionDialog({
   flag,
   sendMessage,
@@ -141,7 +122,7 @@ export function IdentifyPrincipleInSelectionDialog({
   const [fileMenuIndex, setFileMenuIndex] = useState<number | null>(null);
   const [pendingRemove, setPendingRemove] = useState<number | null>(null);
   const [viewFileInfo, setViewFileInfo] = useState<AttachFileToProject | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAddFile, setShowAddFile] = useState(false);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -163,38 +144,16 @@ export function IdentifyPrincipleInSelectionDialog({
     else if (id === "selection") setActiveEditor(selectionRef);
   }, []);
 
+  // Open the shared AttachFileDialog (visible "Choose File" button + file fields) —
+  // same add-file flow as the analyze/feedback tabs, instead of a raw OS picker.
   const handleAddFile = useCallback(() => {
     setFileMenuIndex(null);
-    fileInputRef.current?.click();
+    setShowAddFile(true);
   }, []);
 
-  const handleFileSelected = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      const now = new Date();
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const fileDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-      const fileTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-      const sizeKB = Math.round(f.size / 1024);
-      const fileSize = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
-      const newFile: AttachFileToProject = {
-        id: -(files.length + 1),
-        fileName: f.name,
-        fileType: f.type || "application/octet-stream",
-        fileSize,
-        fileDate,
-        fileTime,
-        fileDirectory: "",
-        fileDescription: "",
-        storageId: "",
-        fullFileName: f.name,
-      };
-      setFiles((prev) => [...prev, newFile]);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    },
-    [files.length]
-  );
+  const handleAddedFile = useCallback((draft: Omit<AttachFileToProject, "id">) => {
+    setFiles((prev) => [...prev, { ...draft, id: -(prev.length + 1) }]);
+  }, []);
 
   const handleRemoveFile = useCallback(() => {
     if (pendingRemove === null) return;
@@ -376,20 +335,7 @@ export function IdentifyPrincipleInSelectionDialog({
           />
         </FieldRow>
         <FieldRow label="Set Derived From">
-          <div style={{ position: "relative" }}>
-            <select
-              style={selectStyle}
-              value={setDerivedFrom}
-              onChange={(e) => setSetDerivedFrom(e.target.value)}
-            >
-              <option value="">— Select a set —</option>
-              {SET_DERIVED_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SetDerivedFromPicker value={setDerivedFrom} onChange={setSetDerivedFrom} />
         </FieldRow>
         <FieldRow label="Principle Description">
           <div
@@ -603,8 +549,11 @@ export function IdentifyPrincipleInSelectionDialog({
             </>
           )}
         </PanelTable>
-        <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileSelected} />
       </div>
+
+      {showAddFile && (
+        <AttachFileDialog onAdd={handleAddedFile} onClose={() => setShowAddFile(false)} />
+      )}
     </>
   );
 
@@ -779,7 +728,24 @@ export function IdentifyPrincipleInSelectionDialog({
 
           <CmdSep />
 
-          {showToolbar && <RichTextToolbar editorRef={activeEditor} />}
+          {showToolbar ? (
+            <RichTextToolbar editorRef={activeEditor} />
+          ) : (
+            <button
+              type="button"
+              onClick={handleAddFile}
+              style={{
+                display: "flex", alignItems: "center", gap: 6, height: 28, padding: "0 12px",
+                background: C.white, border: `1px solid ${C.grey78}`, borderRadius: 4,
+                fontSize: 11.6, fontFamily: "inherit", color: C.grey11, cursor: "pointer", flexShrink: 0,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.grey96; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = C.white; }}
+            >
+              <AttachFileIcon />
+              Add File
+            </button>
+          )}
         </div>
 
         {/* ── Tab bar (36px) ── */}

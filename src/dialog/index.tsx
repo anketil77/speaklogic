@@ -114,6 +114,10 @@ function DialogApp() {
           if (msg.type === "INIT") {
             dbg("DIALOG", "INIT received — setting initData");
             setInitData(msg.payload);
+            // Some openers (e.g. FlaggedHistory principle saves) acknowledge a completed
+            // save by re-sending INIT rather than SAVED/NAVIGATE. Clear the double-submit
+            // lock here too, or the next save is silently ignored for 20s (the "frozen" bug).
+            resetSaving();
           } else if (msg.type === "NAVIGATE") {
             dbg("DIALOG", "NAVIGATE received — switching view", { view: msg.view });
             setInitData(msg.payload);   // swap payload before switching view

@@ -8,6 +8,7 @@ import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { useDraggable }    from "@/dialog/hooks/useDraggable";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
+import { AttachFileDialog } from "@/dialog/components/AttachFileDialog";
 import { RichEditor }      from "@/dialog/components/RichEditor";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { ProblemIcon }     from "@/dialog/components/Icons";
@@ -111,7 +112,7 @@ export function SolveProblemDialog({
 
   const [fileMenuIdx, setFileMenuIdx]     = useState<number | null>(null);
   const [pendingRemove, setPendingRemove] = useState<number | null>(null);
-  const fileInputRef                      = useRef<HTMLInputElement>(null);
+  const [showAddFile, setShowAddFile]     = useState(false);
 
   const [solveHover, setSolveHover]       = useState(false);
   const editorRef                         = useRef<HTMLDivElement>(null);
@@ -145,28 +146,17 @@ export function SolveProblemDialog({
     onClose();
   };
 
-  const handleFileSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const fileDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    const fileTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    const sizeKB = Math.round(f.size / 1024);
-    const fileSize = sizeKB >= 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
-    setFiles((prev) => [...prev, {
-      fileName: f.name, fileType: f.type || "application/octet-stream",
-      fileSize, fileDate, fileTime, fileDirectory: "", fileDescription: "",
-      storageId: "", fullFileName: f.name,
-    }]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  // Open the shared AttachFileDialog (visible "Choose File" button + file fields) —
+  // mirrors the C# SolveProblem.cs `new AttachFile(...)` flow.
+  const handleAddedFile = useCallback((draft: FileDraft) => {
+    setFiles((prev) => [...prev, draft]);
   }, []);
 
   const fileMenuItems = useMemo(() => [
     {
       label: "Add File",
       disabled: false,
-      onClick: () => { setFileMenuIdx(null); fileInputRef.current?.click(); },
+      onClick: () => { setFileMenuIdx(null); setShowAddFile(true); },
     },
     {
       label: "Remove File",
@@ -294,7 +284,9 @@ export function SolveProblemDialog({
             </div>
           )}
         </PanelTable>
-        <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileSelected} />
+        {showAddFile && (
+          <AttachFileDialog onAdd={handleAddedFile} onClose={() => setShowAddFile(false)} />
+        )}
       </div>
     );
   };
