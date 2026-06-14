@@ -9,6 +9,75 @@ import type { ProjectFeedback } from "@/types/db";
 
 type ModelTab = "model1" | "model2";
 
+// ─── State messages (client spec) ───────────────────────────────────────────────
+const FB_PROVIDED_MSG =
+  "The feedback is provided and has not been applied; there is no result for that feedback to show a correction was made";
+const FB_REQUESTED_MSG =
+  "The feedback is requested and has not been provided and applied; there is no result for that feedback to show a correction was made";
+const NOT_APPLICABLE = "Not Applicable";
+
+// ─── Derived feedback model (maps a ProjectFeedback to the diagram) ──────────────
+function deriveModel(feedback: ProjectFeedback) {
+  const ft = feedback.feedbackType;
+  const isApplied = ft === "Applied";
+  const isRequested = ft === "Requested";
+
+  // Recipient (left box) — the person the feedback is given TO.
+  const recipient = feedback.toPerson?.trim() || "";
+  // Provider (right box) — the person who GIVES the feedback. None yet when requested.
+  const provider = (isRequested ? "" : feedback.fromPerson?.trim()) || "";
+
+  // Entity Under Analysis = the text that contains the bad word (the selection).
+  const entityText =
+    feedback.actualSelection?.trim() ||
+    feedback.communicationFunction?.trim() ||
+    feedback.feedbackSubject?.trim() ||
+    "";
+
+  // Feedback Item = what is shared as feedback.
+  //   selection / paragraph / analysis  → the selection / analysis text
+  //   requested                          → the request message
+  const feedbackItem = isRequested
+    ? feedback.feedbackApplication?.trim() ||
+      feedback.feedbackSubject?.trim() ||
+      feedback.actualSelection?.trim() ||
+      ""
+    : feedback.actualSelection?.trim() ||
+      feedback.feedbackSubject?.trim() ||
+      "";
+
+  // ECF = the feedback application ("I changed Word 1 to Word 2").
+  const ecfText = feedback.feedbackApplication?.trim() || "";
+
+  // Feedback Application Result = the corrected text (Word 2 substituted).
+  const resultText =
+    feedback.actualErrorSubstituted?.trim() ||
+    feedback.actualCompensatorReplaced?.trim() ||
+    "";
+  const hasResult = isApplied && !!resultText;
+
+  // Message shown when there is no result to display.
+  const resultMessage = isRequested
+    ? FB_REQUESTED_MSG
+    : !isApplied
+      ? FB_PROVIDED_MSG
+      : "";
+
+  return {
+    ft,
+    isApplied,
+    isRequested,
+    recipient,
+    provider,
+    entityText,
+    feedbackItem,
+    ecfText,
+    resultText,
+    hasResult,
+    resultMessage,
+  };
+}
+
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
 /** Circular avatar with first-letter initial */
@@ -23,7 +92,8 @@ function InitialAvatar({
   bg?: string;
   color?: string;
 }) {
-  const letter = (name?.trim()?.[0] ?? "?").toUpperCase();
+  const trimmed = name?.trim();
+  const letter = (trimmed && trimmed !== NOT_APPLICABLE ? trimmed[0] : "?").toUpperCase();
   return (
     <div
       style={{
@@ -136,7 +206,7 @@ function InlinePopup({
         {htmlContent ? (
           <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
         ) : (
-          plainText || "—"
+          plainText || NOT_APPLICABLE
         )}
       </div>
     </div>
@@ -144,40 +214,34 @@ function InlinePopup({
 }
 
 // ─── Model 1 ───────────────────────────────────────────────────────────────────
-// Layout matches design spec: rounded green person boxes, smooth black curved
-// paths converging on a green diamond (ECF), bottom path to Corrected Article.
-// Canvas: 540×400.
-//   Left person box : x=10,  y=14, w=196, h=66  (avatar on right)
-//   Right person box: x=334, y=14, w=196, h=66  (avatar on right)
-//   Red dot         : just outside right edge of left box, top area
-//   Blue dots       : inside the U-curves, near the descending vertical lines
-//   J badge         : top-right of ECF diamond, slightly overlapping
-//   ECF diamond     : center=(270,240), half-w/h=48
-//   Corrected Art.  : x=160, y=320, w=220, h=50
-
+// Straight orthogonal connectors (no curves) — items just touch the lines.
+// A complete model always renders: any missing piece shows "Not Applicable".
+//   Recipient box (left)  ← ECF        : "return feedback"
+//   Provider box (right)  → ECF        : feedback given
+//   ECF                   → Result box : Feedback Application Result
 const M1_W = 540;
 const M1_H = 400;
 
-const LP_X = 10,  LP_Y = 14, LP_W = 196, LP_H = 66;
-const RP_X = 334, RP_Y = 14, RP_W = 196, RP_H = 66;
-const LP_CX = LP_X + LP_W / 2;   // 108
-const RP_CX = RP_X + RP_W / 2;   // 432
+const LP_X = 14,  LP_Y = 16, LP_W = 190, LP_H = 64;   // recipient (left)
+const RP_X = 336, RP_Y = 16, RP_W = 190, RP_H = 64;   // provider  (right)
+const LP_CX = LP_X + LP_W / 2;   // 109
+const RP_CX = RP_X + RP_W / 2;   // 431
 const LP_BOT = LP_Y + LP_H;      // 80
 const RP_BOT = RP_Y + RP_H;      // 80
 
-const ECF_CX = 270, ECF_CY = 240, ECF_RX = 48, ECF_RY = 48;
-const ECF_LEFT  = ECF_CX - ECF_RX; // 222
-const ECF_RIGHT = ECF_CX + ECF_RX; // 318
+const ECF_CX = 270, ECF_CY = 238, ECF_RX = 46, ECF_RY = 46;
+const ECF_LEFT  = ECF_CX - ECF_RX; // 224
+const ECF_RIGHT = ECF_CX + ECF_RX; // 316
 const ECF_TOP   = ECF_CY - ECF_RY; // 192
-const ECF_BOT   = ECF_CY + ECF_RY; // 288
+const ECF_BOT   = ECF_CY + ECF_RY; // 284
 
-const FB_W = 100, FB_H = 24;
-const FB_CY = ECF_CY;              // 240
+const FB_W = 92, FB_H = 22;
+const FB_CY = ECF_CY;              // 238
 
-const CA_X = 160, CA_Y = 320, CA_W = 220, CA_H = 50;
+const CA_X = 165, CA_Y = 322, CA_W = 210, CA_H = 58;
 
-const LINE_COLOR   = "#2d2d2d";    // dark, near-black arrow/line color
-const BORDER_COLOR = "#5aa06d";    // sage-green border (matches spec)
+const LINE_COLOR   = "#2d2d2d";    // near-black arrow/line color
+const BORDER_COLOR = "#5aa06d";    // sage-green border
 
 function Model1({ feedback }: { feedback: ProjectFeedback }) {
   const [popup, setPopup] = useState<{
@@ -186,25 +250,14 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
     plainText?: string;
   } | null>(null);
 
-  const ft = feedback.feedbackType;
-  const isApplied = ft === "Applied";
-  const showLeft   = !!(feedback.toPerson?.trim());
-  const showRight  = ft !== "Requested" && !!(feedback.fromPerson?.trim());
-  const showCa     = isApplied && !!(feedback.actualErrorSubstituted?.trim());
-  const entityText = (feedback.communicationFunction?.trim() || feedback.feedbackSubject?.trim() || "");
-  const showEntity = showLeft && !!entityText;
+  const m = deriveModel(feedback);
 
   const open = (title: string, opts: { htmlContent?: string; plainText?: string }) =>
     setPopup({ title, ...opts });
 
-  const R = 18;                      // rounded-elbow corner radius
-  const TOP_ARC_Y = LP_BOT + 36;     // horizontal level of the top loop
-
-  // Feedback button positions — centered on the horizontal portion of each side path
-  const lfbCX = (LP_CX + R + ECF_LEFT) / 2;   // mid of left horizontal segment
-  const rfbCX = (RP_CX - R + ECF_RIGHT) / 2;  // mid of right horizontal segment
-  const lfbX = Math.round(lfbCX) - FB_W / 2;
-  const rfbX = Math.round(rfbCX) - FB_W / 2;
+  // Feedback-label centers on the horizontal segment of each side path.
+  const lfbCX = Math.round((ECF_LEFT + LP_CX) / 2);
+  const rfbCX = Math.round((ECF_RIGHT + RP_CX) / 2);
 
   return (
     <div style={{ position: "relative", width: M1_W, height: M1_H, flexShrink: 0, userSelect: "none" }}>
@@ -219,43 +272,19 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
           </marker>
         </defs>
 
-        {/* Left return path: from ECF left → rounded elbow → up into bottom of left box (arrow points up) */}
-        {showLeft && (
-          <path
-            d={`M ${ECF_LEFT - 4} ${FB_CY}
-                L ${LP_CX + R} ${FB_CY}
-                Q ${LP_CX} ${FB_CY} ${LP_CX} ${FB_CY - R}
-                L ${LP_CX} ${LP_BOT + 4}`}
-            fill="none" stroke={LINE_COLOR} strokeWidth="1.8"
-            strokeLinecap="round" markerEnd="url(#arr)"
-          />
-        )}
+        {/* Return path: ECF left → straight left → up into recipient box bottom */}
+        <path
+          d={`M ${ECF_LEFT - 2} ${FB_CY} L ${LP_CX} ${FB_CY} L ${LP_CX} ${LP_BOT + 4}`}
+          fill="none" stroke={LINE_COLOR} strokeWidth="1.7"
+          strokeLinecap="round" strokeLinejoin="round" markerEnd="url(#arr)"
+        />
 
-        {/* Top arc: from below-right of left box, rounded elbow right, rounded elbow down into ECF top */}
-        {showLeft && (
-          <path
-            d={`M ${LP_X + LP_W - 18} ${LP_BOT}
-                L ${LP_X + LP_W - 18} ${TOP_ARC_Y - R}
-                Q ${LP_X + LP_W - 18} ${TOP_ARC_Y} ${LP_X + LP_W - 18 + R} ${TOP_ARC_Y}
-                L ${ECF_CX - R} ${TOP_ARC_Y}
-                Q ${ECF_CX} ${TOP_ARC_Y} ${ECF_CX} ${TOP_ARC_Y + R}
-                L ${ECF_CX} ${ECF_TOP - 4}`}
-            fill="none" stroke={LINE_COLOR} strokeWidth="1.8"
-            strokeLinecap="round" markerEnd="url(#arr)"
-          />
-        )}
-
-        {/* Right path: down from right box → rounded elbow left → into ECF right vertex */}
-        {showRight && (
-          <path
-            d={`M ${RP_CX} ${RP_BOT}
-                L ${RP_CX} ${FB_CY - R}
-                Q ${RP_CX} ${FB_CY} ${RP_CX - R} ${FB_CY}
-                L ${ECF_RIGHT + 4} ${FB_CY}`}
-            fill="none" stroke={LINE_COLOR} strokeWidth="1.8"
-            strokeLinecap="round" markerEnd="url(#arr)"
-          />
-        )}
+        {/* Provider path: provider box bottom → straight down → left into ECF right */}
+        <path
+          d={`M ${RP_CX} ${RP_BOT} L ${RP_CX} ${FB_CY} L ${ECF_RIGHT + 2} ${FB_CY}`}
+          fill="none" stroke={LINE_COLOR} strokeWidth="1.7"
+          strokeLinecap="round" strokeLinejoin="round" markerEnd="url(#arr)"
+        />
 
         {/* ECF diamond */}
         <polygon
@@ -263,181 +292,142 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
           fill={colors.white} stroke={BORDER_COLOR} strokeWidth="2"
         />
 
-        {/* ECF → Corrected Article */}
-        {showCa && (
-          <line
-            x1={ECF_CX} y1={ECF_BOT}
-            x2={ECF_CX} y2={CA_Y - 4}
-            stroke={LINE_COLOR} strokeWidth="1.8"
-            strokeLinecap="round" markerEnd="url(#arr)"
-          />
-        )}
+        {/* ECF → Result box (straight down) */}
+        <line
+          x1={ECF_CX} y1={ECF_BOT}
+          x2={ECF_CX} y2={CA_Y - 4}
+          stroke={LINE_COLOR} strokeWidth="1.7"
+          strokeLinecap="round" markerEnd="url(#arr)"
+        />
       </svg>
 
-      {/* ── Left person box ── */}
-      {showLeft && (
+      {/* ── Recipient box (left) ── */}
+      <div style={{
+        position: "absolute", left: LP_X, top: LP_Y, width: LP_W, height: LP_H,
+        border: `2px solid ${BORDER_COLOR}`, borderRadius: 12, background: colors.white,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 12px", boxSizing: "border-box", zIndex: 5,
+      }}>
         <div style={{
-          position: "absolute", left: LP_X, top: LP_Y, width: LP_W, height: LP_H,
-          border: `2px solid ${BORDER_COLOR}`, borderRadius: 12, background: colors.white,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "0 12px", boxSizing: "border-box", zIndex: 5,
+          flex: 1, fontSize: "11px", color: "#4b524e", lineHeight: "14px", fontWeight: 600,
+          marginRight: 8, overflow: "hidden",
+          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
         }}>
-          <div style={{
-            flex: 1, fontSize: "11px", color: "#4b524e", lineHeight: "14px", fontWeight: 600,
-            marginRight: 8, overflow: "hidden",
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-          }}>
-            {feedback.toPerson || "—"}
-          </div>
-          <InitialAvatar name={feedback.toPerson || "?"} size={42} bg="#C8B5DC" color="#5C3B7A" />
+          {m.recipient || NOT_APPLICABLE}
         </div>
-      )}
+        <InitialAvatar name={m.recipient || "?"} size={42} bg="#C8B5DC" color="#5C3B7A" />
+      </div>
 
-      {/* ── Right person box ── */}
-      {showRight && (
+      {/* ── Provider box (right) ── */}
+      <div style={{
+        position: "absolute", left: RP_X, top: RP_Y, width: RP_W, height: RP_H,
+        border: `2px solid ${BORDER_COLOR}`, borderRadius: 12, background: colors.white,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 12px", boxSizing: "border-box", zIndex: 5,
+      }}>
         <div style={{
-          position: "absolute", left: RP_X, top: RP_Y, width: RP_W, height: RP_H,
-          border: `2px solid ${BORDER_COLOR}`, borderRadius: 12, background: colors.white,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "0 12px", boxSizing: "border-box", zIndex: 5,
+          flex: 1, fontSize: "11px", color: "#4b524e", lineHeight: "14px", fontWeight: 600,
+          marginRight: 8, overflow: "hidden",
+          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
         }}>
-          <div style={{
-            flex: 1, fontSize: "11px", color: "#4b524e", lineHeight: "14px", fontWeight: 600,
-            marginRight: 8, overflow: "hidden",
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-          }}>
-            {feedback.fromPerson || "—"}
-          </div>
-          <InitialAvatar name={feedback.fromPerson || "?"} size={42} bg="#86c6e9" color="#1B5E8A" />
+          {m.provider || NOT_APPLICABLE}
         </div>
-      )}
+        <InitialAvatar name={m.provider || "?"} size={42} bg="#86c6e9" color="#1B5E8A" />
+      </div>
 
-      {/* Red dot (decorative) — outside right edge of left box, top */}
-      {showEntity && (
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: LP_X + LP_W + 8,
-            top: LP_Y + 14,
-            width: 14, height: 14, borderRadius: "50%", background: "#df4d75",
-            zIndex: 6,
-          }}
-        />
-      )}
+      {/* Red dot (decorative) — outside right edge of recipient box, top */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: LP_X + LP_W + 8,
+          top: LP_Y + 12,
+          width: 14, height: 14, borderRadius: "50%", background: "#df4d75",
+          zIndex: 6,
+        }}
+      />
 
       {/* Message icon — click to view entity under analysis */}
-      {showEntity && (
-        <button
-          onClick={() => open("Entity Under Analysis", { plainText: entityText })}
-          title="Entity Under Analysis"
-          style={{
-            position: "absolute",
-            left: LP_X + LP_W + 28,
-            top: LP_Y + 10,
-            background: "none", border: "none", cursor: "pointer", padding: 0,
-            display: "flex", alignItems: "center", zIndex: 6,
-          }}
-        >
-          <ChatBubbleIcon color="#7a807c" size={18} />
-        </button>
-      )}
-
-      {/* Blue dot left — inside the U-curve, just inside the left vertical line */}
-      {showLeft && (
-        <div style={{
+      <button
+        onClick={() =>
+          open("Entity Under Analysis", { htmlContent: m.entityText || undefined, plainText: m.entityText ? undefined : NOT_APPLICABLE })
+        }
+        title="Entity Under Analysis"
+        style={{
           position: "absolute",
-          left: LP_CX + 14,
-          top: Math.round((LP_BOT + FB_CY) / 2) - 7,
-          width: 14, height: 14, borderRadius: "50%", background: "#3769df",
-          zIndex: 4,
-        }} />
-      )}
+          left: LP_X + LP_W + 28,
+          top: LP_Y + 8,
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+          display: "flex", alignItems: "center", zIndex: 6,
+        }}
+      >
+        <ChatBubbleIcon color="#7a807c" size={18} />
+      </button>
 
-      {/* Blue dot right — inside the U-curve, just inside the right vertical line */}
-      {showRight && (
-        <div style={{
-          position: "absolute",
-          left: RP_CX - 28,
-          top: Math.round((RP_BOT + FB_CY) / 2) - 7,
-          width: 14, height: 14, borderRadius: "50%", background: "#3769df",
-          zIndex: 4,
-        }} />
-      )}
-
-      {/* J badge — top-right of ECF diamond, slightly overlapping its top vertex */}
+      {/* J badge — top-right of ECF diamond */}
       <div style={{
         position: "absolute",
         left: ECF_CX + 6,
-        top: ECF_TOP - 26,
-        width: 34, height: 34, borderRadius: "50%",
+        top: ECF_TOP - 24,
+        width: 32, height: 32, borderRadius: "50%",
         background: "#ffd340",
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: "15px", fontWeight: 700, color: "#3a2a00",
+        fontSize: "14px", fontWeight: 700, color: "#3a2a00",
         boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
         zIndex: 7,
       }}>
-        J
+        {(m.provider || m.recipient || "?").trim()[0]?.toUpperCase() ?? "?"}
       </div>
 
-      {/* Left Feedback button (white bg masks the line where it sits) */}
-      {showLeft && (
-        <button
-          onClick={() => open("Feedback", {
-            htmlContent: feedback.feedbackApplication || undefined,
-            plainText: feedback.feedbackApplication ? undefined : (feedback.feedbackSubject || "—"),
-          })}
-          title="Click to view feedback"
-          style={{
-            position: "absolute", left: lfbX, top: FB_CY - FB_H / 2,
-            width: FB_W, height: FB_H,
-            background: colors.white, border: "none", cursor: "pointer", padding: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            gap: 6, color: "#a4aaa6", fontSize: "12px", fontFamily: "inherit",
-            fontWeight: 600, zIndex: 3,
-          }}
-        >
-          <ChatBubbleIcon color="#a4aaa6" size={14} />
-          <span>Feedback</span>
-        </button>
-      )}
-
-      {/* Right Feedback button */}
-      {showRight && (
-        <button
-          onClick={() => open("Feedback", {
-            htmlContent: feedback.feedbackApplication || undefined,
-            plainText: feedback.feedbackApplication ? undefined : (feedback.feedbackSubject || "—"),
-          })}
-          title="Click to view feedback"
-          style={{
-            position: "absolute", left: rfbX, top: FB_CY - FB_H / 2,
-            width: FB_W, height: FB_H,
-            background: colors.white, border: "none", cursor: "pointer", padding: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            gap: 6, color: "#a4aaa6", fontSize: "12px", fontFamily: "inherit",
-            fontWeight: 600, zIndex: 3,
-          }}
-        >
-          <ChatBubbleIcon color="#a4aaa6" size={14} />
-          <span>Feedback</span>
-        </button>
-      )}
-
-      {/* ECF clickable overlay */}
+      {/* Left Feedback label (return feedback) — white bg masks the line */}
       <button
-        onClick={() => {
-          if (isApplied && feedback.feedbackApplication) {
-            open("Feedback Application", { htmlContent: feedback.feedbackApplication });
-          }
+        onClick={() =>
+          open("Feedback", { htmlContent: m.feedbackItem || undefined, plainText: m.feedbackItem ? undefined : NOT_APPLICABLE })
+        }
+        title="Click to view feedback"
+        style={{
+          position: "absolute", left: lfbCX - FB_W / 2, top: FB_CY - FB_H / 2,
+          width: FB_W, height: FB_H,
+          background: colors.white, border: "none", cursor: "pointer", padding: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          gap: 6, color: "#a4aaa6", fontSize: "12px", fontFamily: "inherit",
+          fontWeight: 600, zIndex: 3,
         }}
-        title={isApplied ? "Click to view feedback application" : "ECF"}
+      >
+        <ChatBubbleIcon color="#a4aaa6" size={14} />
+        <span>Feedback</span>
+      </button>
+
+      {/* Right Feedback label */}
+      <button
+        onClick={() =>
+          open("Feedback", { htmlContent: m.feedbackItem || undefined, plainText: m.feedbackItem ? undefined : NOT_APPLICABLE })
+        }
+        title="Click to view feedback"
+        style={{
+          position: "absolute", left: rfbCX - FB_W / 2, top: FB_CY - FB_H / 2,
+          width: FB_W, height: FB_H,
+          background: colors.white, border: "none", cursor: "pointer", padding: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          gap: 6, color: "#a4aaa6", fontSize: "12px", fontFamily: "inherit",
+          fontWeight: 600, zIndex: 3,
+        }}
+      >
+        <ChatBubbleIcon color="#a4aaa6" size={14} />
+        <span>Feedback</span>
+      </button>
+
+      {/* ECF clickable overlay — feedback application */}
+      <button
+        onClick={() =>
+          open("Feedback Application", { htmlContent: m.ecfText || undefined, plainText: m.ecfText ? undefined : NOT_APPLICABLE })
+        }
+        title="Click to view feedback application"
         style={{
           position: "absolute",
           left: ECF_LEFT, top: ECF_TOP,
           width: ECF_RX * 2, height: ECF_RY * 2,
-          background: "none", border: "none",
-          cursor: isApplied ? "pointer" : "default",
+          background: "none", border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
           gap: 6, zIndex: 2, fontFamily: "inherit", padding: 0,
         }}
@@ -446,25 +436,36 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
         <PencilIcon color="#a8a8a8" />
       </button>
 
-      {/* Corrected Article box */}
-      {showCa && (
-        <button
-          onClick={() => open("Corrected Article", { plainText: feedback.actualErrorSubstituted || "—" })}
-          title="Click to view correction"
-          style={{
-            position: "absolute", left: CA_X, top: CA_Y, width: CA_W, height: CA_H,
-            background: colors.white, border: `2px solid ${BORDER_COLOR}`, borderRadius: 12,
-            cursor: "pointer", padding: "0 14px",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            zIndex: 2, fontFamily: "inherit",
-          }}
-        >
+      {/* Feedback Application Result box (always rendered; N/A + message when no result) */}
+      <button
+        onClick={() => {
+          if (m.hasResult) {
+            open("Feedback Application Result", { plainText: m.resultText });
+          } else {
+            open("Feedback Application Result", { plainText: m.resultMessage || NOT_APPLICABLE });
+          }
+        }}
+        title="Click to view the feedback application result"
+        style={{
+          position: "absolute", left: CA_X, top: CA_Y, width: CA_W, height: CA_H,
+          background: colors.white, border: `2px solid ${BORDER_COLOR}`, borderRadius: 12,
+          cursor: "pointer", padding: "0 14px",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+          zIndex: 2, fontFamily: "inherit",
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: "12px", color: "#4b524e", fontWeight: 600 }}>
-            Corrected Article
+            Feedback Application Result
           </span>
           <PencilIcon color="#a8a8a8" />
-        </button>
-      )}
+        </span>
+        {!m.hasResult && (
+          <span style={{ fontSize: "9.5px", color: "#9aa09c", fontWeight: 600 }}>
+            {NOT_APPLICABLE}
+          </span>
+        )}
+      </button>
 
       {/* Inline popup */}
       {popup && (
@@ -482,21 +483,24 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
 // ─── Model 2 ───────────────────────────────────────────────────────────────────
 
 function Model2({ feedback }: { feedback: ProjectFeedback }) {
-  const ft = feedback.feedbackType;
-  const providerName  = feedback.fromPerson?.trim() || "";
-  const requesterName = feedback.toPerson?.trim()   || "";
+  const m = deriveModel(feedback);
 
-  const showProvider  = ft !== "Requested" && !!providerName;
-  const showRequester = !!requesterName;
+  const providerName = m.provider || NOT_APPLICABLE;
+  const recipientName = m.recipient || NOT_APPLICABLE;
 
-  const feedbackText = feedback.feedbackApplication || feedback.feedbackSubject || "";
-  const textPreview  = feedbackText.length > 160 ? feedbackText.slice(0, 160) + "…" : feedbackText;
+  const givenSetText =
+    feedback.feedbackApplication?.trim() ||
+    feedback.actualSelection?.trim() ||
+    feedback.feedbackSubject?.trim() ||
+    "";
+  const textPreview =
+    givenSetText.length > 200 ? givenSetText.slice(0, 200) + "…" : givenSetText;
 
-  // Connector SVG uses viewBox of 564×62 (matches the dialog content width) so
-  // the arrow endpoints align with the 140px-wide person columns below.
-  const cx = 282;       // mid of 564
-  const leftX = 70;     // center of left column (140 wide, starts at x=0)
-  const rightX = 494;   // center of right column (564 - 70)
+  // Connector viewBox 564×70 — both branches always rendered (complete model),
+  // each ending in an arrowhead pointing down at its person.
+  const cx = 282;     // mid of 564
+  const leftX = 70;   // provider column center
+  const rightX = 494; // recipient column center
 
   return (
     <div style={{ padding: "20px 28px 28px" }}>
@@ -513,14 +517,16 @@ function Model2({ feedback }: { feedback: ProjectFeedback }) {
         padding: "10px 14px", fontSize: "11.5px", color: colors.grey11,
         lineHeight: "18px", background: colors.grey96, minHeight: 52,
       }}>
-        <div dangerouslySetInnerHTML={{ __html: textPreview || "—" }} />
+        {textPreview
+          ? <div dangerouslySetInnerHTML={{ __html: textPreview }} />
+          : <em style={{ color: colors.grey38 }}>{NOT_APPLICABLE}</em>}
       </div>
 
-      {/* Connector SVG */}
+      {/* Connector SVG — central stem + two arrowed branches (always present) */}
       <svg
         style={{ display: "block", width: "100%", overflow: "visible" }}
-        height={62}
-        viewBox="0 0 564 62"
+        height={70}
+        viewBox="0 0 564 70"
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
@@ -528,54 +534,41 @@ function Model2({ feedback }: { feedback: ProjectFeedback }) {
             <path d="M0,0 L0,6 L7,3 Z" fill={LINE_COLOR} />
           </marker>
         </defs>
-        <line x1={cx} y1={0} x2={cx} y2={24} stroke={LINE_COLOR} strokeWidth="1.2" />
-        {showProvider && (
-          <>
-            <line x1={cx} y1={24} x2={leftX} y2={24} stroke={LINE_COLOR} strokeWidth="1.2" />
-            <line x1={leftX} y1={24} x2={leftX} y2={57}
-              stroke={LINE_COLOR} strokeWidth="1.2" markerEnd="url(#m2arr)" />
-          </>
-        )}
-        {showRequester && (
-          <>
-            <line x1={cx} y1={24} x2={rightX} y2={24} stroke={LINE_COLOR} strokeWidth="1.2" />
-            <line x1={rightX} y1={24} x2={rightX} y2={57}
-              stroke={LINE_COLOR} strokeWidth="1.2" markerEnd="url(#m2arr)" />
-          </>
-        )}
-        {!showProvider && !showRequester && (
-          <line x1={cx} y1={24} x2={cx} y2={57}
-            stroke={LINE_COLOR} strokeWidth="1.2" markerEnd="url(#m2arr)" />
-        )}
+        {/* central stem */}
+        <line x1={cx} y1={0} x2={cx} y2={26} stroke={LINE_COLOR} strokeWidth="1.2" />
+        {/* provider branch (left) */}
+        <line x1={cx} y1={26} x2={leftX} y2={26} stroke={LINE_COLOR} strokeWidth="1.2" />
+        <line x1={leftX} y1={26} x2={leftX} y2={64}
+          stroke={LINE_COLOR} strokeWidth="1.2" markerEnd="url(#m2arr)" />
+        {/* recipient branch (right) */}
+        <line x1={cx} y1={26} x2={rightX} y2={26} stroke={LINE_COLOR} strokeWidth="1.2" />
+        <line x1={rightX} y1={26} x2={rightX} y2={64}
+          stroke={LINE_COLOR} strokeWidth="1.2" markerEnd="url(#m2arr)" />
       </svg>
 
-      {/* Person icons row — provider (LEFT), requester (RIGHT); names rendered as plain text */}
+      {/* Person row — provider (LEFT), recipient (RIGHT) */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        {showProvider ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140 }}>
-            <InitialAvatar name={providerName} size={56} bg="#C8B5DC" color="#5C3B7A" />
-            <div style={{
-              marginTop: 8, fontSize: "12px", fontWeight: 600,
-              color: colors.grey11, textAlign: "center",
-              maxWidth: 132, wordBreak: "break-word", lineHeight: "16px",
-            }}>
-              {providerName}
-            </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140 }}>
+          <InitialAvatar name={providerName} size={56} bg="#C8B5DC" color="#5C3B7A" />
+          <div style={{
+            marginTop: 8, fontSize: "12px", fontWeight: 600,
+            color: colors.grey11, textAlign: "center",
+            maxWidth: 132, wordBreak: "break-word", lineHeight: "16px",
+          }}>
+            {providerName}
           </div>
-        ) : <div style={{ width: 140 }} />}
+        </div>
 
-        {showRequester ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140 }}>
-            <InitialAvatar name={requesterName} size={56} bg="#86c6e9" color="#1B5E8A" />
-            <div style={{
-              marginTop: 8, fontSize: "12px", fontWeight: 600,
-              color: colors.grey11, textAlign: "center",
-              maxWidth: 132, wordBreak: "break-word", lineHeight: "16px",
-            }}>
-              {requesterName}
-            </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 140 }}>
+          <InitialAvatar name={recipientName} size={56} bg="#86c6e9" color="#1B5E8A" />
+          <div style={{
+            marginTop: 8, fontSize: "12px", fontWeight: 600,
+            color: colors.grey11, textAlign: "center",
+            maxWidth: 132, wordBreak: "break-word", lineHeight: "16px",
+          }}>
+            {recipientName}
           </div>
-        ) : <div style={{ width: 140 }} />}
+        </div>
       </div>
     </div>
   );

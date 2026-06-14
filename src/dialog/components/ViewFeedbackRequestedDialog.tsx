@@ -2,17 +2,47 @@
 // Read-only portal dialog showing a single CommSignalInfo (feedback request).
 // Matches C# ViewFeedbackRequested.cs — no editing, no save, close only.
 
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { formatDisplayDate } from "@/db/db";
 import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
-import type { CommSignalInfo } from "@/types/db";
+import { FeedbackModelIcon } from "@/dialog/components/Icons";
+import { FeedbackModelDialog } from "@/dialog/components/FeedbackModelDialog";
+import type { CommSignalInfo, ProjectFeedback } from "@/types/db";
 import { colors } from "@/styles/tokens";
 
 interface Props {
   request: CommSignalInfo;
   onClose: () => void;
+}
+
+/** Adapt a feedback REQUEST (CommSignalInfo) to the Feedback Model shape.
+ *  feedbackType "Requested" drives the Requested branch: provider = Not
+ *  Applicable, feedback item = the request message, result = the "requested
+ *  and has not been provided…" message. */
+function requestToFeedback(request: CommSignalInfo): ProjectFeedback {
+  return {
+    feedbackApplication: request.actualCommunication || "",
+    feedbackDate: request.communicationDate || "",
+    feedbackTime: request.communicationTime || "",
+    fromPerson: "",                            // provider — none yet (request)
+    toPerson: request.toPerson || "",          // who the feedback is requested from
+    feedbackSubject: request.communicationSubject || "",
+    internalFeedbackName: "",
+    feedbackType: "Requested",
+    actualSelection: request.actualSelection || "",
+    selectionType: request.selectionType || "",
+    actualErrorSubstituted: "",
+    actualCompensatorReplaced: "",
+    source: "Word Document",
+    applicationName: request.applicationName || "",
+    communicationFunction: request.communicationFunction || "",
+    communicationSignal: request.communicationSignalType || "",
+    projectName: "",
+    personName: request.fromPerson || "",
+    personEmail: request.personAddress || "",
+  };
 }
 
 function FieldRow({ label, value }: { label: string; value?: string | null }) {
@@ -64,6 +94,8 @@ function SectionLabel({ text }: { text: string }) {
 
 export function ViewFeedbackRequestedDialog({ request, onClose }: Props) {
   const { pos, onHeaderMouseDown } = useDraggable({ initialX: 80, initialY: 60 });
+  const [showModel, setShowModel] = useState(false);
+  const modelFeedback = useMemo(() => requestToFeedback(request), [request]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -143,6 +175,26 @@ export function ViewFeedbackRequestedDialog({ request, onClose }: Props) {
               Read-only view of a feedback request.
             </div>
           </div>
+
+          {/* Feedback Model */}
+          <button
+            onClick={() => setShowModel(true)}
+            title="View Feedback Model"
+            style={{
+              width: 28,
+              height: 28,
+              border: "none",
+              background: showModel ? colors.grey92 : "transparent",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 4,
+              flexShrink: 0,
+            }}
+          >
+            <FeedbackModelIcon />
+          </button>
 
           {/* Close */}
           <button
@@ -224,6 +276,10 @@ export function ViewFeedbackRequestedDialog({ request, onClose }: Props) {
         {/* Footer */}
         <FooterBar><DismissBtn label="Close" onClick={handleClose} /></FooterBar>
       </div>
+
+      {showModel && (
+        <FeedbackModelDialog feedback={modelFeedback} onClose={() => setShowModel(false)} />
+      )}
     </>
   );
 
