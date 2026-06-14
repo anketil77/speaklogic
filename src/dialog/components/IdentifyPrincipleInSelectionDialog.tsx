@@ -15,7 +15,6 @@ import {
   IdentifyPrincipleHeaderIcon,
   ListIdentifiedCmdIcon,
   ListInterpretedCmdIcon,
-  AttachFileIcon,
 } from "@/dialog/components/Icons";
 import type {
   AttachFileToProject,
@@ -728,24 +727,7 @@ export function IdentifyPrincipleInSelectionDialog({
 
           <CmdSep />
 
-          {showToolbar ? (
-            <RichTextToolbar editorRef={activeEditor} />
-          ) : (
-            <button
-              type="button"
-              onClick={handleAddFile}
-              style={{
-                display: "flex", alignItems: "center", gap: 6, height: 28, padding: "0 12px",
-                background: C.white, border: `1px solid ${C.grey78}`, borderRadius: 4,
-                fontSize: 11.6, fontFamily: "inherit", color: C.grey11, cursor: "pointer", flexShrink: 0,
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = C.grey96; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = C.white; }}
-            >
-              <AttachFileIcon />
-              Add File
-            </button>
-          )}
+          {showToolbar && <RichTextToolbar editorRef={activeEditor} />}
         </div>
 
         {/* ── Tab bar (36px) ── */}

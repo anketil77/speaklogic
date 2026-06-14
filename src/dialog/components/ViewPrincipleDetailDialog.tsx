@@ -9,7 +9,8 @@ import ReactDOM from "react-dom";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { colors } from "@/styles/tokens";
-import { PrincipleDropdownTriggerIcon } from "@/dialog/components/Icons";
+import { PrincipleDropdownTriggerIcon, FeedbackModelIcon } from "@/dialog/components/Icons";
+import { PrincipleModelDialog } from "@/dialog/components/PrincipleModelDialog";
 import type { AttachFileToProject } from "@/types/db";
 
 interface Props {
@@ -90,6 +91,7 @@ export function ViewPrincipleDetailDialog({
 }: Props) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [activeTab, setActiveTab] = useState<TabId>("selection");
+  const [showModel, setShowModel] = useState(false);
   const hasRelationship = actualRelationship !== undefined || relationshipDescription !== undefined;
 
   const TABS: { id: TabId; label: string }[] = [
@@ -185,6 +187,16 @@ export function ViewPrincipleDetailDialog({
             <div style={{ fontWeight: 700, fontSize: 15.6, lineHeight: "21px", color: colors.grey11, letterSpacing: -0.1 }}>{title}</div>
             <div style={{ fontWeight: 400, fontSize: 11.1, lineHeight: "17px", color: colors.grey38, marginTop: 2 }}>{subtitle}</div>
           </div>
+          {hasRelationship && (
+            <button
+              className="sl-icon-btn"
+              onClick={() => setShowModel(true)}
+              style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: showModel ? colors.grey92 : "transparent", border: "none", borderRadius: 4, cursor: "pointer", flexShrink: 0, padding: 0 }}
+              title="View Model"
+            >
+              <FeedbackModelIcon />
+            </button>
+          )}
           <button
             onClick={onClose}
             style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", flexShrink: 0, padding: 0 }}
@@ -229,6 +241,19 @@ export function ViewPrincipleDetailDialog({
         {/* Footer */}
         <FooterBar><DismissBtn label="Close" onClick={onClose} /></FooterBar>
       </div>
+
+      {showModel && (
+        <PrincipleModelDialog
+          aboutSelection={aboutSelection}
+          actualPrinciple={actualPrinciple}
+          principleName={principleName}
+          setDerivedFrom={setDerivedFrom}
+          principleDescription={principleDescription}
+          actualRelationship={actualRelationship || ""}
+          relationshipDescription={relationshipDescription || ""}
+          onClose={() => setShowModel(false)}
+        />
+      )}
     </>,
     document.body
   );
