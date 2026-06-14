@@ -698,7 +698,11 @@ export default function FeedbackHistoryView() {
 
       {/* ── View Feedback portal (fixed, draggable) ── */}
       {viewFeedback && (
-        <ViewFeedbackDialog feedback={viewFeedback} onClose={() => setViewFeedback(null)} />
+        <ViewFeedbackDialog
+          feedback={viewFeedback}
+          onClose={() => setViewFeedback(null)}
+          onSolveProblem={(payload) => sendMessage({ action: "SAVE_PROBLEM_SOLUTION", payload: { ...payload, problemIdx: -1 } })}
+        />
       )}
 
       {/* ── Info message card ── */}

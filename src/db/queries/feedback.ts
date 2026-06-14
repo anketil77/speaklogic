@@ -132,6 +132,20 @@ export function saveFeedback(payload: SaveFeedbackPayload): number {
     }
   }
 
+  // Problems identified during the apply-feedback process — linked to this feedback.
+  if (payload.problems?.length) {
+    for (const pr of payload.problems) {
+      db.run(
+        `INSERT INTO ProjectProblem (
+          problemNumber, problemName, actualProblem, fromActualError,
+          problemDescription, problemDate, problemTime, feedbackId
+        ) VALUES (?,?,?,?,?,?,?,?)`,
+        [pr.problemNumber, pr.problemName, pr.actualProblem, pr.fromActualError,
+         pr.problemDescription, pr.problemDate || nowDate(), pr.problemTime || nowTime(), id]
+      );
+    }
+  }
+
   persistDb();
   return id;
 }

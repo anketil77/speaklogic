@@ -12,6 +12,7 @@ import { ViewErrorDialog } from "@/dialog/components/ViewErrorDialog";
 import { ViewCompensatorDialog } from "@/dialog/components/ViewCompensatorDialog";
 import { ViewAnswerDialog } from "@/dialog/components/ViewAnswerDialog";
 import { ViewFileInformationDialog } from "@/dialog/components/ViewFileInformationDialog";
+import { ViewProblemDialog } from "@/dialog/components/ViewProblemDialog";
 import {
   CloseIcon,
   AnalysisHistoryHeaderIcon,
@@ -23,7 +24,7 @@ import {
   AnalyzeSelectionCmdIcon,
 } from "@/dialog/components/Icons";
 import { CommandDropdown, type CmdDropdownDef } from "@/dialog/components/CommandDropdown";
-import type { ProjectAnalysis, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, AttachFileToProject } from "@/types/db";
+import type { ProjectAnalysis, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, ProjectProblem, AttachFileToProject } from "@/types/db";
 
 type PanelView = "both" | "analysisOnly" | "entityOnly";
 
@@ -51,6 +52,7 @@ const TABS = [
   "Errors",
   "Compensators",
   "Answers",
+  "Problems",
   "Attached Files",
 ] as const;
 type Tab = (typeof TABS)[number];
@@ -105,6 +107,7 @@ type SubDialog =
   | { kind: "error"; item: Omit<ProjectError, "id" | "analysisId"> }
   | { kind: "compensator"; item: Omit<ProjectCompensator, "id" | "analysisId"> }
   | { kind: "answer"; item: Omit<ProjectAnswer, "id" | "analysisId"> }
+  | { kind: "problem"; item: Omit<ProjectProblem, "id" | "analysisId"> }
   | { kind: "file"; item: Omit<AttachFileToProject, "id" | "analysisId" | "feedbackId" | "flagId" | "articleId"> };
 
 type CtxMenu = { x: number; y: number; tab: Tab; rowIndex: number };
@@ -511,6 +514,30 @@ function TabContent({
     );
   }
 
+  if (tab === "Problems") {
+    const rows = (analysis.problems ?? []).map((p) => [
+      String(p.problemNumber ?? ""),
+      p.actualProblem ?? "",
+      p.problemName ?? "",
+      p.fromActualError ?? "",
+      formatDisplayDate(p.problemDate) ?? "",
+    ]);
+    return (
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {rows.length === 0 ? (
+          <EmptyList label="problems" onContextMenu={(e) => onRowContextMenu(e, -1, "Problems")} />
+        ) : (
+          <SubTable
+            cols={["Problem #", "Actual Problem", "Problem Name", "From Actual Error", "Date"]}
+            rows={rows}
+            onRowContextMenu={(e, i) => onRowContextMenu(e, i, "Problems")}
+            selectedRow={ctxMenu?.tab === "Problems" ? ctxMenu.rowIndex : null}
+          />
+        )}
+      </div>
+    );
+  }
+
   if (tab === "Attached Files") {
     const rows = (analysis.files ?? []).map((f) => [
       f.fileName ?? "",
@@ -649,6 +676,9 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
     } else if (tab === "Answers") {
       const item = analysis.answers?.[rowIndex];
       if (item) setSubDialog({ kind: "answer", item });
+    } else if (tab === "Problems") {
+      const item = analysis.problems?.[rowIndex];
+      if (item) setSubDialog({ kind: "problem", item });
     } else if (tab === "Attached Files") {
       const item = analysis.files?.[rowIndex];
       if (item) setSubDialog({ kind: "file", item });
@@ -683,6 +713,14 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
         ];
       case "Answers":
         return [{ ...viewAction, label: "View Answer" }];
+      case "Problems":
+        return [
+          { label: "Add Identify Problem", onClick: () => {}, disabled: true },
+          { label: "Response To Identify Problem", onClick: () => {}, disabled: true },
+          { label: "Remove Identify Problem", onClick: () => {}, disabled: true },
+          { isSep: true },
+          { ...viewAction, label: "View Identify Problem" },
+        ];
       case "Attached Files":
         return [
           { label: "Add File", onClick: () => {}, disabled: true },
@@ -1059,7 +1097,7 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
           y={ctxMenu.y}
           onClose={() => setCtxMenu(null)}
           items={buildContextMenuItems(ctxMenu.tab, ctxMenu.rowIndex)}
-          width={ctxMenu.tab === "Questions" ? 260 : 220}
+          width={ctxMenu.tab === "Questions" || ctxMenu.tab === "Problems" ? 260 : 220}
         />
       )}
 
@@ -1088,6 +1126,13 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
       {subDialog?.kind === "answer" && (
         <ViewAnswerDialog
           answer={subDialog.item}
+          onClose={() => setSubDialog(null)}
+          zIndexBase={300}
+        />
+      )}
+      {subDialog?.kind === "problem" && (
+        <ViewProblemDialog
+          problem={subDialog.item}
           onClose={() => setSubDialog(null)}
           zIndexBase={300}
         />

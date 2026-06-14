@@ -25,6 +25,12 @@ interface Props {
   problem:              ProjectProblem;
   existingErrors:       string[];
   existingCompensators: string[];
+  /** Pre-fill "Feedback Applied" (e.g. the feedback subject being applied). */
+  prefilledFeedback?:        string;
+  /** Pre-check the errors corrected by the applied feedback. */
+  preselectedErrors?:        string[];
+  /** Pre-check the compensators replaced by the applied feedback. */
+  preselectedCompensators?:  string[];
   onSolve: (solution: {
     feedbackApplied:       string;
     errorCorrected:        string;
@@ -84,15 +90,18 @@ const inputStyle: React.CSSProperties = {
 // ─── Main dialog ──────────────────────────────────────────────────────────────
 
 export function SolveProblemDialog({
-  problem, existingErrors, existingCompensators, onSolve, onClose,
+  problem, existingErrors, existingCompensators,
+  prefilledFeedback, preselectedErrors, preselectedCompensators,
+  onSolve, onClose,
 }: Props) {
   const { pos, onHeaderMouseDown } = useDraggable();
 
   const [activeTab, setActiveTab]         = useState<TabId>("solution");
-  const [feedbackApplied, setFeedback]    = useState("");
-  const [selectedErrors, setSelErrors]    = useState<string[]>([]);
+  const [feedbackApplied, setFeedback]    = useState(prefilledFeedback ?? "");
+  // Pre-check only those errors/compensators that exist in the selectable list.
+  const [selectedErrors, setSelErrors]    = useState<string[]>(() => (preselectedErrors ?? []).filter((e) => existingErrors.includes(e)));
   const [errorText, setErrorText]         = useState("");
-  const [selectedComps, setSelComps]      = useState<string[]>([]);
+  const [selectedComps, setSelComps]      = useState<string[]>(() => (preselectedCompensators ?? []).filter((c) => existingCompensators.includes(c)));
   const [compText, setCompText]           = useState("");
   const [additionalExp, setAdditional]    = useState("");
   const [files, setFiles]                 = useState<FileDraft[]>([]);

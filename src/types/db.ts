@@ -110,6 +110,7 @@ export interface ProjectFeedback {
   compensators?: ProjectCompensator[];
   answers?: ProjectAnswer[];
   files?: AttachFileToProject[];
+  problems?: ProjectProblem[];
 }
 
 export interface ProjectError {
@@ -170,6 +171,7 @@ export interface ProjectProblem {
   problemDate: string;
   problemTime: string;
   analysisId?: number;
+  feedbackId?: number;
 }
 
 export interface ProjectProblemSolution {
@@ -702,6 +704,7 @@ export interface SaveFeedbackPayload {
   toPersonEmail?: string;
   files?: Omit<AttachFileToProject, "id" | "analysisId" | "feedbackId" | "flagId" | "articleId">[];
   newCorrectedItems?: Omit<ProjectCorrectedItem, "id" | "analysisId">[];
+  problems?: Omit<ProjectProblem, "id" | "analysisId" | "feedbackId">[];
 }
 
 export interface SaveRequestFeedbackPayload {

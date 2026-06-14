@@ -142,7 +142,8 @@ CREATE TABLE IF NOT EXISTS ProjectProblem (
   problemDescription TEXT,
   problemDate TEXT,
   problemTime TEXT,
-  analysisId INTEGER REFERENCES ProjectAnalysis(id)
+  analysisId INTEGER REFERENCES ProjectAnalysis(id),
+  feedbackId INTEGER REFERENCES ProjectFeedback(id)
 );
 
 CREATE TABLE IF NOT EXISTS ProjectProblemSolution (

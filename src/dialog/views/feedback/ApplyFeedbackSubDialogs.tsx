@@ -12,6 +12,9 @@ import { ViewAnswerDialog } from "@/dialog/components/ViewAnswerDialog";
 import { AttachFileDialog } from "@/dialog/components/AttachFileDialog";
 import { ViewFileInformationDialog } from "@/dialog/components/ViewFileInformationDialog";
 import { CorrectedItemDialog } from "@/dialog/components/CorrectedItemDialog";
+import { ProblemIdentificationDialog } from "@/dialog/components/ProblemIdentificationDialog";
+import { ViewProblemDialog } from "@/dialog/components/ViewProblemDialog";
+import { SolveProblemDialog } from "@/dialog/components/SolveProblemDialog";
 import { AnalysisListPortal } from "@/dialog/components/AnalysisListPortal";
 import { FeedbackListPortal } from "@/dialog/components/FeedbackListPortal";
 import { ViewAnalysisDialog } from "@/dialog/components/ViewAnalysisDialog";
@@ -21,7 +24,7 @@ import type { PanelMenuEntry } from "@/dialog/components/PanelContextMenu";
 import { nowDate, nowTime } from "@/db/db";
 import { colors } from "@/styles/tokens";
 import type { SaveFeedbackPayload, ProjectAnalysis, ProjectFeedback, DialogAction } from "@/types/db";
-import type { QuestionDraft, AnswerDraft, ErrorDraft, CompensatorDraft, FileDraft, CorrectedItemDraft, OpenDialog, CtxMenu, TabValue } from "./applyFeedbackTypes";
+import type { QuestionDraft, AnswerDraft, ErrorDraft, CompensatorDraft, ProblemDraft, FileDraft, CorrectedItemDraft, OpenDialog, CtxMenu, TabValue } from "./applyFeedbackTypes";
 
 // ── Remove confirmation overlay ───────────────────────────────────────────────
 export function RemoveOverlay({ message, onYes, onNo }: { message: string; onYes: () => void; onNo: () => void }) {
@@ -54,6 +57,11 @@ export interface ApplyFeedbackSubDialogsProps {
   compensatorOptions: string[];
   errors: ErrorDraft[];
   correctedItems: CorrectedItemDraft[];
+  problems: ProblemDraft[];
+  setProblems: React.Dispatch<React.SetStateAction<ProblemDraft[]>>;
+  feedbackSubject: string;
+  solvePreselectedErrors: string[];
+  solvePreselectedCompensators: string[];
   pendingRemove: { tab: TabValue; idx: number; message: string } | null;
   setPendingRemove: React.Dispatch<React.SetStateAction<{ tab: TabValue; idx: number; message: string } | null>>;
   confirmRemove: () => void;
@@ -83,7 +91,7 @@ const applyBtnStyle: React.CSSProperties = { height: "32px", padding: "0 18px", 
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function ApplyFeedbackSubDialogs(p: ApplyFeedbackSubDialogsProps) {
-  const { openDialog, closePortal, questions, setQuestions, setAnswers, setErrors, setCompensators, setFiles, setCorrectedItems, errorOptions, compensatorOptions, errors, correctedItems, pendingRemove, setPendingRemove, confirmRemove, showConfirm, setShowConfirm, setPendingPayload, saving, confirmSave, ctxMenu, setCtxMenu, ctxItems, showAnalysisList, setShowAnalysisList, showFeedbackList, setShowFeedbackList, viewAnalysis, setViewAnalysis, viewFeedback, setViewFeedback, availableAnalyses, availableFeedbacks, sendMessage } = p;
+  const { openDialog, closePortal, questions, setQuestions, setAnswers, setErrors, setCompensators, setFiles, setCorrectedItems, errorOptions, compensatorOptions, errors, correctedItems, problems, setProblems, feedbackSubject, solvePreselectedErrors, solvePreselectedCompensators, pendingRemove, setPendingRemove, confirmRemove, showConfirm, setShowConfirm, setPendingPayload, saving, confirmSave, ctxMenu, setCtxMenu, ctxItems, showAnalysisList, setShowAnalysisList, showFeedbackList, setShowFeedbackList, viewAnalysis, setViewAnalysis, viewFeedback, setViewFeedback, availableAnalyses, availableFeedbacks, sendMessage } = p;
 
   return (
     <>
@@ -169,6 +177,31 @@ export function ApplyFeedbackSubDialogs(p: ApplyFeedbackSubDialogsProps) {
       {openDialog?.type === "viewCorrectedItem" && (
         <CorrectedItemDialog itemCount={correctedItems.length} existingErrors={errorOptions} existingCompensators={compensatorOptions}
           initialItem={openDialog.item} readOnly onAdd={closePortal} onClose={closePortal} />
+      )}
+
+      {/* ── Problem identify / view / solve ──────────────────────────────────── */}
+      {openDialog?.type === "addProblem" && (
+        <ProblemIdentificationDialog itemCount={problems.length} existingErrors={errorOptions}
+          onAdd={(pr) => { setProblems((prev) => [...prev, pr]); closePortal(); }} onClose={closePortal} />
+      )}
+      {openDialog?.type === "viewProblem" && (
+        <ViewProblemDialog problem={openDialog.item} onClose={closePortal} />
+      )}
+      {openDialog?.type === "solveProblem" && (
+        <SolveProblemDialog
+          problem={openDialog.item}
+          existingErrors={errorOptions}
+          existingCompensators={compensatorOptions}
+          prefilledFeedback={feedbackSubject}
+          preselectedErrors={solvePreselectedErrors}
+          preselectedCompensators={solvePreselectedCompensators}
+          onSolve={(solution) => {
+            sendMessage({ action: "SAVE_PROBLEM_SOLUTION", payload: { ...solution, actualProblem: openDialog.item.actualProblem, problemIdx: openDialog.idx } });
+            if (solution.removeProblem) setProblems((prev) => prev.filter((_, i) => i !== openDialog.idx));
+            closePortal();
+          }}
+          onClose={closePortal}
+        />
       )}
 
       {/* ── List portals ────────────────────────────────────────────────────── */}

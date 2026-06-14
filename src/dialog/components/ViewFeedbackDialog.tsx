@@ -13,6 +13,8 @@ import { ViewErrorDialog } from "@/dialog/components/ViewErrorDialog";
 import { ViewCompensatorDialog } from "@/dialog/components/ViewCompensatorDialog";
 import { ViewAnswerDialog } from "@/dialog/components/ViewAnswerDialog";
 import { ViewFileInformationDialog } from "@/dialog/components/ViewFileInformationDialog";
+import { ViewProblemDialog } from "@/dialog/components/ViewProblemDialog";
+import { SolveProblemDialog } from "@/dialog/components/SolveProblemDialog";
 import {
   CloseIcon,
   FeedbackHistoryHeaderIcon,
@@ -26,10 +28,14 @@ import {
 import { FeedbackModelDialog } from "@/dialog/components/FeedbackModelDialog";
 import { HtmlContent } from "@/dialog/components/HtmlContent";
 import { colors } from "@/styles/tokens";
-import type { ProjectFeedback, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, AttachFileToProject } from "@/types/db";
+import type { ProjectFeedback, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, ProjectProblem, AttachFileToProject } from "@/types/db";
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
-type VFTab = "feedback" | "selection" | "errors" | "compensators" | "questions" | "answers" | "files";
+type VFTab = "feedback" | "selection" | "errors" | "compensators" | "questions" | "answers" | "problems" | "files";
+
+// Solution payload emitted when the user solves a problem from the View Feedback dialog.
+// The host adds `problemIdx` before persisting via SAVE_PROBLEM_SOLUTION.
+export type VfSolveProblemPayload = Omit<import("@/types/db").SaveProblemSolutionPayload, "problemIdx">;
 
 // Base tabs (always shown). The "Selection" tab is inserted at position #2 at
 // runtime only when the feedback was created from a selection/paragraph apply.
@@ -39,6 +45,7 @@ const VF_TABS: { value: VFTab; label: string }[] = [
   { value: "compensators", label: "Compensators" },
   { value: "questions", label: "Analysis Question" },
   { value: "answers", label: "Answers" },
+  { value: "problems", label: "Problems" },
   { value: "files", label: "Attached Files" },
 ];
 
@@ -81,6 +88,14 @@ const F_COLS: PanelTableCol<AttachFileToProject>[] = [
   { header: "File Date", width: "18%", render: (f) => formatDisplayDate(f.fileDate) || "—", truncate: true },
   { header: "File Time", width: "16%", render: (f) => f.fileTime || "—", truncate: true },
   { header: "File Size", width: "16%", render: (f) => f.fileSize || "—", truncate: true },
+];
+
+const P_COLS: PanelTableCol<ProjectProblem>[] = [
+  { header: "Problem #", width: "10%", render: (p) => p.problemNumber, truncate: true },
+  { header: "Actual Problem", width: "30%", render: (p) => p.actualProblem || "—", truncate: true },
+  { header: "Problem Name", width: "26%", render: (p) => p.problemName || "—", truncate: true },
+  { header: "From Actual Error", width: "22%", render: (p) => p.fromActualError || "—", truncate: true },
+  { header: "Date", width: "12%", render: (p) => formatDisplayDate(p.problemDate) || "—", truncate: true },
 ];
 
 // ─── Info messages (from C# ViewFeedback source) ──────────────────────────────
@@ -152,9 +167,11 @@ function VfCmdSep() {
 interface Props {
   feedback: ProjectFeedback;
   onClose: () => void;
+  /** When provided, the Problems tab exposes "Solve Problem". The host persists the solution. */
+  onSolveProblem?: (payload: VfSolveProblemPayload) => void;
 }
 
-export function ViewFeedbackDialog({ feedback, onClose }: Props) {
+export function ViewFeedbackDialog({ feedback, onClose, onSolveProblem }: Props) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [activeTab, setActiveTab] = useState<VFTab>("feedback");
   const [openDropId, setOpenDropId] = useState<string | null>(null);
@@ -181,11 +198,17 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
   const [fMenu, setFMenu] = useState<{ x: number; y: number } | null>(null);
   const [viewF, setViewF] = useState<AttachFileToProject | null>(null);
 
+  const [pSelIdx, setPSelIdx] = useState<number | null>(null);
+  const [pMenu, setPMenu] = useState<{ x: number; y: number } | null>(null);
+  const [viewP, setViewP] = useState<ProjectProblem | null>(null);
+  const [solveP, setSolveP] = useState<ProjectProblem | null>(null);
+
   const questions = feedback.questions ?? [];
   const errors = feedback.errors ?? [];
   const compensators = feedback.compensators ?? [];
   const answers = feedback.answers ?? [];
   const files = feedback.files ?? [];
+  const problems = feedback.problems ?? [];
 
   // Selection tab appears only for selection/paragraph-applied feedback.
   const hasSelection = !!(feedback.actualSelection || feedback.selectionType);
@@ -202,6 +225,7 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
     compensators: compensators.length,
     questions: questions.length,
     answers: answers.length,
+    problems: problems.length,
     files: files.length,
   };
 
@@ -263,6 +287,19 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
     },
   ], [fSelIdx, files]);
 
+  const pMenuItems = useMemo<PanelMenuEntry[]>(() => [
+    {
+      label: "View Problem",
+      disabled: pSelIdx === null,
+      onClick: () => { if (pSelIdx !== null) { setViewP(problems[pSelIdx]); setPMenu(null); } },
+    },
+    {
+      label: "Solve Problem",
+      disabled: pSelIdx === null || !onSolveProblem,
+      onClick: () => { if (pSelIdx !== null) { setSolveP(problems[pSelIdx]); setPMenu(null); } },
+    },
+  ], [pSelIdx, problems, onSolveProblem]);
+
   const handleQContextMenu = useCallback((e: React.MouseEvent, idx: number | null) => {
     e.preventDefault();
     if (idx !== null) setQSelIdx(idx);
@@ -287,6 +324,11 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
     e.preventDefault();
     if (idx !== null) setFSelIdx(idx);
     setFMenu({ x: e.clientX, y: e.clientY });
+  }, []);
+  const handlePContextMenu = useCallback((e: React.MouseEvent, idx: number | null) => {
+    e.preventDefault();
+    if (idx !== null) setPSelIdx(idx);
+    setPMenu({ x: e.clientX, y: e.clientY });
   }, []);
 
   return createPortal(
@@ -511,6 +553,19 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
             </div>
           )}
 
+          {activeTab === "problems" && (
+            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative" }}>
+              <PanelTable<ProjectProblem>
+                columns={P_COLS}
+                rows={problems}
+                emptyText="No problems identified."
+                selectedIndex={pSelIdx}
+                onRowClick={(idx) => setPSelIdx((p) => (p === idx ? null : idx))}
+                onRowContextMenu={handlePContextMenu}
+              />
+            </div>
+          )}
+
           {activeTab === "files" && (
             <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative" }}>
               <PanelTable<AttachFileToProject>
@@ -540,6 +595,7 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
       {cMenu && <PanelContextMenu x={cMenu.x} y={cMenu.y} items={cMenuItems} onClose={() => setCMenu(null)} />}
       {aMenu && <PanelContextMenu x={aMenu.x} y={aMenu.y} items={aMenuItems} onClose={() => setAMenu(null)} />}
       {fMenu && <PanelContextMenu x={fMenu.x} y={fMenu.y} items={fMenuItems} onClose={() => setFMenu(null)} />}
+      {pMenu && <PanelContextMenu x={pMenu.x} y={pMenu.y} items={pMenuItems} onClose={() => setPMenu(null)} />}
 
       {/* Sub-view dialogs */}
       {viewQ && <ViewQuestionDialog question={viewQ} onClose={() => setViewQ(null)} />}
@@ -547,6 +603,22 @@ export function ViewFeedbackDialog({ feedback, onClose }: Props) {
       {viewC && <ViewCompensatorDialog compensator={viewC} onClose={() => setViewC(null)} />}
       {viewA && <ViewAnswerDialog answer={viewA} onClose={() => setViewA(null)} />}
       {viewF && <ViewFileInformationDialog file={viewF} onClose={() => setViewF(null)} />}
+      {viewP && <ViewProblemDialog problem={viewP} onClose={() => setViewP(null)} />}
+      {solveP && (
+        <SolveProblemDialog
+          problem={solveP}
+          existingErrors={errors.map((e) => e.actualError).filter(Boolean)}
+          existingCompensators={compensators.map((c) => c.actualCompensator).filter(Boolean)}
+          prefilledFeedback={feedback.feedbackSubject}
+          preselectedErrors={[feedback.actualErrorSubstituted].filter(Boolean)}
+          preselectedCompensators={[feedback.actualCompensatorReplaced].filter(Boolean)}
+          onSolve={(solution) => {
+            onSolveProblem?.({ ...solution, actualProblem: solveP.actualProblem });
+            setSolveP(null);
+          }}
+          onClose={() => setSolveP(null)}
+        />
+      )}
 
       {/* Feedback model dialog */}
       {showModel && <FeedbackModelDialog feedback={feedback} onClose={() => setShowModel(false)} />}

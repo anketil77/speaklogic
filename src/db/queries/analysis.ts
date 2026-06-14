@@ -220,6 +220,20 @@ export function getProblemsByAnalysis(analysisId: number): ProjectProblem[] {
   });
 }
 
+export function getProblemsByFeedback(feedbackId: number): ProjectProblem[] {
+  const db = getDb();
+  const result = db.exec("SELECT * FROM ProjectProblem WHERE feedbackId = ?", [feedbackId]);
+  if (!result.length) return [];
+  return result[0].values.map((row) => {
+    const cols = result[0].columns;
+    const obj: Record<string, unknown> = {};
+    cols.forEach((col, i) => {
+      obj[col] = row[i];
+    });
+    return obj as unknown as ProjectProblem;
+  });
+}
+
 export function getAnswersByAnalysis(analysisId: number): ProjectAnswer[] {
   const db = getDb();
   const result = db.exec("SELECT * FROM ProjectAnswer WHERE analysisId = ?", [analysisId]);

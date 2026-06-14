@@ -8,7 +8,7 @@ import type { PanelTableCol } from "@/dialog/components/PanelTable";
 import { formatDisplayDate } from "@/db/db";
 import { colors } from "@/styles/tokens";
 import type { DialogInitPayload, AnalysisDataForApply } from "@/types/db";
-import type { QuestionDraft, AnswerDraft, ErrorDraft, CompensatorDraft, FileDraft, CorrectedItemDraft, TabValue, FeedbackForm } from "./applyFeedbackTypes";
+import type { QuestionDraft, AnswerDraft, ErrorDraft, CompensatorDraft, ProblemDraft, FileDraft, CorrectedItemDraft, TabValue, FeedbackForm } from "./applyFeedbackTypes";
 
 // ── Column definitions (module-level — never inline) ──────────────────────────
 const Q_COLS: PanelTableCol<string[]>[] = [
@@ -46,6 +46,12 @@ const CI_COLS: PanelTableCol<string[]>[] = [
   { header: "Error Selection", width: "36%", render: (r) => r[1], truncate: true },
   { header: "Compensator", width: "36%", render: (r) => r[2], truncate: true },
   { header: "Corrected", width: "20%", render: (r) => r[3], truncate: true },
+];
+const PROB_COLS: PanelTableCol<string[]>[] = [
+  { header: "#", width: "8%", render: (r) => r[0] },
+  { header: "Actual Problem", width: "30%", render: (r) => r[1], truncate: true },
+  { header: "Problem Name", width: "28%", render: (r) => r[2], truncate: true },
+  { header: "From Actual Error", width: "34%", render: (r) => r[3], truncate: true },
 ];
 
 // ── Inline styles ─────────────────────────────────────────────────────────────
@@ -142,6 +148,7 @@ export interface ApplyFeedbackTabsProps {
   answers: AnswerDraft[];
   files: FileDraft[];
   correctedItems: CorrectedItemDraft[];
+  problems: ProblemDraft[];
   selectedRow: { tab: TabValue; idx: number } | null;
   onRowClick: (tab: TabValue, idx: number) => void;
   onCtx: (tab: TabValue, idx: number | null, x: number, y: number) => void;
@@ -151,7 +158,7 @@ export interface ApplyFeedbackTabsProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
   const s = useStyles();
-  const { activeTab, setActiveTab, tabs, validationError, initData, analysisData, selectionHtml, form, updateForm, errorOptions, compensatorOptions, editorRef, questions, errors, compensators, answers, files, correctedItems, selectedRow, onRowClick, onCtx, onInsertToDocument } = p;
+  const { activeTab, setActiveTab, tabs, validationError, initData, analysisData, selectionHtml, form, updateForm, errorOptions, compensatorOptions, editorRef, questions, errors, compensators, answers, files, correctedItems, problems, selectedRow, onRowClick, onCtx, onInsertToDocument } = p;
 
   return (
     <>
@@ -365,6 +372,14 @@ export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
             selectedIndex={selectedRow?.tab === "corrected" ? selectedRow.idx : null}
             onRowClick={(i) => onRowClick("corrected", i)}
             onRowContextMenu={(e, i) => onCtx("corrected", i, e.clientX, e.clientY)} />
+        )}
+
+        {activeTab === "problems" && (
+          <PanelTable<string[]> columns={PROB_COLS}
+            rows={problems.map((pr) => [String(pr.problemNumber), pr.actualProblem, pr.problemName, pr.fromActualError])}
+            selectedIndex={selectedRow?.tab === "problems" ? selectedRow.idx : null}
+            onRowClick={(i) => onRowClick("problems", i)}
+            onRowContextMenu={(e, i) => onCtx("problems", i, e.clientX, e.clientY)} />
         )}
       </div>
     </>

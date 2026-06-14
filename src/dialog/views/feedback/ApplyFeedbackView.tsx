@@ -18,7 +18,7 @@ import { ApplyFeedbackTabs } from "./ApplyFeedbackTabs";
 import { ApplyFeedbackSubDialogs } from "./ApplyFeedbackSubDialogs";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import { InsertConfirmToast } from "@/dialog/components/InsertConfirmToast";
-import type { QuestionDraft, AnswerDraft, ErrorDraft, CompensatorDraft, FileDraft, CorrectedItemDraft, TabValue, CtxMenu, OpenDialog, FeedbackForm } from "./applyFeedbackTypes";
+import type { QuestionDraft, AnswerDraft, ErrorDraft, CompensatorDraft, ProblemDraft, FileDraft, CorrectedItemDraft, TabValue, CtxMenu, OpenDialog, FeedbackForm } from "./applyFeedbackTypes";
 
 // Per-field validation messages — verbatim from C# ApplyFeedback.cs:169-233.
 // Each empty field fires its own dialog (matches MyXtraMessageBox.Show in the legacy app).
@@ -109,6 +109,7 @@ export default function ApplyView() {
   const [answers, setAnswers] = useState<AnswerDraft[]>([]);
   const [files, setFiles] = useState<FileDraft[]>([]);
   const [correctedItems, setCorrectedItems] = useState<CorrectedItemDraft[]>([]);
+  const [problems, setProblems] = useState<ProblemDraft[]>([]);
   const [selectedRow, setSelectedRow] = useState<{ tab: TabValue; idx: number } | null>(null);
   const [openDialog, setOpenDialog] = useState<OpenDialog | null>(null);
   const [pendingRemove, setPendingRemove] = useState<{ tab: TabValue; idx: number; message: string } | null>(null);
@@ -156,11 +157,22 @@ export default function ApplyView() {
   const selectionHtml = useMemo(() => (initData?.selectionHtml ? sanitizeWordHtml(initData.selectionHtml) : ""), [initData?.selectionHtml]);
   const errorOptions = useMemo(() => errors.map((e) => e.actualError).filter(Boolean), [errors]);
   const compensatorOptions = useMemo(() => compensators.map((c) => c.actualCompensator).filter(Boolean), [compensators]);
+  // Solve Problem auto-select: errors corrected + compensators replaced by THIS feedback
+  // (the substituted error/compensator plus every corrected-item pair). Client spec:
+  // "selected automatically, because they were corrected during the applied feedback".
+  const solvePreselectedErrors = useMemo(
+    () => Array.from(new Set([form.errorSubstituted, ...correctedItems.map((c) => c.errorSelection)].filter(Boolean))),
+    [form.errorSubstituted, correctedItems]
+  );
+  const solvePreselectedCompensators = useMemo(
+    () => Array.from(new Set([form.compensatorReplaced, ...correctedItems.map((c) => c.compensatorSelection)].filter(Boolean))),
+    [form.compensatorReplaced, correctedItems]
+  );
 
   const tabs = useMemo((): { value: TabValue; label: string }[] => {
     const mid = initData?.mode === "selection" ? { value: "selection" as TabValue, label: "Selection" } :
       initData?.mode === "paragraph" ? { value: "paragraph" as TabValue, label: "Paragraph" } : null;
-    return [{ value: "feedback", label: "Feedback" }, ...(mid ? [mid] : []), { value: "questions", label: "Analysis Question" }, { value: "errors", label: "Errors" }, { value: "compensators", label: "Compensators" }, { value: "answers", label: "Answers" }, { value: "corrected", label: "Corrected Items" }, { value: "files", label: "Attached Files" }];
+    return [{ value: "feedback", label: "Feedback" }, ...(mid ? [mid] : []), { value: "questions", label: "Analysis Question" }, { value: "errors", label: "Errors" }, { value: "compensators", label: "Compensators" }, { value: "answers", label: "Answers" }, { value: "problems", label: "Problems" }, { value: "corrected", label: "Corrected Items" }, { value: "files", label: "Attached Files" }];
   }, [initData]);
 
   const updateForm = useCallback(<K extends keyof FeedbackForm>(key: K, value: string) => {
@@ -225,9 +237,19 @@ export default function ApplyView() {
           { label: "Identify Additional Compensator", onClick: () => { setOpenDialog({ type: "compensatorForError", error: "", app: "" }); setCtxMenu(null); } },
         ];
       }
+      case "problems": {
+        const pr = idx !== null ? problems[idx] : undefined;
+        return [
+          { label: "Identify Problem", onClick: () => { setOpenDialog({ type: "addProblem" }); setCtxMenu(null); } },
+          { label: "View Problem", onClick: () => { if (pr) { setOpenDialog({ type: "viewProblem", item: pr }); setCtxMenu(null); } }, disabled: !pr },
+          { label: "Solve Problem", onClick: () => { if (pr && idx !== null) { setOpenDialog({ type: "solveProblem", item: pr, idx }); setCtxMenu(null); } }, disabled: !pr },
+          { isSep: true },
+          { label: "Remove Problem", onClick: () => { if (pr && idx !== null) { setPendingRemove({ tab: "problems", idx, message: "Remove this identified problem?" }); setCtxMenu(null); } }, disabled: !pr },
+        ];
+      }
       default: return [];
     }
-  }, [ctxMenu, questions, errors, compensators, answers, files, correctedItems]);
+  }, [ctxMenu, questions, errors, compensators, answers, files, correctedItems, problems]);
 
   const selectedQuestionIdx = selectedRow?.tab === "questions" ? selectedRow.idx : null;
   const analysisToolsDef = useMemo((): CmdDropdownDef => ({
@@ -247,6 +269,7 @@ export default function ApplyView() {
     if (tab === "questions") setQuestions((prev) => prev.filter((_, i) => i !== idx));
     else if (tab === "answers") setAnswers((prev) => prev.filter((_, i) => i !== idx));
     else if (tab === "files") setFiles((prev) => prev.filter((_, i) => i !== idx));
+    else if (tab === "problems") setProblems((prev) => prev.filter((_, i) => i !== idx));
     setSelectedRow(null);
     setPendingRemove(null);
   }, [pendingRemove]);
@@ -307,10 +330,19 @@ export default function ApplyView() {
         personName: initData.personName, personEmail: initData.personEmail, analysisId: analysisData?.id,
       },
       files: newFiles, newCorrectedItems,
+      problems: problems.map((pr) => ({
+        problemNumber: pr.problemNumber,
+        problemName: pr.problemName,
+        actualProblem: pr.actualProblem,
+        fromActualError: pr.fromActualError,
+        problemDescription: pr.problemDescription,
+        problemDate: pr.problemDate,
+        problemTime: pr.problemTime,
+      })),
     };
     setPendingPayload(payload);
     setShowConfirm(true);
-  }, [form, initData, analysisData, correctedItems, files, selectionHtml]);
+  }, [form, initData, analysisData, correctedItems, files, selectionHtml, problems]);
 
   const confirmSave = useCallback(() => {
     if (pendingPayload) { dbg("APPLY", "confirmSave — sending SAVE_FEEDBACK"); submitSave({ action: "SAVE_FEEDBACK", payload: pendingPayload }); }
@@ -354,7 +386,7 @@ export default function ApplyView() {
         initData={initData} analysisData={analysisData} selectionHtml={selectionHtml}
         form={form} updateForm={updateForm} errorOptions={errorOptions} compensatorOptions={compensatorOptions}
         editorRef={editorRef} questions={questions} errors={errors} compensators={compensators}
-        answers={answers} files={files} correctedItems={correctedItems}
+        answers={answers} files={files} correctedItems={correctedItems} problems={problems}
         selectedRow={selectedRow} onRowClick={onRowClick} onCtx={onCtx}
         onInsertToDocument={(text, html) => {
           if (text || html) {
@@ -380,6 +412,8 @@ export default function ApplyView() {
         setErrors={setErrors} setCompensators={setCompensators} setFiles={setFiles}
         setCorrectedItems={setCorrectedItems} errorOptions={errorOptions} compensatorOptions={compensatorOptions}
         errors={errors} correctedItems={correctedItems}
+        problems={problems} setProblems={setProblems} feedbackSubject={form.feedbackSubject}
+        solvePreselectedErrors={solvePreselectedErrors} solvePreselectedCompensators={solvePreselectedCompensators}
         pendingRemove={pendingRemove} setPendingRemove={setPendingRemove} confirmRemove={confirmRemove}
         showConfirm={showConfirm} setShowConfirm={setShowConfirm}
         setPendingPayload={setPendingPayload} saving={saving} confirmSave={confirmSave}

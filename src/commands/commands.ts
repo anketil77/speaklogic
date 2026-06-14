@@ -6,7 +6,7 @@ const DIALOG_BASE = window.location.origin;
 
 
 import { initDb, nowDate, formatDisplayDate } from "@/db/db";
-import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis } from "@/db/queries/analysis";
+import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
@@ -810,8 +810,8 @@ function openAnalyzeDialogWithPayload(
                 return { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) };
               });
               const applyFeedbacks = getAllFeedbacks().map((f) => {
-                if (!f.analysisId) return f;
-                return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+                if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
+                return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] };
               });
               const applyPayload: DialogInitPayload = {
                 selection: payload.analysis.entityUnderAnalysis,
@@ -1250,8 +1250,8 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             return { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) };
           });
           const allFeedbacks = getAllFeedbacks().map((f) => {
-            if (!f.analysisId) return f;
-            return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+            if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
+            return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] };
           });
           const navCommConfig = getCommunicationConfig();
           const applyPayload: DialogInitPayload = {
@@ -1390,7 +1390,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         if (m.action === "READY") {
           const { personName, personEmail } = getUserIdentity();
           const feedbacks = getAllFeedbacks().map((f) => {
-            if (!f.analysisId) return f;
+            if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
             return {
               ...f,
               questions: getQuestionsByAnalysis(f.analysisId),
@@ -1398,6 +1398,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
               compensators: getCompensatorsByAnalysis(f.analysisId),
               answers: getAnswersByAnalysis(f.analysisId),
               files: getFilesByAnalysis(f.analysisId),
+              problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])],
             };
           });
           const hostMsg: HostMessage = {
@@ -1422,6 +1423,20 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           try { deleteFeedback((m as { action: string; id: number }).id); }
           catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
         }
+        if (m.action === "SAVE_PROBLEM_SOLUTION") {
+          // Solve Problem from the View Feedback dialog's Problems tab.
+          const sp = m.payload as import("@/types/db").SaveProblemSolutionPayload;
+          try {
+            saveProblemSolution({
+              actualProblem:         sp.actualProblem,
+              feedbackApplied:       sp.feedbackApplied,
+              errorCorrected:        sp.errorCorrected,
+              compensatorReplaced:   sp.compensatorReplaced,
+              additionalExplanation: sp.additionalExplanation,
+              files:                 sp.files,
+            });
+          } catch (err) { dbg("HOST", "saveProblemSolution (feedback history) THREW", String(err)); replyError(dialog, `Failed to save problem solution: ${String(err)}`); }
+        }
         if (m.action === "LIST_FEEDBACK_APPLIED" || m.action === "LIST_FEEDBACK_PROVIDED") {
           // Views not yet implemented — no-op until ListFeedbackAppliedView / ListFeedbackProvidedView are built
         }
@@ -1444,7 +1459,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         if (m.action === "BACK_TO_FEEDBACK_HISTORY") {
           const { personName, personEmail } = getUserIdentity();
           const feedbacks = getAllFeedbacks().map((f) => {
-            if (!f.analysisId) return f;
+            if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
             return {
               ...f,
               questions: getQuestionsByAnalysis(f.analysisId),
@@ -1452,6 +1467,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
               compensators: getCompensatorsByAnalysis(f.analysisId),
               answers: getAnswersByAnalysis(f.analysisId),
               files: getFilesByAnalysis(f.analysisId),
+              problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])],
             };
           });
           const backPayload: DialogInitPayload = {
@@ -2344,8 +2360,8 @@ function openApplyFromHistory(
     return { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) };
   });
   const feedbacks = getAllFeedbacks().map((f) => {
-    if (!f.analysisId) return f;
-    return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+    if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
+    return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] };
   });
   openApplyDialog({
     selection: flag.actualSelection,
@@ -3009,6 +3025,24 @@ function openApplyDialog(initPayload: DialogInitPayload, addInEvent: Office.Addi
             try { dialog.close(); } catch { }
             complete();
             break;
+          case "SAVE_PROBLEM_SOLUTION": {
+            // Solve Problem from the apply-feedback Problems tab — save, keep dialog open.
+            const sp = m.payload as import("@/types/db").SaveProblemSolutionPayload;
+            try {
+              saveProblemSolution({
+                actualProblem:         sp.actualProblem,
+                feedbackApplied:       sp.feedbackApplied,
+                errorCorrected:        sp.errorCorrected,
+                compensatorReplaced:   sp.compensatorReplaced,
+                additionalExplanation: sp.additionalExplanation,
+                files:                 sp.files,
+              });
+            } catch (err) {
+              dbg("HOST", "saveProblemSolution (apply) THREW", String(err));
+              dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+            }
+            break;
+          }
           case "INSERT_TEXT_AT_CURSOR":
             insertTextAtCursor((m as { action: string; text: string; html?: string }).text, (m as { action: string; text: string; html?: string }).html);
             break;
@@ -3045,8 +3079,8 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
     return { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) };
   });
   const feedbacks = getAllFeedbacks().map((f) => {
-    if (!f.analysisId) return f;
-    return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) };
+    if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
+    return { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] };
   });
   openApplyDialog({
     selection,

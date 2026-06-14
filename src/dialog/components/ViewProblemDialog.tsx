@@ -13,6 +13,7 @@ type ProblemDraft = Omit<ProjectProblem, "id" | "analysisId">;
 export interface ViewProblemDialogProps {
   problem: ProblemDraft;
   onClose: () => void;
+  zIndexBase?: number;
 }
 
 const C = {
@@ -75,7 +76,7 @@ const readonlyInput: React.CSSProperties = {
   cursor: "default",
 };
 
-export function ViewProblemDialog({ problem, onClose }: ViewProblemDialogProps) {
+export function ViewProblemDialog({ problem, onClose, zIndexBase = 200 }: ViewProblemDialogProps) {
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
 
   const { pos, onHeaderMouseDown } = useDraggable();
@@ -84,7 +85,7 @@ export function ViewProblemDialog({ problem, onClose }: ViewProblemDialogProps) 
 
   return createPortal(
     <>
-      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.18)", zIndex: 199 }} />
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.18)", zIndex: zIndexBase - 1 }} />
       <div
         style={{
           position: "fixed",
@@ -95,7 +96,7 @@ export function ViewProblemDialog({ problem, onClose }: ViewProblemDialogProps) 
           maxWidth: "96vw",
           height: 560,
           maxHeight: "90vh",
-          zIndex: 200,
+          zIndex: zIndexBase,
           display: "flex",
           flexDirection: "column",
           background: C.white,

@@ -1,14 +1,15 @@
-import type { ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, AttachFileToProject } from "@/types/db";
+import type { ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, ProjectProblem, AttachFileToProject } from "@/types/db";
 import type { CorrectedItemDraft } from "@/dialog/components/CorrectedItemDialog";
 
 export type QuestionDraft = Omit<ProjectQuestion, "id" | "analysisId" | "questionDate" | "questionTime">;
 export type AnswerDraft = Omit<ProjectAnswer, "id" | "analysisId" | "questionId">;
 export type ErrorDraft = Omit<ProjectError, "id" | "analysisId">;
 export type CompensatorDraft = Omit<ProjectCompensator, "id" | "analysisId">;
+export type ProblemDraft = Omit<ProjectProblem, "id" | "analysisId" | "feedbackId">;
 export type FileDraft = Omit<AttachFileToProject, "id" | "analysisId" | "feedbackId" | "flagId" | "articleId">;
 export type { CorrectedItemDraft };
 
-export type TabValue = "feedback" | "analysis" | "selection" | "paragraph" | "questions" | "errors" | "compensators" | "answers" | "files" | "corrected";
+export type TabValue = "feedback" | "analysis" | "selection" | "paragraph" | "questions" | "errors" | "compensators" | "answers" | "problems" | "files" | "corrected";
 
 export type CtxMenu = { tab: TabValue; idx: number | null; x: number; y: number };
 
@@ -25,7 +26,10 @@ export type OpenDialog =
   | { type: "viewFile"; item: FileDraft }
   | { type: "addCorrectedItem" }
   | { type: "editCorrectedItem"; item: CorrectedItemDraft; idx: number }
-  | { type: "viewCorrectedItem"; item: CorrectedItemDraft };
+  | { type: "viewCorrectedItem"; item: CorrectedItemDraft }
+  | { type: "addProblem" }
+  | { type: "viewProblem"; item: ProblemDraft }
+  | { type: "solveProblem"; item: ProblemDraft; idx: number };
 
 export interface FeedbackForm {
   applicationName: string;

@@ -13,6 +13,7 @@ import {
   getErrorsByAnalysis,
   getFilesByAnalysis,
   getProblemsByAnalysis,
+  getProblemsByFeedback,
   getQuestionsByAnalysis,
   getAllAnalyses,
   getRetainedAnalyses,
@@ -583,7 +584,7 @@ export function OutlookTaskPane() {
             const { personName: pn, personEmail: pe } = getUserIdentity();
             const cc = getCommunicationConfig();
             const applyAnalyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
-            const applyFeedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
+            const applyFeedbacks = getAllFeedbacks().map((f) => !f.analysisId ? { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] } : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] });
             dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: { selection: payload.analysis.entityUnderAnalysis, mode: payload.analysis.selectionType === "Selection" ? "selection" : "paragraph", source: payload.analysis.source, personName: pn, personEmail: pe, applicationName: payload.analysis.applicationName, communicationFunction: payload.analysis.communicationFunction, communicationSignal: payload.analysis.communicationSignal, projectName: payload.analysis.projectName, peopleList: [], communicationPersonName: cc?.personName ?? "", communicationPersonEmail: cc?.personEmail ?? "", analysisData: { id: savedId, entityUnderAnalysis: payload.analysis.entityUnderAnalysis, analysisSubject: payload.analysis.analysisSubject ?? "", actualAnalysis: payload.analysis.actualAnalysis, fromPerson: payload.analysis.fromPerson ?? "", errors: payload.errors, compensators: payload.compensators, questions: payload.questions, answers: payload.answers, files: payload.files, correctedItems: [] }, analyses: applyAnalyses, feedbacks: applyFeedbacks } } as HostMessage));
           } else if (payload.analysis.whatToDoWithAnalysis === "ProvideFeedbackWithAnalysis") {
             const { personName: pn, personEmail: pe } = getUserIdentity();
@@ -669,7 +670,7 @@ export function OutlookTaskPane() {
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
     const analyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
-    const feedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
+    const feedbacks = getAllFeedbacks().map((f) => !f.analysisId ? { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] } : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] });
     const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName || subject, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "", analyses, feedbacks };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=apply`,
@@ -691,6 +692,19 @@ export function OutlookTaskPane() {
           } else {
             dialog.close(); dialogRef.current = null;
           }
+        } else if (action.action === "SAVE_PROBLEM_SOLUTION") {
+          // Solve Problem from the apply-feedback Problems tab — save, keep dialog open.
+          const sp = action.payload as import("@/types/db").SaveProblemSolutionPayload;
+          try {
+            saveProblemSolution({
+              actualProblem:         sp.actualProblem,
+              feedbackApplied:       sp.feedbackApplied,
+              errorCorrected:        sp.errorCorrected,
+              compensatorReplaced:   sp.compensatorReplaced,
+              additionalExplanation: sp.additionalExplanation,
+              files:                 sp.files,
+            });
+          } catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); }
         }
       }
     );
@@ -826,7 +840,7 @@ export function OutlookTaskPane() {
           const { personName: pn, personEmail: pe } = getUserIdentity();
           const cc = getCommunicationConfig();
           const allAnalyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
-          const allFeedbacks = getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
+          const allFeedbacks = getAllFeedbacks().map((f) => !f.analysisId ? { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] } : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] });
           dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: { selection: analysis.entityUnderAnalysis?.replace(/<[^>]+>/g, "") ?? "", mode: analysis.selectionType === "Paragraph" ? "paragraph" : "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: analysis.applicationName ?? "", communicationFunction: analysis.communicationFunction ?? "", communicationSignal: analysis.communicationSignal ?? "", projectName: analysis.projectName ?? "", peopleList: getPeopleNames(), communicationPersonName: cc?.personName ?? "", communicationPersonEmail: cc?.personEmail ?? "", analyses: allAnalyses, feedbacks: allFeedbacks } } as HostMessage));
         }
         if (action.action === "NAVIGATE_TO_PROVIDE") {
@@ -861,7 +875,7 @@ export function OutlookTaskPane() {
     if (!dbReady) return;
     const { personName, personEmail } = getUserIdentity();
 
-    const buildFeedbacks = () => getAllFeedbacks().map((f) => !f.analysisId ? f : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId) });
+    const buildFeedbacks = () => getAllFeedbacks().map((f) => !f.analysisId ? { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] } : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] });
 
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=feedback-history`,
@@ -871,6 +885,19 @@ export function OutlookTaskPane() {
         if (action.action === "DELETE_FEEDBACK") {
           try { deleteFeedback((action as { action: string; id: number }).id); }
           catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
+        }
+        if (action.action === "SAVE_PROBLEM_SOLUTION") {
+          const sp = action.payload as import("@/types/db").SaveProblemSolutionPayload;
+          try {
+            saveProblemSolution({
+              actualProblem:         sp.actualProblem,
+              feedbackApplied:       sp.feedbackApplied,
+              errorCorrected:        sp.errorCorrected,
+              compensatorReplaced:   sp.compensatorReplaced,
+              additionalExplanation: sp.additionalExplanation,
+              files:                 sp.files,
+            });
+          } catch (err) { setStatus({ msg: `Failed to save problem solution: ${String(err)}`, ok: false }); }
         }
         if (action.action === "LIST_FEEDBACK_REQUESTED") {
           const { personName: pn, personEmail: pe } = getUserIdentity();
