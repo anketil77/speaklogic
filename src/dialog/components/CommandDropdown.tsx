@@ -1,5 +1,6 @@
 // src/dialog/components/CommandDropdown.tsx
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDownRegular } from "@fluentui/react-icons";
 import { colors } from "@/styles/tokens";
 
@@ -25,11 +26,15 @@ interface Props {
   onClose: () => void;
 }
 
+// Panel is portaled to document.body with position:fixed so it can never be
+// clipped by an ancestor's overflow. The command bar uses overflowX:auto (for
+// horizontal scroll on narrow dialogs) which the CSS spec promotes to
+// overflow-y:auto as well — that previously clipped an absolutely-positioned
+// panel and made these menus appear not to drop down. Same escape pattern as
+// RichTextToolbar's dropdowns.
 const panelStyle: React.CSSProperties = {
-  position: "absolute",
-  top: "100%",
-  left: 0,
-  zIndex: 200,
+  position: "fixed",
+  zIndex: 9999,
   background: "#FFFFFF",
   border: "1px solid #E0E0E0",
   boxShadow: "0px 4px 16px rgba(0,0,0,0.12), 0px 1px 4px rgba(0,0,0,0.06)",
@@ -41,13 +46,26 @@ const panelStyle: React.CSSProperties = {
 
 export function CommandDropdown({ def, open, onToggle, onClose }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
+
+  // Anchor the fixed panel just below the trigger button when it opens.
+  useLayoutEffect(() => {
+    if (open && rootRef.current) {
+      const r = rootRef.current.getBoundingClientRect();
+      setAnchor({ top: r.bottom, left: r.left });
+    } else {
+      setAnchor(null);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
     const handleOutsideClick = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        onClose();
-      }
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t)) return;
+      if (panelRef.current?.contains(t)) return;
+      onClose();
     };
     document.addEventListener("mousedown", handleOutsideClick, true);
     return () => document.removeEventListener("mousedown", handleOutsideClick, true);
@@ -98,8 +116,12 @@ export function CommandDropdown({ def, open, onToggle, onClose }: Props) {
         )}
         <ChevronDownRegular style={{ fontSize: "8px", color: colors.grey38 }} />
       </button>
-      {open && (
-        <div role="menu" style={panelStyle}>
+      {open && anchor && createPortal(
+        <div
+          ref={(el) => { panelRef.current = el; }}
+          role="menu"
+          style={{ ...panelStyle, top: anchor.top, left: anchor.left }}
+        >
           {def.items.map((item) => (
             <button
               key={item.label}
@@ -144,7 +166,7 @@ export function CommandDropdown({ def, open, onToggle, onClose }: Props) {
             </button>
           ))}
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }
