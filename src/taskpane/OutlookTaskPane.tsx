@@ -5,6 +5,8 @@ import { initDb, nowDate, formatDisplayDate } from "@/db/db";
 import { dbg } from "@/debug/log";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { getKeywordRules, getKeywordSetting, saveKeywordRules } from "@/db/queries/keywords";
+import { acquireToken, getSignedInAccount, signOut } from "@/graph/auth";
+import { setUpSignalFoldersAndRules } from "@/graph/mailFolders";
 import { getAllPeople, getPeopleEmailMap, getPeopleNames, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import {
   deleteAnalysis,
@@ -360,6 +362,7 @@ const GROUPS: GroupDef[] = [
     items: [
       { id: "communicationConfig", label: "Comm Config",        icon: "btn-comm-config-32.png" },
       { id: "keywordSettings",     label: "People & Keywords",  icon: "btn-comm-config-32.png" },
+      { id: "setupFolders",        label: "Set up Folders",     icon: "btn-comm-config-32.png" },
       { id: "requestSLFeedback",   label: "Request SL Feedback",icon: "btn-req-sl-fb-32.png" },
       { id: "help",                label: "Help",               icon: "btn-help-32.png" },
       { id: "about",               label: "About",              icon: "btn-about-32.png" },
@@ -377,6 +380,18 @@ export function OutlookTaskPane() {
   const commCtxRef = useRef({ appName: "", commFunction: "", commSignal: "", projectName: "" });
   const [commCtx, setCommCtx] = useState(commCtxRef.current);
   const [commCtxOpen, setCommCtxOpen] = useState(true);
+  const [msAccount, setMsAccount] = useState<string | null>(null);
+
+  // Reflect any existing Microsoft sign-in (for the folders feature) on load.
+  useEffect(() => {
+    getSignedInAccount().then((acc) => setMsAccount(acc?.username ?? null)).catch(() => {});
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    await signOut();
+    setMsAccount(null);
+    setStatus({ msg: "Signed out of Microsoft.", ok: true });
+  }, []);
 
   useEffect(() => {
     // ── TEMP DIAGNOSTIC: why is userProfile empty on M365? Remove once root cause found. ──
@@ -1287,6 +1302,20 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
+  const handleSetupFolders = useCallback(async () => {
+    setStatus({ msg: "Signing in to Microsoft…", ok: true });
+    try {
+      const token = await acquireToken();
+      const acc = await getSignedInAccount();
+      setMsAccount(acc?.username ?? null);
+      setStatus({ msg: "Creating folders and auto-sort rules…", ok: true });
+      const { folders, rules } = await setUpSignalFoldersAndRules(token);
+      setStatus({ msg: `Done — ${folders} signal folders ready, ${rules} new auto-sort rule(s) added.`, ok: true });
+    } catch (err) {
+      setStatus({ msg: `Folder setup failed: ${String(err)}`, ok: false });
+    }
+  }, []);
+
   const handleRequestSLFeedback = useCallback(() => {
     if (!dbReady) return;
     const commConfig = getCommunicationConfig();
@@ -1340,6 +1369,7 @@ export function OutlookTaskPane() {
       case "listSelectionRelatedPrinciple":   handleListSelectionRelatedPrinciple(); break;
       case "communicationConfig":handleCommunicationConfig(); break;
       case "keywordSettings":    handleKeywordSettings(); break;
+      case "setupFolders":       void handleSetupFolders(); break;
       case "requestSLFeedback":  handleRequestSLFeedback(); break;
       case "createArticle":      handleCreateArticle(); break;
       case "listArticles":       handleListArticles(); break;
@@ -1347,7 +1377,7 @@ export function OutlookTaskPane() {
       case "about":              handleSimple("about"); break;
       default: break;
     }
-  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListSelection, handleListIdentifiedPrinciple, handleListInterpretedPrinciple, handleListSelectionRelatedPrinciple, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleKeywordSettings, handleRequestSLFeedback, handleSimple]);
+  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListSelection, handleListIdentifiedPrinciple, handleListInterpretedPrinciple, handleListSelectionRelatedPrinciple, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleKeywordSettings, handleSetupFolders, handleRequestSLFeedback, handleSimple]);
 
   // ── render ────────────────────────────────────────────────────────────────
 
@@ -1367,6 +1397,18 @@ export function OutlookTaskPane() {
         <div style={{ padding: "8px 16px", background: status.ok ? "#DFF6DD" : "#FDE7E9", color: status.ok ? "#107C10" : "#A4262C", fontSize: 12, borderBottom: `1px solid ${status.ok ? "#BDDA9B" : "#F4B8BB"}`, flexShrink: 0 }}>
           {status.msg}
           <button onClick={() => setStatus(null)} style={{ float: "right", background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
+        </div>
+      )}
+
+      {/* Microsoft account (folders feature) — only shown once signed in */}
+      {msAccount && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "5px 12px", background: "#F3F9FD", borderBottom: "1px solid #DCEBF7", fontSize: 10.5, color: "#3B3B3B", flexShrink: 0 }}>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ color: "#107C10" }}>●</span> Microsoft: {msAccount}
+          </span>
+          <button onClick={() => void handleSignOut()} style={{ background: "none", border: "none", color: "#0078D4", cursor: "pointer", fontSize: 10.5, fontWeight: 600, padding: 0, flexShrink: 0 }}>
+            Sign out
+          </button>
         </div>
       )}
 
