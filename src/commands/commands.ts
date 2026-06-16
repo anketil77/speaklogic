@@ -3575,16 +3575,38 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
     // from storage so keywords added after it started are seen (not just the
     // snapshot from first launch).
     await reloadDbFromStorage();
-    if (getKeywordRules().length === 0) { ev.completed({ allowEvent: true }); return; }
+    const rules = getKeywordRules();
 
     const [recipients, body] = await Promise.all([getRecipientsAsync(), getBodyTextAsync()]);
     const subject = (() => {
       try { return String((Office.context.mailbox.item as Office.MessageCompose).subject as unknown as string) || ""; }
       catch { return ""; }
     })();
-    const hits = findBannedWords(recipients, `${subject}\n${body}`);
+    const haystack = `${subject}\n${body}`;
+    const hits = findBannedWords(recipients, haystack);
 
-    if (hits.length === 0) { ev.completed({ allowEvent: true }); return; }
+    dbg("KEYWORDS", "OnMessageSend check", {
+      rules: rules.length,
+      words: rules.map((r) => `${r.isGlobal ? "*" : r.personName || r.personEmail}:${r.keyword}`),
+      toCount: recipients.length,
+      recipients: recipients.map((r) => r.email),
+      bodyLen: body.length,
+      hits,
+    });
+
+    // TEMP DEBUG PROBE: type "SLDEBUG" anywhere in the email body to see exactly
+    // what the send-checker reads (remove this block once the keyword issue is resolved).
+    if (/SLDEBUG/i.test(haystack)) {
+      const words = rules.map((r) => `${r.isGlobal ? "global" : (r.personName || r.personEmail || "?")}=${r.keyword}`).join(", ");
+      ev.completed({
+        allowEvent: false,
+        errorMessage:
+          `DEBUG — rules:${rules.length} [${words}] | to:${recipients.length} | bodyLen:${body.length} | hasAngry:${/angry/i.test(haystack)} | hits:[${hits.join(",")}]`.slice(0, 500),
+      });
+      return;
+    }
+
+    if (rules.length === 0 || hits.length === 0) { ev.completed({ allowEvent: true }); return; }
 
     const mode = getKeywordSetting().sendMode;
     const wordList = hits.join(", ");
