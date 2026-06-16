@@ -5,7 +5,7 @@
 const DIALOG_BASE = window.location.origin;
 
 
-import { initDb, nowDate, formatDisplayDate } from "@/db/db";
+import { initDb, nowDate, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
 import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
@@ -3571,6 +3571,10 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
   const ev = event as SmartAlertsEvent;
   try {
     await ensureDb();
+    // The send-checker runtime is long-lived and caches the DB in memory; reload
+    // from storage so keywords added after it started are seen (not just the
+    // snapshot from first launch).
+    await reloadDbFromStorage();
     if (getKeywordRules().length === 0) { ev.completed({ allowEvent: true }); return; }
 
     const [recipients, body] = await Promise.all([getRecipientsAsync(), getBodyTextAsync()]);

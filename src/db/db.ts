@@ -7,6 +7,7 @@ import { CREATE_TABLES_SQL } from "@/db/schema";
 
 const DB_STORAGE_KEY = "speaklogic_db_v1";
 let db: Database | null = null;
+let SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
 
 export async function initDb(): Promise<Database> {
   if (db) return db;
@@ -17,7 +18,7 @@ export async function initDb(): Promise<Database> {
   if (!wasmResp.ok) throw new Error(`Wasm fetch failed: ${wasmResp.status} from ${wasmUrl}`);
   const wasmBinary = await wasmResp.arrayBuffer();
 
-  const SQL = await initSqlJs({ wasmBinary });
+  SQL = await initSqlJs({ wasmBinary });
 
   const saved = localStorage.getItem(DB_STORAGE_KEY);
   if (saved) {
@@ -31,6 +32,28 @@ export async function initDb(): Promise<Database> {
   runMigrations(db);
   persistDb();
   return db;
+}
+
+/**
+ * Re-read the database from localStorage into the in-memory instance.
+ *
+ * Each Office runtime (dialog, taskpane, and the hidden OnMessageSend event
+ * runtime) keeps its OWN cached `db`. A write in one runtime persists to
+ * localStorage but does NOT update another runtime's in-memory copy. Long-lived
+ * runtimes (notably the Smart Alerts send-checker) therefore read stale data.
+ * Call this before any read that must reflect the very latest saved state.
+ * Safe because every writer calls persistDb() immediately, so localStorage is
+ * always the source of truth.
+ */
+export async function reloadDbFromStorage(): Promise<void> {
+  if (!db || !SQL) { await initDb(); return; }
+  const saved = localStorage.getItem(DB_STORAGE_KEY);
+  if (!saved) return;
+  const bytes = Uint8Array.from(atob(saved), (c) => c.charCodeAt(0));
+  const fresh = new SQL.Database(bytes);
+  fresh.run(CREATE_TABLES_SQL);
+  runMigrations(fresh);
+  db = fresh;
 }
 
 // Parses CREATE TABLE statements and returns a map of tableName → columns.

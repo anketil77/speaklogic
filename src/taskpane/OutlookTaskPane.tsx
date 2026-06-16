@@ -383,11 +383,16 @@ export function OutlookTaskPane() {
   const [msAccount, setMsAccount] = useState<string | null>(null);
 
   // Reflect any existing Microsoft sign-in (for the folders feature) on load.
+  // NAA shares the Outlook session, so the broker re-supplies the account on every
+  // load and a true sign-out isn't possible. We honor a local "signed out" flag so
+  // the account line stays hidden after the user chooses Sign out (until next setup).
   useEffect(() => {
+    if (localStorage.getItem("sl_ms_signed_out") === "1") { setMsAccount(null); return; }
     getSignedInAccount().then((acc) => setMsAccount(acc?.username ?? null)).catch(() => {});
   }, []);
 
   const handleSignOut = useCallback(async () => {
+    localStorage.setItem("sl_ms_signed_out", "1");
     await signOut();
     setMsAccount(null);
     setStatus({ msg: "Signed out of Microsoft.", ok: true });
@@ -1305,6 +1310,7 @@ export function OutlookTaskPane() {
   const handleSetupFolders = useCallback(async () => {
     setStatus({ msg: "Signing in to Microsoft…", ok: true });
     try {
+      localStorage.removeItem("sl_ms_signed_out");
       const token = await acquireToken();
       const acc = await getSignedInAccount();
       setMsAccount(acc?.username ?? null);
