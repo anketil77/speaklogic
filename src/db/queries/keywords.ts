@@ -97,21 +97,13 @@ export function findBannedWords(
 
     const kw = rule.keyword.trim().toLowerCase();
     if (!kw) continue;
-    // Word-boundary match for single tokens; substring for multi-word phrases.
-    const isToken = /^[a-z0-9_'-]+$/i.test(kw);
-    let found = false;
-    if (isToken) {
-      const re = new RegExp("(?:^|[^a-z0-9_])" + escapeRegExp(kw) + "(?:$|[^a-z0-9_])", "i");
-      found = re.test(haystack);
-    } else {
-      found = haystack.indexOf(kw) !== -1;
-    }
+    // Substring ("contains the word") match — case-insensitive. Whole-word
+    // matching was too strict: when Outlook concatenates body text (e.g. a typed
+    // word glued to the attached context marker → "sdfAngry"), a boundary match
+    // misses it. The client spec is "message contains a word", so contains is correct.
+    const found = haystack.indexOf(kw) !== -1;
     const label = rule.keyword.trim();
     if (found && hits.indexOf(label) === -1) hits.push(label);
   }
   return hits;
-}
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
