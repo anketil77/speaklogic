@@ -3587,6 +3587,19 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
 
     dbg("KEYWORDS", "OnMessageSend check", { rules: rules.length, toCount: recipients.length, bodyLen: body.length, hits });
 
+    // TEMP ALWAYS-ON DIAGNOSTIC — fires on every send so we can see what the
+    // checker actually reads (remove once the keyword issue is resolved).
+    {
+      const mode = getKeywordSetting().sendMode;
+      const tail = body.slice(-70).replace(/\s+/g, " ");
+      ev.completed({
+        allowEvent: false,
+        errorMessage:
+          `DEBUG2 mode:${mode} rules:${rules.length} hits:[${hits.join(",")}] bodyLen:${body.length} tail:"${tail}"`.slice(0, 500),
+      });
+      return;
+    }
+
     if (rules.length === 0 || hits.length === 0) { ev.completed({ allowEvent: true }); return; }
 
     const mode = getKeywordSetting().sendMode;
