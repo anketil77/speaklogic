@@ -226,6 +226,7 @@
                     <Item id="si_helpArticle_OL_v10_item"><Label resid="helpArticle.Label"/><Supertip><Title resid="helpArticle.Label"/><Description resid="helpArticle.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="helpArticle.Icon16"/><bt:Image size="32" resid="helpArticle.Icon32"/><bt:Image size="80" resid="helpArticle.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>helpArticle</FunctionName></Action></Item>
                     <Item id="si_about_OL_v10_item"><Label resid="about.Label"/><Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action></Item>
                     <Item id="si_communicationConfig_OL_v10_item"><Label resid="communicationConfig.Label"/><Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action></Item>
+                    <Item id="si_keywordSettings_OL_v10_item"><Label resid="keywordSettings.Label"/><Supertip><Title resid="keywordSettings.Label"/><Description resid="keywordSettings.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>keywordSettings</FunctionName></Action></Item>
                   </Items>
                 </Control>
                 <Control xsi:type="Button" id="openSidebar_OL_v10">
@@ -368,6 +369,7 @@
         <bt:String id="listIntPrinciple.Label" DefaultValue="List Interpreted Principle"/>
         <bt:String id="listRelPrinciple.Label" DefaultValue="List Selection Related with Principle"/>
         <bt:String id="communicationConfig.Label" DefaultValue="Communication Config"/>
+        <bt:String id="keywordSettings.Label" DefaultValue="People &amp; Keywords"/>
         <bt:String id="people.Label" DefaultValue="Contacts"/>
         <bt:String id="requestSLFeedback.Label" DefaultValue="Request SL Feedback"/>
         <bt:String id="help.Label" DefaultValue="Help"/>
@@ -399,6 +401,7 @@
         <bt:String id="listIntPrinciple.Tooltip" DefaultValue="View all interpreted principles"/>
         <bt:String id="listRelPrinciple.Tooltip" DefaultValue="View all selections related to a principle"/>
         <bt:String id="communicationConfig.Tooltip" DefaultValue="Configure your name and email for analysis and feedback"/>
+        <bt:String id="keywordSettings.Tooltip" DefaultValue="Manage flagged words per person and warn or block sending"/>
         <bt:String id="people.Tooltip" DefaultValue="Manage your contacts for feedback and analysis"/>
         <bt:String id="requestSLFeedback.Tooltip" DefaultValue="Send feedback to the Speak Logic team"/>
         <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
@@ -423,8 +426,23 @@
 
       <Hosts>
         <Host xsi:type="MailHost">
+          <!-- Smart Alerts event runtime (OnMessageSend). Activates on Mailbox 1.12+ clients;
+               older clients ignore it gracefully. -->
+          <Runtimes>
+            <Runtime resid="WebViewRuntime.Url">
+              <Override type="javascript" resid="JSRuntime.Url"/>
+            </Runtime>
+          </Runtimes>
           <DesktopFormFactor>
             <FunctionFile resid="Commands.Url.v11"/>
+
+            <!-- Smart Alerts: warn/stop sending when the body contains a flagged word. -->
+            <ExtensionPoint xsi:type="LaunchEvent">
+              <LaunchEvents>
+                <LaunchEvent Type="OnMessageSend" FunctionName="onMessageSendHandler" SendMode="SoftBlock"/>
+              </LaunchEvents>
+              <SourceLocation resid="WebViewRuntime.Url"/>
+            </ExtensionPoint>
 
             <!-- Read mode -->
             <ExtensionPoint xsi:type="MessageReadCommandSurface">
@@ -569,6 +587,7 @@
                       <Item id="si_helpArticle_OL_v11_item"><Label resid="helpArticle.Label.v11"/><Supertip><Title resid="helpArticle.Label.v11"/><Description resid="helpArticle.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="helpArticle.Icon16.v11"/><bt:Image size="32" resid="helpArticle.Icon32.v11"/><bt:Image size="80" resid="helpArticle.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>helpArticle</FunctionName></Action></Item>
                       <Item id="si_about_OL_v11_item"><Label resid="about.Label.v11"/><Supertip><Title resid="about.Label.v11"/><Description resid="about.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="about.Icon16.v11"/><bt:Image size="32" resid="about.Icon32.v11"/><bt:Image size="80" resid="about.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action></Item>
                       <Item id="si_communicationConfig_OL_v11_item"><Label resid="communicationConfig.Label.v11"/><Supertip><Title resid="communicationConfig.Label.v11"/><Description resid="communicationConfig.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16.v11"/><bt:Image size="32" resid="communicationConfig.Icon32.v11"/><bt:Image size="80" resid="communicationConfig.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action></Item>
+                      <Item id="si_keywordSettings_OL_v11_item"><Label resid="keywordSettings.Label.v11"/><Supertip><Title resid="keywordSettings.Label.v11"/><Description resid="keywordSettings.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16.v11"/><bt:Image size="32" resid="communicationConfig.Icon32.v11"/><bt:Image size="80" resid="communicationConfig.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>keywordSettings</FunctionName></Action></Item>
                     </Items>
                   </Control>
                   <Control xsi:type="Button" id="openSidebar_OL_v11">
@@ -726,6 +745,7 @@
                       <Item id="si_helpArticle_OLC_v11_item"><Label resid="helpArticle.Label.v11"/><Supertip><Title resid="helpArticle.Label.v11"/><Description resid="helpArticle.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="helpArticle.Icon16.v11"/><bt:Image size="32" resid="helpArticle.Icon32.v11"/><bt:Image size="80" resid="helpArticle.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>helpArticle</FunctionName></Action></Item>
                       <Item id="si_about_OLC_v11_item"><Label resid="about.Label.v11"/><Supertip><Title resid="about.Label.v11"/><Description resid="about.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="about.Icon16.v11"/><bt:Image size="32" resid="about.Icon32.v11"/><bt:Image size="80" resid="about.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action></Item>
                       <Item id="si_communicationConfig_OLC_v11_item"><Label resid="communicationConfig.Label.v11"/><Supertip><Title resid="communicationConfig.Label.v11"/><Description resid="communicationConfig.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16.v11"/><bt:Image size="32" resid="communicationConfig.Icon32.v11"/><bt:Image size="80" resid="communicationConfig.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action></Item>
+                      <Item id="si_keywordSettings_OLC_v11_item"><Label resid="keywordSettings.Label.v11"/><Supertip><Title resid="keywordSettings.Label.v11"/><Description resid="keywordSettings.Tooltip.v11"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16.v11"/><bt:Image size="32" resid="communicationConfig.Icon32.v11"/><bt:Image size="80" resid="communicationConfig.Icon80.v11"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>keywordSettings</FunctionName></Action></Item>
                     </Items>
                   </Control>
                   <Control xsi:type="Button" id="openSidebar_OLC_v11">
@@ -834,6 +854,8 @@
         <bt:Urls>
           <bt:Url id="Commands.Url.v11" DefaultValue="https://localhost:3000/commands.html"/>
           <bt:Url id="taskpane.Url.v11" DefaultValue="https://localhost:3000/taskpane.html"/>
+          <bt:Url id="WebViewRuntime.Url" DefaultValue="https://localhost:3000/commands.html"/>
+          <bt:Url id="JSRuntime.Url" DefaultValue="https://localhost:3000/commands.js"/>
         </bt:Urls>
         <bt:ShortStrings>
           <bt:String id="tabSpeakLogic.Label.v11" DefaultValue="Speak Logic"/>
@@ -864,6 +886,7 @@
           <bt:String id="listIntPrinciple.Label.v11" DefaultValue="List Interpreted Principle"/>
           <bt:String id="listRelPrinciple.Label.v11" DefaultValue="List Selection Related with Principle"/>
           <bt:String id="communicationConfig.Label.v11" DefaultValue="Communication Config"/>
+          <bt:String id="keywordSettings.Label.v11" DefaultValue="People &amp; Keywords"/>
           <bt:String id="people.Label.v11" DefaultValue="Contacts"/>
           <bt:String id="requestSLFeedback.Label.v11" DefaultValue="Request SL Feedback"/>
           <bt:String id="help.Label.v11" DefaultValue="Help"/>
@@ -894,6 +917,7 @@
           <bt:String id="listIntPrinciple.Tooltip.v11" DefaultValue="View all interpreted principles"/>
           <bt:String id="listRelPrinciple.Tooltip.v11" DefaultValue="View all selections related to a principle"/>
           <bt:String id="communicationConfig.Tooltip.v11" DefaultValue="Configure your name and email for analysis and feedback"/>
+          <bt:String id="keywordSettings.Tooltip.v11" DefaultValue="Manage flagged words per person and warn or block sending"/>
           <bt:String id="people.Tooltip.v11" DefaultValue="Manage your contacts for feedback and analysis"/>
           <bt:String id="requestSLFeedback.Tooltip.v11" DefaultValue="Send feedback to the Speak Logic team"/>
           <bt:String id="help.Tooltip.v11" DefaultValue="View help documentation"/>

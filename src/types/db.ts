@@ -627,6 +627,28 @@ export interface SaveCommunicationConfigPayload {
   personEmail: string;
 }
 
+// ---- Keyword guard (banned-words per person + global) ----
+
+export type KeywordSendMode = "warn" | "stop";
+
+export interface KeywordRule {
+  id?: number;
+  personName: string;
+  personEmail: string;
+  keyword: string;
+  isGlobal: boolean;
+}
+
+export interface KeywordSetting {
+  id?: number;
+  sendMode: KeywordSendMode;
+}
+
+export interface SaveKeywordRulesPayload {
+  rules: Array<Omit<KeywordRule, "id">>;
+  sendMode: KeywordSendMode;
+}
+
 export type SelectionMode = "selection" | "paragraph";
 export type HostSource = "Word Document" | "Outlook Mail" | "PowerPoint Document";
 
@@ -688,6 +710,9 @@ export interface DialogInitPayload {
   contacts?: ContactPerson[];
   /** User-defined "Select Information" items (Article Wizard Step Info). */
   userInfoItems?: UserInformationItem[];
+  /** Keyword guard rules + send mode (KeywordSettingsView). */
+  keywordRules?: KeywordRule[];
+  keywordSendMode?: KeywordSendMode;
 }
 
 // User-defined "information" item shown in the wizard's "Select Information"
@@ -739,6 +764,7 @@ export type DialogAction =
   | { action: "SAVE_REQUEST_FEEDBACK"; payload: SaveRequestFeedbackPayload }
   | { action: "SAVE_REQUEST_SL_FEEDBACK"; payload: SaveRequestSLFeedbackPayload }
   | { action: "SAVE_COMMUNICATION_CONFIG"; payload: SaveCommunicationConfigPayload }
+  | { action: "SAVE_KEYWORD_RULES"; payload: SaveKeywordRulesPayload }
   | { action: "SAVE_FLAG"; payload: FlagEntityForAnalysis }
   | { action: "SAVE_USER_INFO_ITEM"; name: string; html: string }
   | { action: "DELETE_USER_INFO_ITEM"; id: number }

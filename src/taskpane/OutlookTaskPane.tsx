@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { initDb, nowDate, formatDisplayDate } from "@/db/db";
 import { dbg } from "@/debug/log";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
+import { getKeywordRules, getKeywordSetting, saveKeywordRules } from "@/db/queries/keywords";
 import { getAllPeople, getPeopleEmailMap, getPeopleNames, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
 import {
   deleteAnalysis,
@@ -61,6 +62,7 @@ import type {
   SaveArticlePayload,
   SaveArticleWizardPayload,
   SaveCommunicationConfigPayload,
+  SaveKeywordRulesPayload,
   SaveFeedbackPayload,
   SavePrincipleInSelectionPayload,
   SaveRelatedSelectionPayload,
@@ -357,6 +359,7 @@ const GROUPS: GroupDef[] = [
     id: "about", label: "About",
     items: [
       { id: "communicationConfig", label: "Comm Config",        icon: "btn-comm-config-32.png" },
+      { id: "keywordSettings",     label: "People & Keywords",  icon: "btn-comm-config-32.png" },
       { id: "requestSLFeedback",   label: "Request SL Feedback",icon: "btn-req-sl-fb-32.png" },
       { id: "help",                label: "Help",               icon: "btn-help-32.png" },
       { id: "about",               label: "About",              icon: "btn-about-32.png" },
@@ -1266,6 +1269,24 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
+  const handleKeywordSettings = useCallback(() => {
+    if (!dbReady) return;
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=keyword-settings`,
+      { height: 70, width: 32 },
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(), keywordRules: getKeywordRules(), keywordSendMode: getKeywordSetting().sendMode }),
+      (dialog, action) => {
+        if (action.action === "SAVE_KEYWORD_RULES") {
+          try {
+            const p = action.payload as SaveKeywordRulesPayload;
+            saveKeywordRules(p.rules, p.sendMode);
+            dialog.close(); dialogRef.current = null;
+          } catch (err) { setStatus({ msg: `Failed to save keyword settings: ${String(err)}`, ok: false }); }
+        }
+      }
+    );
+  }, [dbReady, openManagedDialog]);
+
   const handleRequestSLFeedback = useCallback(() => {
     if (!dbReady) return;
     const commConfig = getCommunicationConfig();
@@ -1318,6 +1339,7 @@ export function OutlookTaskPane() {
       case "listInterpretedPrinciple":        handleListInterpretedPrinciple(); break;
       case "listSelectionRelatedPrinciple":   handleListSelectionRelatedPrinciple(); break;
       case "communicationConfig":handleCommunicationConfig(); break;
+      case "keywordSettings":    handleKeywordSettings(); break;
       case "requestSLFeedback":  handleRequestSLFeedback(); break;
       case "createArticle":      handleCreateArticle(); break;
       case "listArticles":       handleListArticles(); break;
@@ -1325,7 +1347,7 @@ export function OutlookTaskPane() {
       case "about":              handleSimple("about"); break;
       default: break;
     }
-  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListSelection, handleListIdentifiedPrinciple, handleListInterpretedPrinciple, handleListSelectionRelatedPrinciple, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleRequestSLFeedback, handleSimple]);
+  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListSelection, handleListIdentifiedPrinciple, handleListInterpretedPrinciple, handleListSelectionRelatedPrinciple, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleKeywordSettings, handleRequestSLFeedback, handleSimple]);
 
   // ── render ────────────────────────────────────────────────────────────────
 

@@ -12,6 +12,7 @@ import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail, getAllPeople, updatePersonById, deletePersonById, addPersonContact } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
+import { getKeywordRules, getKeywordSetting, saveKeywordRules, findBannedWords } from "@/db/queries/keywords";
 import { saveArticle, updateArticle, publishArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById } from "@/db/queries/article";
 import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
 import { saveProblemSolution } from "@/db/queries/problem";
@@ -42,6 +43,7 @@ import type {
   SaveAnalysisPayload,
   SaveArticlePayload,
   SaveCommunicationConfigPayload,
+  SaveKeywordRulesPayload,
   SaveFeedbackPayload,
   SaveRelatedSelectionPayload,
   SavePrincipleInSelectionPayload,
@@ -170,6 +172,9 @@ function registerHandlers(): void {
   });
   Office.actions.associate("about", (event) => openAboutDialog(event));
   Office.actions.associate("communicationConfig", (event) => openCommunicationConfigDialog(event));
+  Office.actions.associate("keywordSettings", (event) => openKeywordSettingsDialog(event));
+  // Outlook Smart Alerts: runs when the user clicks Send (see manifest LaunchEvent).
+  Office.actions.associate("onMessageSendHandler", onMessageSendHandler);
   Office.actions.associate("createArticle", (event) =>
     void openCreateArticleDialog(event)
   );
@@ -3444,6 +3449,163 @@ function openCommunicationConfigDialog(event: Office.AddinCommands.Event, attemp
   }).catch((err: unknown) => {
     showNoSelectionMessage("Database Error", String(err), event);
   });
+}
+
+// ─── Speak Logic Settings: People & Keywords ──────────────────────────────────
+function openKeywordSettingsDialog(event: Office.AddinCommands.Event, attempt = 0): void {
+  ensureDb().then(() => {
+    const initPayload: DialogInitPayload = {
+      selection: "",
+      mode: "selection",
+      source: getSource(),
+      personName: "",
+      personEmail: "",
+      applicationName: "",
+      communicationFunction: "",
+      communicationSignal: "",
+      projectName: "",
+      peopleList: getPeopleNames(),
+      peopleEmailMap: getPeopleEmailMap(),
+      contacts: getAllPeople(),
+      keywordRules: getKeywordRules(),
+      keywordSendMode: getKeywordSetting().sendMode,
+    };
+
+    const TARGET_H_PX = 560;
+    const TARGET_W_PX = 460;
+    const screenH = window.screen?.availHeight || 900;
+    const screenW = window.screen?.availWidth || 1440;
+    const h = Math.min(85, Math.max(40, Math.round((TARGET_H_PX / (screenH * 0.93)) * 100) + 4));
+    const w = Math.min(85, Math.max(24, Math.round((TARGET_W_PX / (screenW * 0.95)) * 100)));
+
+    _trackDialogAsync(
+      `${DIALOG_BASE}/dialog.html?view=keyword-settings`,
+      { height: h, width: w, displayInIframe: true },
+      (result) => {
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+            setTimeout(() => openKeywordSettingsDialog(event, attempt + 1), 300);
+            return;
+          }
+          handleDialogOpenError(result.error, event);
+          return;
+        }
+        const dialog = result.value;
+        const complete = makeEventCompleter(event);
+        dialog.addEventHandler(Office.EventType.DialogEventReceived, () => complete());
+        dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+          const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+          switch (m.action) {
+            case "READY":
+              dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+              break;
+            case "SAVE_KEYWORD_RULES":
+              try {
+                const p = m.payload as SaveKeywordRulesPayload;
+                saveKeywordRules(p.rules, p.sendMode);
+                try { dialog.close(); } catch { /* already closed */ }
+                complete();
+              } catch (err) { replyError(dialog, `Failed to save keyword settings: ${String(err)}`); }
+              break;
+            case "CLOSE":
+              try { dialog.close(); } catch { /* already closed */ }
+              complete();
+              break;
+            default:
+              break;
+          }
+        });
+      }
+    );
+  }).catch((err: unknown) => {
+    showNoSelectionMessage("Database Error", String(err), event);
+  });
+}
+
+// ─── Outlook Smart Alerts: block/warn on banned words before send ─────────────
+type SmartAlertsEvent = Office.AddinCommands.Event & {
+  completed: (options?: { allowEvent?: boolean; errorMessage?: string; sendModeOverride?: string }) => void;
+};
+
+function getRecipientsAsync(): Promise<Array<{ name?: string; email?: string }>> {
+  return new Promise((resolve) => {
+    try {
+      const item = Office.context.mailbox.item as Office.MessageCompose;
+      const out: Array<{ name?: string; email?: string }> = [];
+      let pending = 0;
+      let done = false;
+      const finish = () => { if (done) return; done = true; resolve(out); };
+      const collect = (field?: { getAsync: (cb: (r: Office.AsyncResult<Office.EmailAddressDetails[]>) => void) => void }) => {
+        if (!field) return;
+        pending++;
+        field.getAsync((r) => {
+          if (r.status === Office.AsyncResultStatus.Succeeded && r.value) {
+            for (const a of r.value) out.push({ name: a.displayName, email: a.emailAddress });
+          }
+          if (--pending === 0) finish();
+        });
+      };
+      collect(item.to);
+      collect(item.cc);
+      if (pending === 0) finish();
+      setTimeout(finish, 4000); // safety: never hang the send
+    } catch {
+      resolve([]);
+    }
+  });
+}
+
+function getBodyTextAsync(): Promise<string> {
+  return new Promise((resolve) => {
+    try {
+      Office.context.mailbox.item.body.getAsync(Office.CoercionType.Text, (r) => {
+        resolve(r.status === Office.AsyncResultStatus.Succeeded ? String(r.value ?? "") : "");
+      });
+    } catch {
+      resolve("");
+    }
+  });
+}
+
+async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<void> {
+  const ev = event as SmartAlertsEvent;
+  try {
+    await ensureDb();
+    if (getKeywordRules().length === 0) { ev.completed({ allowEvent: true }); return; }
+
+    const [recipients, body] = await Promise.all([getRecipientsAsync(), getBodyTextAsync()]);
+    const subject = (() => {
+      try { return String((Office.context.mailbox.item as Office.MessageCompose).subject as unknown as string) || ""; }
+      catch { return ""; }
+    })();
+    const hits = findBannedWords(recipients, `${subject}\n${body}`);
+
+    if (hits.length === 0) { ev.completed({ allowEvent: true }); return; }
+
+    const mode = getKeywordSetting().sendMode;
+    const wordList = hits.join(", ");
+    if (mode === "stop") {
+      // Manifest SendMode is SoftBlock → no "Send Anyway"; user must remove the words.
+      ev.completed({
+        allowEvent: false,
+        errorMessage: `Forbidden word found: ${wordList}. Remove it before sending.`,
+      });
+    } else {
+      // warn: relax the SoftBlock default to PromptUser so a "Send Anyway" button appears.
+      // sendModeOverride only supports PromptUser (Mailbox 1.14+); harmless if unsupported.
+      const promptUser =
+        (Office.MailboxEnums as unknown as { SendModeOverride?: { PromptUser?: string } })?.SendModeOverride?.PromptUser ??
+        "promptUser";
+      ev.completed({
+        allowEvent: false,
+        sendModeOverride: promptUser,
+        errorMessage: `Flagged word found: ${wordList}. Send anyway?`,
+      });
+    }
+  } catch {
+    // Never block the user on our own failure.
+    ev.completed({ allowEvent: true });
+  }
 }
 
 function openPeopleDialog(event: Office.AddinCommands.Event): void {
