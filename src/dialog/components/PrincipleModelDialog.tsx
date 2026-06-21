@@ -211,6 +211,14 @@ export function PrincipleModelDialog(props: Props) {
 
               {/* Circle join node */}
               <circle cx={CIR_CX} cy={CIR_CY} r={CIR_R} fill={colors.white} stroke={BORDER_COLOR} strokeWidth="2" />
+              <text
+                x={CIR_CX} y={CIR_CY}
+                textAnchor="middle" dominantBaseline="central"
+                fontSize="13" fontWeight="600" fill={colors.grey11}
+                fontFamily="'Inter','Segoe UI',sans-serif"
+              >
+                Related
+              </text>
 
               {/* Circle → Relationship box */}
               <line
