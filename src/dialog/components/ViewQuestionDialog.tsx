@@ -4,7 +4,8 @@ import React, { useState, useCallback } from "react";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
-import { ViewQuestionHeaderIcon, CloseIcon, QuestionCheckIcon, QuestionBookmarkIcon, FlagCommunicationIcon, EditQuestionIcon } from "@/dialog/components/Icons";
+import { ViewQuestionHeaderIcon, CloseIcon, QuestionCheckIcon, QuestionBookmarkIcon, FlagCommunicationIcon, EditQuestionIcon, FeedbackModelIcon } from "@/dialog/components/Icons";
+import { EntityModelDialog } from "@/dialog/components/EntityModelDialog";
 import type { ProjectQuestion } from "@/types/db";
 
 type QuestionDraft = Omit<ProjectQuestion, "id" | "analysisId" | "questionDate" | "questionTime">;
@@ -81,6 +82,7 @@ const readonlyInput: React.CSSProperties = {
 
 export function ViewQuestionDialog({ question, onClose, zIndexBase = 200 }: ViewQuestionDialogProps) {
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
+  const [showModel, setShowModel] = useState(false);
 
   // ── Dragging ──────────────────────────────────────────────────────────────────
   const { pos, onHeaderMouseDown } = useDraggable();
@@ -136,6 +138,10 @@ export function ViewQuestionDialog({ question, onClose, zIndexBase = 200 }: View
         <button className="sl-icon-btn" onClick={() => toggle("editQuestion")} style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: infoPanel === "editQuestion" ? C.iconBg : "transparent", border: "none", borderRadius: 4, cursor: "pointer", padding: 0, flexShrink: 0 }} title="Edit This Question">
           <EditQuestionIcon />
         </button>
+        <CmdSep />
+        <button className="sl-icon-btn" onClick={() => setShowModel(true)} style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", padding: 0, flexShrink: 0 }} title="View Question Model">
+          <FeedbackModelIcon color={C.grey38} />
+        </button>
       </div>
 
       {/* ── Tab bar ── */}
@@ -168,6 +174,17 @@ export function ViewQuestionDialog({ question, onClose, zIndexBase = 200 }: View
         />
       )}
     </div>
+
+    {showModel && (
+      <EntityModelDialog
+        title="Question Model"
+        subtitle="View the question model representation."
+        left={{ label: "Actual Question", content: question.actualQuestion }}
+        right={{ label: "Entity Question Points To", content: question.entityQuestionPointTo }}
+        arrowLabel="points to"
+        onClose={() => setShowModel(false)}
+      />
+    )}
     </>,
     document.body
   );

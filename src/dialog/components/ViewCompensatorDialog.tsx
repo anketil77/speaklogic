@@ -4,7 +4,8 @@ import React, { useState, useCallback } from "react";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
-import { CompensatorIcon, CloseIcon, EditQuestionIcon, QuestionCheckIcon, FlagCommunicationIcon } from "@/dialog/components/Icons";
+import { CompensatorIcon, CloseIcon, EditQuestionIcon, QuestionCheckIcon, FlagCommunicationIcon, FeedbackModelIcon } from "@/dialog/components/Icons";
+import { EntityModelDialog } from "@/dialog/components/EntityModelDialog";
 import type { ProjectCompensator } from "@/types/db";
 
 type CompensatorDraft = Omit<ProjectCompensator, "id" | "analysisId">;
@@ -77,6 +78,7 @@ const readonlyInput: React.CSSProperties = {
 
 export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200 }: ViewCompensatorDialogProps) {
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
+  const [showModel, setShowModel] = useState(false);
 
   const { pos, onHeaderMouseDown } = useDraggable();
 
@@ -154,6 +156,15 @@ export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200 }
         >
           <FlagCommunicationIcon />
         </button>
+        <CmdSep />
+        <button
+          className="sl-icon-btn"
+          onClick={() => setShowModel(true)}
+          style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", padding: 0, flexShrink: 0 }}
+          title="View Compensator Model"
+        >
+          <FeedbackModelIcon color={C.grey38} />
+        </button>
       </div>
 
       {/* ── Tab bar ── */}
@@ -209,6 +220,17 @@ export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200 }
         />
       )}
     </div>
+
+    {showModel && (
+      <EntityModelDialog
+        title="Compensator Model"
+        subtitle="View the compensator model representation."
+        left={{ label: "Actual Error Replaced", content: compensator.actualErrorReplaced }}
+        right={{ label: "Actual Compensator", content: compensator.actualCompensator }}
+        arrowLabel="replaced by"
+        onClose={() => setShowModel(false)}
+      />
+    )}
     </>,
     document.body
   );

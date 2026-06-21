@@ -5,7 +5,8 @@ import { formatDisplayDate } from "@/db/db";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
-import { ProblemIcon, CloseIcon, EditQuestionIcon, QuestionCheckIcon, FlagCommunicationIcon } from "@/dialog/components/Icons";
+import { ProblemIcon, CloseIcon, EditQuestionIcon, QuestionCheckIcon, FlagCommunicationIcon, FeedbackModelIcon } from "@/dialog/components/Icons";
+import { EntityModelDialog } from "@/dialog/components/EntityModelDialog";
 import type { ProjectProblem } from "@/types/db";
 
 type ProblemDraft = Omit<ProjectProblem, "id" | "analysisId">;
@@ -78,6 +79,7 @@ const readonlyInput: React.CSSProperties = {
 
 export function ViewProblemDialog({ problem, onClose, zIndexBase = 200 }: ViewProblemDialogProps) {
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
+  const [showModel, setShowModel] = useState(false);
 
   const { pos, onHeaderMouseDown } = useDraggable();
 
@@ -155,6 +157,15 @@ export function ViewProblemDialog({ problem, onClose, zIndexBase = 200 }: ViewPr
           >
             <FlagCommunicationIcon />
           </button>
+          <CmdSep />
+          <button
+            className="sl-icon-btn"
+            onClick={() => setShowModel(true)}
+            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", padding: 0, flexShrink: 0 }}
+            title="View Problem Model"
+          >
+            <FeedbackModelIcon color={C.grey38} />
+          </button>
         </div>
 
         {/* ── Tab bar ── */}
@@ -212,6 +223,17 @@ export function ViewProblemDialog({ problem, onClose, zIndexBase = 200 }: ViewPr
           />
         )}
       </div>
+
+      {showModel && (
+        <EntityModelDialog
+          title="Problem Model"
+          subtitle="View the problem model representation."
+          left={{ label: "From Actual Error", content: problem.fromActualError }}
+          right={{ label: "Actual Problem", content: problem.actualProblem }}
+          arrowLabel="gives rise to"
+          onClose={() => setShowModel(false)}
+        />
+      )}
     </>,
     document.body
   );

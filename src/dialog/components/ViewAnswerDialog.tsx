@@ -4,7 +4,8 @@ import React, { useState, useCallback } from "react";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
-import { AnswerIcon, CloseIcon, EditQuestionIcon, FlagCommunicationIcon } from "@/dialog/components/Icons";
+import { AnswerIcon, CloseIcon, EditQuestionIcon, FlagCommunicationIcon, FeedbackModelIcon } from "@/dialog/components/Icons";
+import { EntityModelDialog } from "@/dialog/components/EntityModelDialog";
 import type { ProjectAnswer } from "@/types/db";
 
 type AnswerDraft = Omit<ProjectAnswer, "id" | "analysisId" | "questionId">;
@@ -73,6 +74,7 @@ const readonlyInput: React.CSSProperties = {
 
 export function ViewAnswerDialog({ answer, onClose, zIndexBase = 200 }: ViewAnswerDialogProps) {
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
+  const [showModel, setShowModel] = useState(false);
 
   const { pos, onHeaderMouseDown } = useDraggable();
 
@@ -142,6 +144,15 @@ export function ViewAnswerDialog({ answer, onClose, zIndexBase = 200 }: ViewAnsw
           >
             <FlagCommunicationIcon />
           </button>
+          <CmdSep />
+          <button
+            className="sl-icon-btn"
+            onClick={() => setShowModel(true)}
+            style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", padding: 0, flexShrink: 0 }}
+            title="View Answer Model"
+          >
+            <FeedbackModelIcon color={C.grey38} />
+          </button>
         </div>
 
         {/* ── Tab bar ── */}
@@ -188,6 +199,17 @@ export function ViewAnswerDialog({ answer, onClose, zIndexBase = 200 }: ViewAnsw
           />
         )}
       </div>
+
+      {showModel && (
+        <EntityModelDialog
+          title="Answer Model"
+          subtitle="View the answer model representation."
+          left={{ label: "Actual Question", content: answer.actualQuestion }}
+          right={{ label: "Actual Answer", content: answer.actualAnswer }}
+          arrowLabel="answered by"
+          onClose={() => setShowModel(false)}
+        />
+      )}
     </>,
     document.body
   );

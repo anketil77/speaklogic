@@ -5,7 +5,8 @@ import { formatDisplayDate } from "@/db/db";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
-import { ErrorIcon, CloseIcon, QuestionCheckIcon, FlagCommunicationIcon, EditQuestionIcon } from "@/dialog/components/Icons";
+import { ErrorIcon, CloseIcon, QuestionCheckIcon, FlagCommunicationIcon, EditQuestionIcon, FeedbackModelIcon } from "@/dialog/components/Icons";
+import { EntityModelDialog } from "@/dialog/components/EntityModelDialog";
 import type { ProjectError } from "@/types/db";
 
 type ErrorDraft = Omit<ProjectError, "id" | "analysisId">;
@@ -78,6 +79,7 @@ const readonlyInput: React.CSSProperties = {
 
 export function ViewErrorDialog({ error, onClose, zIndexBase = 200 }: ViewErrorDialogProps) {
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
+  const [showModel, setShowModel] = useState(false);
 
   const { pos, onHeaderMouseDown } = useDraggable();
 
@@ -155,6 +157,15 @@ export function ViewErrorDialog({ error, onClose, zIndexBase = 200 }: ViewErrorD
         >
           <FlagCommunicationIcon />
         </button>
+        <CmdSep />
+        <button
+          className="sl-icon-btn"
+          onClick={() => setShowModel(true)}
+          style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", padding: 0, flexShrink: 0 }}
+          title="View Error Model"
+        >
+          <FeedbackModelIcon color={C.grey38} />
+        </button>
       </div>
 
       {/* ── Tab bar ── */}
@@ -210,6 +221,17 @@ export function ViewErrorDialog({ error, onClose, zIndexBase = 200 }: ViewErrorD
         />
       )}
     </div>
+
+    {showModel && (
+      <EntityModelDialog
+        title="Error Model"
+        subtitle="View the error model representation."
+        left={{ label: "Actual Error", content: error.actualError }}
+        right={{ label: "Entity Error Points To", content: error.entityErrorPointTo }}
+        arrowLabel="points to"
+        onClose={() => setShowModel(false)}
+      />
+    )}
     </>,
     document.body
   );

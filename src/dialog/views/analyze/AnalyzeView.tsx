@@ -295,6 +295,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
   const lastAnalysisSelectionRef = useRef<string>("");
   const cmdBarRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabValue>("analysis");
+  const activeTabRef = useRef<HTMLButtonElement>(null);
   const [openDropdown, setOpenDropdown] = useState<DropdownId | null>(null);
   type EntityViewMode = "both" | "analysis-only" | "entity-only";
   const [entityViewMode, setEntityViewMode] = useState<EntityViewMode>("both");
@@ -600,6 +601,12 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
     [panels.questions.length, panels.errors.length, panels.compensators.length, panels.files.length, panels.problems.length, panels.answers.length]
   );
 
+  // Keep the active tab visible in the horizontally-scrolling strip — without this
+  // the last tabs (e.g. Answers) sit off the right edge on narrow dialogs.
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeTab, panels.showAnswersTab]);
+
   const visibleTabs = useMemo(
     () => ALL_TABS.filter((t) => t.value !== "answers" || panels.showAnswersTab),
     [panels.showAnswersTab]
@@ -692,6 +699,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
           return (
             <button
               key={value}
+              ref={isActive ? activeTabRef : undefined}
               className={`${styles.tabBtn}${isActive ? ` ${styles.tabBtnActive}` : ""}`}
               onClick={() => setActiveTab(value)}
             >

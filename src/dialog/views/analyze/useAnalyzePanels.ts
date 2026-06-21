@@ -157,6 +157,8 @@ export function useAnalyzePanels(opts: {
       setQuestions((prev) =>
         prev.map((item, i) => (i === questionIdx ? { ...item, responseStatus: "Answered" } : item))
       );
+      // Reveal the Answers tab automatically once a question is answered.
+      setShowAnswersTab(true);
     },
     [questions, answers.length]
   );
