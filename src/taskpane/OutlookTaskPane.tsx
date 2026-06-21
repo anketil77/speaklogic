@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { initDb, nowDate, formatDisplayDate } from "@/db/db";
 import { dbg } from "@/debug/log";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
-import { getKeywordRules, getKeywordSetting, saveKeywordRules } from "@/db/queries/keywords";
+import { getKeywordRules, getKeywordSetting, saveKeywordRules, getKeywordHistory, deleteKeywordHistoryById, clearKeywordHistory } from "@/db/queries/keywords";
 import { acquireToken, getSignedInAccount, signOut } from "@/graph/auth";
 import { setUpSignalFoldersAndRules } from "@/graph/mailFolders";
 import { getAllPeople, getPeopleEmailMap, getPeopleNames, upsertPersonName, upsertPersonWithEmail } from "@/db/queries/people";
@@ -362,6 +362,7 @@ const GROUPS: GroupDef[] = [
     items: [
       { id: "communicationConfig", label: "Comm Config",        icon: "btn-comm-config-32.png" },
       { id: "keywordSettings",     label: "People & Keywords",  icon: "btn-comm-config-32.png" },
+      { id: "keywordHistory",      label: "Keywords History",   icon: "btn-list-feedback-32.png" },
       { id: "setupFolders",        label: "Set up Folders",     icon: "btn-comm-config-32.png" },
       { id: "requestSLFeedback",   label: "Request SL Feedback",icon: "btn-req-sl-fb-32.png" },
       { id: "help",                label: "Help",               icon: "btn-help-32.png" },
@@ -1307,6 +1308,32 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
+  const handleKeywordHistory = useCallback(() => {
+    if (!dbReady) return;
+    const buildPayload = (): DialogInitPayload => ({
+      selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "",
+      applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction,
+      communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName,
+      peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), keywordHistory: getKeywordHistory(),
+    });
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=keyword-history`,
+      { height: 70, width: 38 },
+      buildPayload,
+      (dialog, action) => {
+        try {
+          if (action.action === "DELETE_KEYWORD_HISTORY") {
+            deleteKeywordHistoryById(action.id);
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          } else if (action.action === "CLEAR_KEYWORD_HISTORY") {
+            clearKeywordHistory();
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          }
+        } catch (err) { setStatus({ msg: `Failed to update history: ${String(err)}`, ok: false }); }
+      }
+    );
+  }, [dbReady, openManagedDialog]);
+
   const handleSetupFolders = useCallback(async () => {
     setStatus({ msg: "Signing in to Microsoft…", ok: true });
     try {
@@ -1375,6 +1402,7 @@ export function OutlookTaskPane() {
       case "listSelectionRelatedPrinciple":   handleListSelectionRelatedPrinciple(); break;
       case "communicationConfig":handleCommunicationConfig(); break;
       case "keywordSettings":    handleKeywordSettings(); break;
+      case "keywordHistory":     handleKeywordHistory(); break;
       case "setupFolders":       void handleSetupFolders(); break;
       case "requestSLFeedback":  handleRequestSLFeedback(); break;
       case "createArticle":      handleCreateArticle(); break;
@@ -1383,7 +1411,7 @@ export function OutlookTaskPane() {
       case "about":              handleSimple("about"); break;
       default: break;
     }
-  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListSelection, handleListIdentifiedPrinciple, handleListInterpretedPrinciple, handleListSelectionRelatedPrinciple, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleKeywordSettings, handleSetupFolders, handleRequestSLFeedback, handleSimple]);
+  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListSelection, handleListIdentifiedPrinciple, handleListInterpretedPrinciple, handleListSelectionRelatedPrinciple, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleKeywordSettings, handleKeywordHistory, handleSetupFolders, handleRequestSLFeedback, handleSimple]);
 
   // ── render ────────────────────────────────────────────────────────────────
 
