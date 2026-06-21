@@ -1,9 +1,12 @@
 // src/dialog/components/PrincipleModelDialog.tsx
 // Web-only visual for the related principle (SelectionWithPrinciple).
-// No C# equivalent — spec comes from the client diagram:
-//   Selection box (top-left) + Principle box (bottom-left) → circle join node → Relationship box (right)
-// Each box has a clickable text icon that pops up its content (mirrors the
-// View Related Principle tabs: About Selection / About Principle / About Relationship).
+// No C# equivalent — spec comes from the client diagram (point 21):
+//   Model 1 (relationship): Selection box + Principle box → circle join node → Relationship box.
+//   Model 2 (principle): blue-header Principle box + a Principle Communication box below it
+//     ("click to view" → pops up Communication Principle + Comm Principle Description),
+//     showing that the communication principle is attached to the actual principle.
+// Two-tab layout mirrors FeedbackModelDialog. Title is "Relationship Model".
+// Each box has a clickable text icon that pops up its content.
 // Shares primitives with FeedbackModelDialog via modelShared.tsx.
 
 import React, { useState } from "react";
@@ -25,6 +28,8 @@ interface Props {
   principleName: string;
   setDerivedFrom: string;
   principleDescription: string;
+  communicationPrinciple: string;
+  commPrincipleDescription: string;
   actualRelationship: string;
   relationshipDescription: string;
   onClose: () => void;
@@ -50,10 +55,20 @@ function deriveModel(p: Props) {
     relRows.push(`<b>Relationship Description:</b><br/>${p.relationshipDescription.trim()}`);
   const relationshipHtml = relRows.join("<br/><br/>");
 
+  // Model 2 — the communication principle attached to the actual principle
+  // (About Communication Principle tab content).
+  const commRows: string[] = [];
+  if (p.communicationPrinciple?.trim())
+    commRows.push(`<b>Communication Principle:</b> ${p.communicationPrinciple.trim()}`);
+  if (p.commPrincipleDescription?.trim())
+    commRows.push(`<b>Comm Principle Description:</b><br/>${p.commPrincipleDescription.trim()}`);
+  const commPrincipleHtml = commRows.join("<br/><br/>");
+
   return {
     selectionHtml,
     principleHtml,
     relationshipHtml,
+    commPrincipleHtml,
     principlePreview: p.principleName?.trim() || p.actualPrinciple?.trim() || "",
     relationshipPreview: p.actualRelationship?.trim() || "",
   };
@@ -124,10 +139,124 @@ function ModelBox({
   );
 }
 
+// ─── Model 2 — Principle box with the attached Principle Communication box ─────────
+// Client (point 21): "model 2 will show the principle box like this … you include a
+// principle communication box. You can add below it like (click to view)."
+function Model2({
+  principleHtml,
+  commPrincipleHtml,
+  onOpen,
+}: {
+  principleHtml: string;
+  commPrincipleHtml: string;
+  onOpen: (title: string, html: string) => void;
+}) {
+  const BOX2_W = 300;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 0,
+        padding: "8px 0 4px",
+      }}
+    >
+      {/* Principle box (blue header) */}
+      <ModelBoxStatic
+        w={BOX2_W}
+        label="Principle"
+        blueHeader
+        onClick={() => onOpen("Principle", principleHtml)}
+      />
+
+      {/* Connector — the communication principle is attached to the actual principle */}
+      <div style={{ width: 2, height: 26, background: BORDER_COLOR }} />
+
+      {/* Principle Communication box (click to view) */}
+      <ModelBoxStatic
+        w={BOX2_W}
+        label="Principle Communication"
+        onClick={() => onOpen("Communication Principle", commPrincipleHtml)}
+      />
+    </div>
+  );
+}
+
+// Flow-positioned variant of ModelBox (no absolute coords) for Model 2's vertical stack.
+function ModelBoxStatic({
+  w,
+  label,
+  blueHeader,
+  onClick,
+}: {
+  w: number;
+  label: string;
+  blueHeader?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={`Click to view the ${label.toLowerCase()}`}
+      style={{
+        position: "relative",
+        width: w,
+        minHeight: 92,
+        border: `2px solid ${BORDER_COLOR}`,
+        borderRadius: 12,
+        background: colors.white,
+        cursor: "pointer",
+        padding: 0,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "inherit",
+      }}
+    >
+      {blueHeader ? (
+        <>
+          <div style={{
+            height: 34, background: colors.azure42, color: colors.white,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "0 12px", fontSize: "12px", fontWeight: 700, flexShrink: 0,
+          }}>
+            <span>{label}</span>
+            <ChatBubbleIcon color={colors.white} size={15} />
+          </div>
+          <div style={{
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "11px", color: "#7a807c", fontWeight: 600, padding: "16px 0",
+          }}>
+            Click to view
+          </div>
+        </>
+      ) : (
+        <div style={{
+          flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+          gap: 8, fontSize: "12px", color: "#4b524e", fontWeight: 600, padding: "16px 12px",
+        }}>
+          <span>{label}</span>
+          <ChatBubbleIcon color="#7a807c" size={16} />
+          <span style={{ fontSize: "11px", color: "#7a807c", fontWeight: 600 }}>(click to view)</span>
+        </div>
+      )}
+    </button>
+  );
+}
+
+type ModelTab = "model1" | "model2";
+
 export function PrincipleModelDialog(props: Props) {
   const { onClose } = props;
   const { pos, onHeaderMouseDown } = useDraggable();
   const [popup, setPopup] = useState<{ title: string; htmlContent?: string; plainText?: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<ModelTab>("model1");
+
+  const tabs: { value: ModelTab; label: string }[] = [
+    { value: "model1", label: "Model 1" },
+    { value: "model2", label: "Model 2" },
+  ];
 
   const m = deriveModel(props);
 
@@ -166,7 +295,7 @@ export function PrincipleModelDialog(props: Props) {
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: "15.6px", fontWeight: 700, color: colors.grey11, letterSpacing: "-0.1px", lineHeight: "21px" }}>
-              Principle Model
+              Relationship Model
             </div>
             <div style={{ fontSize: "11.1px", color: colors.grey38, lineHeight: "17px", marginTop: 2 }}>
               View the selection-principle relationship model.
@@ -182,8 +311,35 @@ export function PrincipleModelDialog(props: Props) {
           </button>
         </div>
 
+        {/* Tab bar */}
+        <div style={{
+          height: 36, background: colors.white, display: "flex", alignItems: "flex-end",
+          padding: "0 20px", borderBottom: `1px solid ${colors.grey88}`, flexShrink: 0,
+        }}>
+          {tabs.map(({ value, label }) => {
+            const isActive = activeTab === value;
+            return (
+              <button
+                key={value}
+                onClick={() => { setActiveTab(value); setPopup(null); }}
+                style={{
+                  height: 36, padding: "0 14px", border: "none", background: "none",
+                  cursor: "pointer", fontSize: "12px",
+                  fontWeight: isActive ? 700 : 400,
+                  color: isActive ? colors.grey11 : colors.grey38,
+                  borderBottom: isActive ? `2px solid ${colors.azure42}` : "2px solid transparent",
+                  fontFamily: "inherit", whiteSpace: "nowrap",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Diagram */}
-        <div style={{ flex: 1, overflow: "auto", padding: "24px 30px" }}>
+        <div style={{ flex: 1, overflow: "auto", padding: "24px 30px", position: "relative" }}>
+          {activeTab === "model1" && (
           <div style={{ position: "relative", width: M_W, height: M_H, flexShrink: 0, userSelect: "none", margin: "0 auto" }}>
             <svg
               style={{ position: "absolute", inset: 0, overflow: "visible", pointerEvents: "none" }}
@@ -230,16 +386,21 @@ export function PrincipleModelDialog(props: Props) {
             <ModelBox x={TL_X} y={TL_Y} w={BOX_W} h={BOX_H} label="Selection" onClick={() => open("Selection", m.selectionHtml)} />
             <ModelBox x={BL_X} y={BL_Y} w={BOX_W} h={BOX_H} label="Principle" blueHeader onClick={() => open("Principle", m.principleHtml)} />
             <ModelBox x={RB_X} y={RB_Y} w={RB_W} h={RB_H} label="Relationship" onClick={() => open("Relationship", m.relationshipHtml)} />
-
-            {popup && (
-              <InlinePopup
-                title={popup.title}
-                htmlContent={popup.htmlContent}
-                plainText={popup.plainText}
-                onClose={() => setPopup(null)}
-              />
-            )}
           </div>
+          )}
+
+          {activeTab === "model2" && (
+            <Model2 principleHtml={m.principleHtml} commPrincipleHtml={m.commPrincipleHtml} onOpen={open} />
+          )}
+
+          {popup && (
+            <InlinePopup
+              title={popup.title}
+              htmlContent={popup.htmlContent}
+              plainText={popup.plainText}
+              onClose={() => setPopup(null)}
+            />
+          )}
         </div>
       </div>
     </>,

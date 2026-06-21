@@ -249,6 +249,8 @@ export function ViewPrincipleDetailDialog({
           principleName={principleName}
           setDerivedFrom={setDerivedFrom}
           principleDescription={principleDescription}
+          communicationPrinciple={communicationPrinciple}
+          commPrincipleDescription={commPrincipleDescription}
           actualRelationship={actualRelationship || ""}
           relationshipDescription={relationshipDescription || ""}
           onClose={() => setShowModel(false)}
