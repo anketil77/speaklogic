@@ -2,13 +2,14 @@
 
 /* global Office */
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { ErrorIcon } from "@/dialog/components/Icons";
 import { FormRow, CmdSep } from "@/dialog/components/FormRow";
 import { inputStyle, readonlyInputStyle } from "@/dialog/styles/formStyles";
+import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import type { ProjectError } from "@/types/db";
 
@@ -30,13 +31,25 @@ const LABEL_W = 168;
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ErrorIdentificationView() {
+  const { initData } = useDialogComm();
   const editorRef = useRef<HTMLDivElement>(null);
   const [toolbarCloseSignal, setToolbarCloseSignal] = useState(0);
 
+  // Inline flow (Point 9): the selected document text is the actual error, and
+  // the entity name ("File: … Page: …") is the source communication/application.
   const [actualError, setActualError] = useState("");
   const [fromActualCommunication, setFromActualCommunication] = useState("");
   const [entityErrorPointTo, setEntityErrorPointTo] = useState("");
   const [errorDescription, setErrorDescription] = useState("");
+
+  // INIT arrives async after first render — prefill once when it lands.
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (prefilledRef.current || !initData) return;
+    prefilledRef.current = true;
+    if (initData.selection) setActualError(initData.selection);
+    if (initData.applicationName) setFromActualCommunication(initData.applicationName);
+  }, [initData]);
 
   const errorDate = nowDate();
   const errorTime = nowTime();

@@ -2,13 +2,14 @@
 
 /* global Office */
 
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import { FooterBar, FooterHelperText, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
 import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
 import { RichEditor } from "@/dialog/components/RichEditor";
 import { CompensatorIcon } from "@/dialog/components/Icons";
 import { FormRow, CmdSep } from "@/dialog/components/FormRow";
 import { inputStyle, readonlyInputStyle } from "@/dialog/styles/formStyles";
+import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { nowDate, nowTime, formatDisplayDate } from "@/db/db";
 import type { ProjectCompensator } from "@/types/db";
 
@@ -79,7 +80,8 @@ interface CompensatorViewProps {
   existingErrors?: string[];
 }
 
-export default function CompensatorView({ existingErrors = [] }: CompensatorViewProps) {
+export default function CompensatorView({ existingErrors }: CompensatorViewProps) {
+  const { initData } = useDialogComm();
   const editorRef = useRef<HTMLDivElement>(null);
   const [toolbarCloseSignal, setToolbarCloseSignal] = useState(0);
 
@@ -87,6 +89,18 @@ export default function CompensatorView({ existingErrors = [] }: CompensatorView
   const [actualErrorReplaced, setActualErrorReplaced] = useState("");
   const [inActualCommunication, setInActualCommunication] = useState("");
   const [compensatorDescription, setCompensatorDescription] = useState("");
+
+  // Inline flow (Point 9): the green-selected text is the actual compensator;
+  // the error list comes from inlineErrors so "Actual Error To Replace" is a
+  // dropdown of errors already identified in the document.
+  const errorOptions = existingErrors ?? initData?.inlineErrors ?? [];
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (prefilledRef.current || !initData) return;
+    prefilledRef.current = true;
+    if (initData.selection) setActualCompensator(initData.selection);
+    if (initData.applicationName) setInActualCommunication(initData.applicationName);
+  }, [initData]);
 
   const compensatorDate = nowDate();
   const compensatorTime = nowTime();
@@ -312,10 +326,10 @@ export default function CompensatorView({ existingErrors = [] }: CompensatorView
           </FormRow>
 
           <FormRow label="Actual Error To Replace">
-            {existingErrors.length > 0 ? (
+            {errorOptions.length > 0 ? (
               <StyledSelect value={actualErrorReplaced} onChange={setActualErrorReplaced}>
                 <option value="">Select actual error</option>
-                {existingErrors.map((err, i) => (
+                {errorOptions.map((err, i) => (
                   <option key={i} value={err}>
                     {err}
                   </option>

@@ -118,6 +118,52 @@ export function saveFullAnalysis(payload: SaveAnalysisPayload): number {
   return analysisId;
 }
 
+// ─── Inline Identify (Point 9) ──────────────────────────────────────────────
+// Returns every error across all analyses (newest first). Used to populate the
+// "Actual Error To Replace" dropdown in the inline Compensator dialog.
+export function getAllErrors(): ProjectError[] {
+  const db = getDb();
+  const result = db.exec("SELECT * FROM ProjectError ORDER BY id DESC");
+  if (!result.length) return [];
+  return result[0].values.map((row) => {
+    const cols = result[0].columns;
+    const obj: Record<string, unknown> = {};
+    cols.forEach((col, i) => { obj[col] = row[i]; });
+    return obj as unknown as ProjectError;
+  });
+}
+
+// Finds the analysis a given error text belongs to (most recent match), so an
+// inline compensator can be attached to the same on-the-fly analysis.
+export function findAnalysisIdByErrorText(actualError: string): number | null {
+  const db = getDb();
+  const result = db.exec(
+    "SELECT analysisId FROM ProjectError WHERE actualError = ? AND analysisId IS NOT NULL ORDER BY id DESC LIMIT 1",
+    [actualError]
+  );
+  if (!result.length || !result[0].values.length) return null;
+  return result[0].values[0][0] as number;
+}
+
+// Inserts a single compensator into an existing analysis and bumps its count.
+export function addCompensatorToAnalysis(
+  analysisId: number,
+  c: Omit<ProjectCompensator, "id" | "analysisId">
+): void {
+  const db = getDb();
+  db.run(
+    `INSERT INTO ProjectCompensator
+      (compensatorNumber, actualCompensator, actualErrorReplaced, inActualCommunication, compensatorDescription, compensatorDate, compensatorTime, analysisId)
+     VALUES (?,?,?,?,?,?,?,?)`,
+    [c.compensatorNumber, c.actualCompensator, c.actualErrorReplaced, c.inActualCommunication, c.compensatorDescription, c.compensatorDate || nowDate(), c.compensatorTime || nowTime(), analysisId]
+  );
+  db.run(
+    "UPDATE ProjectAnalysis SET compensatorCount = compensatorCount + 1 WHERE id = ?",
+    [analysisId]
+  );
+  persistDb();
+}
+
 export function getAllAnalyses(): ProjectAnalysis[] {
   const db = getDb();
   const result = db.exec("SELECT * FROM ProjectAnalysis ORDER BY id DESC");

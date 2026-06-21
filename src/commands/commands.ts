@@ -6,7 +6,7 @@ const DIALOG_BASE = window.location.origin;
 
 
 import { initDb, nowDate, nowTime, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
-import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback } from "@/db/queries/analysis";
+import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback, getAllErrors, findAnalysisIdByErrorText, addCompensatorToAnalysis } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
@@ -40,6 +40,8 @@ import type {
   FlagEntityForAnalysis,
   HostMessage,
   HostSource,
+  ProjectError,
+  ProjectCompensator,
   SaveAnalysisPayload,
   SaveArticlePayload,
   SaveCommunicationConfigPayload,
@@ -122,6 +124,12 @@ function registerHandlers(): void {
   );
   Office.actions.associate("applyParagraph", (event) =>
     openApplyDialogFromRibbon("paragraph", event)
+  );
+  Office.actions.associate("identifyError", (event) =>
+    openIdentifyErrorDialog("selection", event)
+  );
+  Office.actions.associate("identifyCompensator", (event) =>
+    openIdentifyCompensatorDialog("selection", event)
   );
   Office.actions.associate("provideFeedbackSelection", (event) =>
     openProvideFeedbackFromRibbon("selection", event)
@@ -995,6 +1003,192 @@ function openAnalyzeDialogWithPayload(
         const code = (evt as { error?: number }).error;
         dbg("HOST", "DialogEventReceived (dialog closed by user or error)", { code });
         complete();
+      });
+    }
+  );
+}
+
+// ─── Inline Identify Error / Compensator (Point 9) ──────────────────────────
+// User selects text in the document, picks "Identify Selection as Error" (or
+// Compensator) from the ribbon/context menu. We open the standalone dialog with
+// the selected text prefilled, build an analysis on the fly behind the scenes,
+// and highlight the selection (red = error, green = compensator) when they save.
+
+// Highlights the current Word selection. Runs only AFTER the dialog closes so it
+// never takes the document lock before a dialog is opened (Word-web freeze rule).
+// Word-only; other hosts no-op. Best-effort — failure is logged, never thrown.
+function colorWordSelection(kind: "error" | "compensator"): Promise<void> {
+  if (Office.context.host !== Office.HostType.Word) return Promise.resolve();
+  const highlight = kind === "error" ? "#FF0000" : "#00FF00"; // red / bright green
+  return Word.run(async (ctx) => {
+    const range = ctx.document.getSelection();
+    range.font.highlightColor = highlight;
+    await ctx.sync();
+  }).catch((err) => { dbg("HOST", "colorWordSelection failed", String(err)); });
+}
+
+async function openIdentifyErrorDialog(
+  mode: SelectionMode,
+  event: Office.AddinCommands.Event
+): Promise<void> {
+  await openInlineIdentifyDialog("error", mode, event);
+}
+
+async function openIdentifyCompensatorDialog(
+  mode: SelectionMode,
+  event: Office.AddinCommands.Event
+): Promise<void> {
+  await openInlineIdentifyDialog("compensator", mode, event);
+}
+
+async function openInlineIdentifyDialog(
+  kind: "error" | "compensator",
+  mode: SelectionMode,
+  event: Office.AddinCommands.Event,
+  attempt = 0
+): Promise<void> {
+  dbg("HOST", "openInlineIdentifyDialog start", { kind, mode });
+  if (attempt === 0) {
+    try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
+  }
+  const meta = await fetchSelectionOrNotify(
+    mode,
+    "Text Selection Message",
+    "In order to identify an error or compensator, that entity must exist. " +
+    "Please select the actual text in the document that you want to identify.",
+    event
+  );
+  if (!meta) return;
+  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber } = meta;
+
+  const { personName, personEmail } = getUserIdentity();
+  const commConfig = getCommunicationConfig();
+  const appName = buildEntityName(documentTitle, documentName, pageNumber);
+  const source = getSource();
+  const selectionType: "Selection" | "Paragraph" = mode === "selection" ? "Selection" : "Paragraph";
+
+  const initPayload: DialogInitPayload = {
+    selection,
+    selectionHtml,
+    mode,
+    source,
+    personName,
+    personEmail,
+    applicationName: appName,
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: buildPeopleList(commConfig?.personName),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+    // Compensator dialog: dropdown of errors already identified in the document.
+    inlineErrors: kind === "compensator"
+      ? Array.from(new Set(getAllErrors().map((e) => e.actualError).filter(Boolean)))
+      : undefined,
+  };
+
+  // Builds the on-the-fly analysis that carries the identified error/compensator.
+  const buildAnalysis = (subject: string, body: string): Omit<ProjectAnalysis, "id"> => ({
+    entityUnderAnalysis: selection,
+    fromPerson: commConfig?.personName ?? "",
+    analysisSubject: subject,
+    actualAnalysis: body || selection,
+    whatToDoWithAnalysis: "RetainAnalysisAsNeed",
+    source,
+    applicationName: appName,
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    analysisDate: nowDate(),
+    analysisTime: nowTime(),
+    personName,
+    personEmail,
+    selectionType,
+    errorCount: 0,
+    questionCount: 0,
+    compensatorCount: 0,
+    answerCount: 0,
+    problemCount: 0,
+    correctedItemCount: 0,
+  });
+
+  const view = kind === "error" ? "error-identification" : "compensator";
+  const params = new URLSearchParams({ view, mode });
+  _trackDialogAsync(
+    `${DIALOG_BASE}/dialog.html?${params.toString()}`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openInlineIdentifyDialog(kind, mode, event, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      const complete = makeEventCompleter(event);
+
+      // Saves, highlights the selection, then closes the dialog.
+      const finish = (saveFn: () => void) => {
+        try {
+          saveFn();
+        } catch (err) {
+          dbg("HOST", "inline identify save THREW", String(err));
+          replyError(dialog, `Failed to save: ${String(err)}`);
+          return;
+        }
+        dialog.close();
+        colorWordSelection(kind).finally(() => complete());
+      };
+
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        dbg("HOST", "DialogMessageReceived (inline identify)", { action: m.action });
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "ADD_ERROR":
+          case "SAVE_ERROR_DRAFT": {
+            const errPayload = m.payload as Omit<ProjectError, "id" | "analysisId">;
+            finish(() => {
+              saveFullAnalysis({
+                analysis: buildAnalysis("Identified Error", errPayload.errorDescription || errPayload.actualError),
+                errors: [errPayload],
+                questions: [], answers: [], compensators: [], problems: [], files: [],
+              });
+            });
+            break;
+          }
+          case "ADD_COMPENSATOR":
+          case "SAVE_COMPENSATOR_DRAFT": {
+            const compPayload = m.payload as Omit<ProjectCompensator, "id" | "analysisId">;
+            finish(() => {
+              const targetId = compPayload.actualErrorReplaced
+                ? findAnalysisIdByErrorText(compPayload.actualErrorReplaced)
+                : null;
+              if (targetId != null) {
+                // Attach to the same analysis the chosen error came from.
+                addCompensatorToAnalysis(targetId, compPayload);
+              } else {
+                // No matching error — create a fresh analysis carrying the compensator.
+                saveFullAnalysis({
+                  analysis: buildAnalysis("Identified Compensator", compPayload.compensatorDescription || compPayload.actualCompensator),
+                  errors: [], questions: [], answers: [], compensators: [compPayload], problems: [], files: [],
+                });
+              }
+            });
+            break;
+          }
+          case "CLOSE":
+            dialog.close();
+            complete();
+            break;
+          default:
+            dbg("HOST", "inline identify: unhandled action", { action: m.action });
+            break;
+        }
       });
     }
   );

@@ -726,6 +726,8 @@ export interface DialogInitPayload {
   keywordSendMode?: KeywordSendMode;
   /** Logged flagged-send events (KeywordHistoryView). */
   keywordHistory?: KeywordHistory[];
+  /** Existing error texts for the inline Compensator dialog dropdown (Point 9). */
+  inlineErrors?: string[];
 }
 
 // User-defined "information" item shown in the wizard's "Select Information"
@@ -773,6 +775,10 @@ export type DialogAction =
   | { action: "READY" }
   | { action: "CLOSE" }
   | { action: "SAVE_ANALYSIS"; payload: SaveAnalysisPayload }
+  | { action: "ADD_ERROR"; payload: Omit<ProjectError, "id" | "analysisId"> }
+  | { action: "SAVE_ERROR_DRAFT"; payload: Omit<ProjectError, "id" | "analysisId"> }
+  | { action: "ADD_COMPENSATOR"; payload: Omit<ProjectCompensator, "id" | "analysisId"> }
+  | { action: "SAVE_COMPENSATOR_DRAFT"; payload: Omit<ProjectCompensator, "id" | "analysisId"> }
   | { action: "SAVE_FEEDBACK"; payload: SaveFeedbackPayload }
   | { action: "SAVE_REQUEST_FEEDBACK"; payload: SaveRequestFeedbackPayload }
   | { action: "SAVE_REQUEST_SL_FEEDBACK"; payload: SaveRequestSLFeedbackPayload }

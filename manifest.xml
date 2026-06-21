@@ -59,6 +59,18 @@
                   <Icon><bt:Image size="16" resid="analyzeParagraph.Icon16"/><bt:Image size="32" resid="analyzeParagraph.Icon32"/><bt:Image size="80" resid="analyzeParagraph.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>analyzeParagraph</FunctionName></Action>
                 </Control>
+                <Control xsi:type="Button" id="identifyError">
+                  <Label resid="identifyError.Label"/>
+                  <Supertip><Title resid="identifyError.Label"/><Description resid="identifyError.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="analyzeSelection.Icon16"/><bt:Image size="32" resid="analyzeSelection.Icon32"/><bt:Image size="80" resid="analyzeSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>identifyError</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="identifyCompensator">
+                  <Label resid="identifyCompensator.Label"/>
+                  <Supertip><Title resid="identifyCompensator.Label"/><Description resid="identifyCompensator.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="analyzeSelection.Icon16"/><bt:Image size="32" resid="analyzeSelection.Icon32"/><bt:Image size="80" resid="analyzeSelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>identifyCompensator</FunctionName></Action>
+                </Control>
               </Group>
 
               <Group id="grpFlag">
@@ -260,6 +272,18 @@
                     <Supertip><Title resid="ctx_applyParagraph.Label"/><Description resid="applyParagraph.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_identifyError">
+                    <Label resid="identifyError.Label"/>
+                    <Supertip><Title resid="identifyError.Label"/><Description resid="identifyError.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="analyzeSelection.Icon16"/><bt:Image size="32" resid="analyzeSelection.Icon32"/><bt:Image size="80" resid="analyzeSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>identifyError</FunctionName></Action>
+                  </Item>
+                  <Item id="ctx_identifyCompensator">
+                    <Label resid="identifyCompensator.Label"/>
+                    <Supertip><Title resid="identifyCompensator.Label"/><Description resid="identifyCompensator.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="analyzeSelection.Icon16"/><bt:Image size="32" resid="analyzeSelection.Icon32"/><bt:Image size="80" resid="analyzeSelection.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>identifyCompensator</FunctionName></Action>
                   </Item>
                 </Items>
               </Control>
@@ -636,6 +660,8 @@
         <bt:String id="grpAbout.Label" DefaultValue="About"/>
         <bt:String id="analyzeSelection.Label" DefaultValue="Analyze Selection"/>
         <bt:String id="analyzeParagraph.Label" DefaultValue="Analyze Paragraph"/>
+        <bt:String id="identifyError.Label" DefaultValue="Identify Selection as Error"/>
+        <bt:String id="identifyCompensator.Label" DefaultValue="Identify Selection as Compensator"/>
         <bt:String id="flagSelection.Label" DefaultValue="Flag Selection"/>
         <bt:String id="flagParagraph.Label" DefaultValue="Flag Paragraph"/>
         <bt:String id="selectionConfig.Label" DefaultValue="Selection Config"/>
@@ -668,6 +694,8 @@
         <bt:String id="SpeakLogicMenu.Tooltip" DefaultValue="Speak Logic analysis and feedback tools"/>
         <bt:String id="analyzeSelection.Tooltip" DefaultValue="Analyze the selected text"/>
         <bt:String id="analyzeParagraph.Tooltip" DefaultValue="Analyze the current paragraph"/>
+        <bt:String id="identifyError.Tooltip" DefaultValue="Mark the selected text as an error and highlight it red"/>
+        <bt:String id="identifyCompensator.Tooltip" DefaultValue="Mark the selected text as a compensator and highlight it green"/>
         <bt:String id="flagSelection.Tooltip" DefaultValue="Flag selected text for later analysis"/>
         <bt:String id="flagParagraph.Tooltip" DefaultValue="Flag current paragraph for later analysis"/>
         <bt:String id="selectionConfig.Tooltip" DefaultValue="Configure selection behavior"/>
