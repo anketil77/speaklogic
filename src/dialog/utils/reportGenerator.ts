@@ -248,7 +248,7 @@ export function openAnalysisReport(a: ProjectAnalysis): void {
 
 export function openSelectionHistoryReport(h: FlaggedEntityHistory): void {
   const rows = [
-    fieldRow("Entity Name", esc(h.entityName)),
+    fieldRow("Entity Name", esc(stripHtml(h.entityName))),
     fieldRow("Selection Type", esc(h.source)),
     blockField("Actual Selection", esc(stripHtml(h.actualSelection))),
   ].join("");

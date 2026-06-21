@@ -69,8 +69,23 @@ const MSG_PROVIDE =
   "will need to view the actual selection, then choose provide selection as feedback from the " +
   "view selection dialog.";
 
+// Legacy audit rows stored the raw Word-Online selection HTML (e.g.
+// `<div class="OutlineGroup" …>`) in entityName before the write-side plainText
+// guard existed. Strip tags at display time so those old records read cleanly too.
+function stripHtmlText(v: string | undefined | null): string {
+  if (!v) return "";
+  return v
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 const COLUMNS: PanelTableCol<FlaggedEntityHistory>[] = [
-  { header: "Entity Name",      width: "25%", render: (r) => r.entityName || "—",                      truncate: true },
+  { header: "Entity Name",      width: "25%", render: (r) => stripHtmlText(r.entityName) || "—",         truncate: true },
   { header: "Selection Type",   width: "20%", render: (r) => SOURCE_LABEL[r.source] ?? r.source ?? "—", truncate: true },
   { header: "Date Flagged",     width: "18%", render: (r) => formatDisplayDate(r.flaggedDate) || "—",                      truncate: true },
   { header: "Time Flagged",     width: "17%", render: (r) => r.flaggedTime || "—",                      truncate: true },
