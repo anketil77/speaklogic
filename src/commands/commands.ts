@@ -5,14 +5,14 @@
 const DIALOG_BASE = window.location.origin;
 
 
-import { initDb, nowDate, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
+import { initDb, nowDate, nowTime, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
 import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail, getAllPeople, updatePersonById, deletePersonById, addPersonContact } from "@/db/queries/people";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
-import { getKeywordRules, getKeywordSetting, saveKeywordRules, findBannedWords } from "@/db/queries/keywords";
+import { getKeywordRules, getKeywordSetting, saveKeywordRules, findBannedWords, addKeywordHistory, getKeywordHistory, deleteKeywordHistoryById, clearKeywordHistory } from "@/db/queries/keywords";
 import { saveArticle, updateArticle, publishArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById } from "@/db/queries/article";
 import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
 import { saveProblemSolution } from "@/db/queries/problem";
@@ -173,6 +173,7 @@ function registerHandlers(): void {
   Office.actions.associate("about", (event) => openAboutDialog(event));
   Office.actions.associate("communicationConfig", (event) => openCommunicationConfigDialog(event));
   Office.actions.associate("keywordSettings", (event) => openKeywordSettingsDialog(event));
+  Office.actions.associate("keywordHistory", (event) => openKeywordHistoryDialog(event));
   // Outlook Smart Alerts: runs when the user clicks Send (see manifest LaunchEvent).
   Office.actions.associate("onMessageSendHandler", onMessageSendHandler);
   Office.actions.associate("createArticle", (event) =>
@@ -3522,6 +3523,76 @@ function openKeywordSettingsDialog(event: Office.AddinCommands.Event, attempt = 
   });
 }
 
+function openKeywordHistoryDialog(event: Office.AddinCommands.Event, attempt = 0): void {
+  ensureDb().then(() => {
+    const buildPayload = (): DialogInitPayload => ({
+      selection: "",
+      mode: "selection",
+      source: getSource(),
+      personName: "",
+      personEmail: "",
+      applicationName: "",
+      communicationFunction: "",
+      communicationSignal: "",
+      projectName: "",
+      peopleList: getPeopleNames(),
+      peopleEmailMap: getPeopleEmailMap(),
+      keywordHistory: getKeywordHistory(),
+    });
+
+    const TARGET_H_PX = 560;
+    const TARGET_W_PX = 540;
+    const screenH = window.screen?.availHeight || 900;
+    const screenW = window.screen?.availWidth || 1440;
+    const h = Math.min(85, Math.max(40, Math.round((TARGET_H_PX / (screenH * 0.93)) * 100) + 4));
+    const w = Math.min(85, Math.max(28, Math.round((TARGET_W_PX / (screenW * 0.95)) * 100)));
+
+    _trackDialogAsync(
+      `${DIALOG_BASE}/dialog.html?view=keyword-history`,
+      { height: h, width: w, displayInIframe: true },
+      (result) => {
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+            setTimeout(() => openKeywordHistoryDialog(event, attempt + 1), 300);
+            return;
+          }
+          handleDialogOpenError(result.error, event);
+          return;
+        }
+        const dialog = result.value;
+        const complete = makeEventCompleter(event);
+        const sendInit = () =>
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+        dialog.addEventHandler(Office.EventType.DialogEventReceived, () => complete());
+        dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+          const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+          switch (m.action) {
+            case "READY":
+              sendInit();
+              break;
+            case "DELETE_KEYWORD_HISTORY":
+              try { deleteKeywordHistoryById(m.id); sendInit(); }
+              catch (err) { replyError(dialog, `Failed to delete history: ${String(err)}`); }
+              break;
+            case "CLEAR_KEYWORD_HISTORY":
+              try { clearKeywordHistory(); sendInit(); }
+              catch (err) { replyError(dialog, `Failed to clear history: ${String(err)}`); }
+              break;
+            case "CLOSE":
+              try { dialog.close(); } catch { /* already closed */ }
+              complete();
+              break;
+            default:
+              break;
+          }
+        });
+      }
+    );
+  }).catch((err: unknown) => {
+    showNoSelectionMessage("Database Error", String(err), event);
+  });
+}
+
 // ─── Outlook Smart Alerts: block/warn on banned words before send ─────────────
 type SmartAlertsEvent = Office.AddinCommands.Event & {
   completed: (options?: { allowEvent?: boolean; errorMessage?: string; sendModeOverride?: string }) => void;
@@ -3591,6 +3662,25 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
 
     const mode = getKeywordSetting().sendMode;
     const wordList = hits.join(", ");
+
+    // Log this flagged-send event (Keywords / Bad Words History). Non-critical.
+    try {
+      const recipLabel = recipients
+        .map((r) => r.name || r.email || "")
+        .filter(Boolean)
+        .join(", ");
+      addKeywordHistory({
+        sentDate: nowDate(),
+        sentTime: nowTime(),
+        recipients: recipLabel,
+        words: wordList,
+        action: mode,
+        subject,
+      });
+    } catch {
+      /* never block send on audit failure */
+    }
+
     if (mode === "stop") {
       // Manifest SendMode is SoftBlock → no "Send Anyway"; user must remove the words.
       ev.completed({

@@ -24,6 +24,7 @@ import AnswerAnalysisQuestionView from "@/dialog/views/AnswerAnalysisQuestionVie
 import AttachFileView from "@/dialog/views/AttachFileView";
 import CommunicationConfigView from "@/dialog/views/CommunicationConfigView";
 import KeywordSettingsView from "@/dialog/views/KeywordSettingsView";
+import KeywordHistoryView from "@/dialog/views/KeywordHistoryView";
 import FlagView from "@/dialog/views/FlagView";
 import SelectionConfigView from "@/dialog/views/SelectionConfigView";
 import RequestFeedbackView from "@/dialog/views/feedback/RequestFeedbackView";
@@ -214,6 +215,8 @@ function DialogApp() {
         return <CommunicationConfigView />;
       case "keyword-settings":
         return <KeywordSettingsView />;
+      case "keyword-history":
+        return <KeywordHistoryView />;
       case "flag":
         return <FlagView />;
       case "selection-config":

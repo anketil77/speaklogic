@@ -649,6 +649,17 @@ export interface SaveKeywordRulesPayload {
   sendMode: KeywordSendMode;
 }
 
+/** One logged flagged-send event (Keywords / Bad Words History). */
+export interface KeywordHistory {
+  id?: number;
+  sentDate: string;   // ISO YYYY-MM-DD (display via formatDisplayDate)
+  sentTime: string;   // HH:MM:SS
+  recipients: string; // comma-joined recipient list (display only)
+  words: string;      // comma-joined flagged words
+  action: KeywordSendMode; // "warn" | "stop"
+  subject: string;
+}
+
 export type SelectionMode = "selection" | "paragraph";
 export type HostSource = "Word Document" | "Outlook Mail" | "PowerPoint Document";
 
@@ -713,6 +724,8 @@ export interface DialogInitPayload {
   /** Keyword guard rules + send mode (KeywordSettingsView). */
   keywordRules?: KeywordRule[];
   keywordSendMode?: KeywordSendMode;
+  /** Logged flagged-send events (KeywordHistoryView). */
+  keywordHistory?: KeywordHistory[];
 }
 
 // User-defined "information" item shown in the wizard's "Select Information"
@@ -765,6 +778,8 @@ export type DialogAction =
   | { action: "SAVE_REQUEST_SL_FEEDBACK"; payload: SaveRequestSLFeedbackPayload }
   | { action: "SAVE_COMMUNICATION_CONFIG"; payload: SaveCommunicationConfigPayload }
   | { action: "SAVE_KEYWORD_RULES"; payload: SaveKeywordRulesPayload }
+  | { action: "DELETE_KEYWORD_HISTORY"; id: number }
+  | { action: "CLEAR_KEYWORD_HISTORY" }
   | { action: "SAVE_FLAG"; payload: FlagEntityForAnalysis }
   | { action: "SAVE_USER_INFO_ITEM"; name: string; html: string }
   | { action: "DELETE_USER_INFO_ITEM"; id: number }

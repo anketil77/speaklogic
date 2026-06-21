@@ -8,7 +8,7 @@
 // and falls back to name match. Global rules apply to every recipient.
 
 import { getDb, persistDb } from "@/db/db";
-import type { KeywordRule, KeywordSendMode, KeywordSetting } from "@/types/db";
+import type { KeywordHistory, KeywordRule, KeywordSendMode, KeywordSetting } from "@/types/db";
 
 function normEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -106,4 +106,62 @@ export function findBannedWords(
     if (found && hits.indexOf(label) === -1) hits.push(label);
   }
   return hits;
+}
+
+// ── Keywords / Bad Words History (audit log of flagged sends) ──────────────
+
+/** Log one flagged-send event. Non-critical — callers wrap in try/catch. */
+export function addKeywordHistory(entry: Omit<KeywordHistory, "id">): void {
+  try {
+    const db = getDb();
+    db.run(
+      "INSERT INTO KeywordHistory (sentDate, sentTime, recipients, words, action, subject) VALUES (?, ?, ?, ?, ?, ?)",
+      [entry.sentDate, entry.sentTime, entry.recipients, entry.words, entry.action, entry.subject]
+    );
+    persistDb();
+  } catch {
+    // non-critical — never block a send on audit failure
+  }
+}
+
+/** All logged events, newest first. */
+export function getKeywordHistory(): KeywordHistory[] {
+  try {
+    const db = getDb();
+    const result = db.exec(
+      "SELECT id, sentDate, sentTime, recipients, words, action, subject FROM KeywordHistory ORDER BY sentDate DESC, sentTime DESC, id DESC"
+    );
+    if (!result.length) return [];
+    return result[0].values.map((row) => ({
+      id: row[0] as number,
+      sentDate: String(row[1] ?? ""),
+      sentTime: String(row[2] ?? ""),
+      recipients: String(row[3] ?? ""),
+      words: String(row[4] ?? ""),
+      action: (String(row[5] ?? "warn") === "stop" ? "stop" : "warn") as KeywordSendMode,
+      subject: String(row[6] ?? ""),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function deleteKeywordHistoryById(id: number): void {
+  try {
+    const db = getDb();
+    db.run("DELETE FROM KeywordHistory WHERE id = ?", [id]);
+    persistDb();
+  } catch {
+    // non-critical
+  }
+}
+
+export function clearKeywordHistory(): void {
+  try {
+    const db = getDb();
+    db.run("DELETE FROM KeywordHistory");
+    persistDb();
+  } catch {
+    // non-critical
+  }
 }
