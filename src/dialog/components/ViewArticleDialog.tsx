@@ -9,6 +9,7 @@ import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { ResizeHandles } from "@/dialog/components/ResizeHandles";
 import { ArticleHeaderIcon, CloseIcon } from "@/dialog/components/Icons";
 import { HtmlContent } from "@/dialog/components/HtmlContent";
+import { VTABLE_MARKER } from "@/dialog/utils/buildVerificationTable";
 import { CategoryIcon } from "@/dialog/views/createarticle/CategoryPickerPanel";
 import type { Article } from "@/types/db";
 
@@ -121,6 +122,7 @@ function WizardContent({ article }: { article: Article }) {
   const hasGivenSet = article.peopleLocation || article.consideration || article.articleBasisReference;
   const hasContent  = article.motherNatureConsiderations || article.negativeFunction ||
                       article.problemDetails || article.funcExecuteFromEvent || article.relationshipDetails;
+  const hasVTable   = (article.motherNatureConsiderations ?? "").includes(VTABLE_MARKER);
   const hasObs      = article.preEventObservation || article.postEventObservation;
   const hasProvider = article.providerName || article.reviewerName;
   const hasProduct  = article.productName || article.modelNumber || article.productType || article.productFunction;
@@ -174,8 +176,9 @@ function WizardContent({ article }: { article: Article }) {
         </WizardSection>
       )}
 
-      {/* Info before event */}
-      {article.infoBeforeEvent && (
+      {/* Info before event — suppressed when the verification table is present,
+          since the table's left column already shows this info (no duplication). */}
+      {article.infoBeforeEvent && !hasVTable && (
         <WizardSection title="Information Before Event">
           <HtmlContent
             className="sl-article-content"
@@ -188,7 +191,11 @@ function WizardContent({ article }: { article: Article }) {
       {/* Content sections — all authored via RichEditor so render as HTML */}
       {hasContent && (
         <WizardSection title="Content">
-          <WizardField label="Mother Nature Considerations" value={article.motherNatureConsiderations} html />
+          <WizardField
+            label={hasVTable ? "Information & Mother Nature Consideration" : "Mother Nature Considerations"}
+            value={article.motherNatureConsiderations}
+            html
+          />
           <WizardField label="Negative Function Executed"   value={article.negativeFunction}           html />
           <WizardField label="Problem Developed"            value={article.problemDetails}             html />
           <WizardField label="Function Executed from Event" value={article.funcExecuteFromEvent}       html />

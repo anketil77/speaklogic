@@ -1,4 +1,5 @@
 import type { Article } from "@/types/db";
+import { VTABLE_MARKER } from "@/dialog/utils/buildVerificationTable";
 
 const HR = `<hr style="margin:16px 0;border:none;border-top:1px solid #D0D0D0;">`;
 
@@ -22,11 +23,20 @@ export function formatArticleForAnalysis(article: Article): string {
 
   const wizard: string[] = [];
 
-  if (article.infoBeforeEvent?.trim())
-    wizard.push(section("Information Before Event", plain(article.infoBeforeEvent)));
+  // New wizard records pair info ↔ verification in a single table stored in
+  // motherNatureConsiderations. When present, render only the table (its left
+  // column already carries the info) and skip the standalone info section.
+  const hasVTable = (article.motherNatureConsiderations ?? "").includes(VTABLE_MARKER);
 
-  if (article.motherNatureConsiderations?.trim())
-    wizard.push(section("Mother Nature Considerations", plain(article.motherNatureConsiderations)));
+  if (hasVTable) {
+    wizard.push(section("Information & Mother Nature Consideration", article.motherNatureConsiderations!.trim()));
+  } else {
+    if (article.infoBeforeEvent?.trim())
+      wizard.push(section("Information Before Event", plain(article.infoBeforeEvent)));
+
+    if (article.motherNatureConsiderations?.trim())
+      wizard.push(section("Mother Nature Considerations", plain(article.motherNatureConsiderations)));
+  }
 
   if (article.negativeFunction?.trim())
     wizard.push(section("Negative Function", plain(article.negativeFunction)));

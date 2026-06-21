@@ -25,6 +25,7 @@ import { getTemplateSequence } from "./createarticle/wizard/templateSequences";
 import { INITIAL_WIZARD_DATA } from "./createarticle/wizard/wizardTypes";
 import type { WizardData, StepProps, StepId } from "./createarticle/wizard/wizardTypes";
 import type { SaveArticleWizardPayload } from "@/types/db";
+import { buildVerificationTable } from "@/dialog/utils/buildVerificationTable";
 
 // ─── Reducer ─────────────────────────────────────────────────────────────────
 
@@ -110,18 +111,10 @@ export default function ArticleWizardView() {
         .map((e) => e.html)
         .filter((h) => h && h.trim())
         .join("");
-      const combinedVerifications = data.infoBeforeEvent
-        .map((e, i) => {
-          const v = (e.verification || "").trim();
-          if (!v) return "";
-          return `<p><strong>Verification #${i + 1}:</strong></p>${v}`;
-        })
-        .filter(Boolean)
-        .join("");
-      const combinedMotherNature = [
-        data.motherNatureConsiderations || "",
-        combinedVerifications,
-      ].filter((s) => s && s.trim()).join("");
+      // Pair each info entry with its verification as a static 2-col table
+      // (Information Before Event | Mother Nature Consideration). Stored in the
+      // motherNatureConsiderations column; renders everywhere with no JS.
+      const combinedMotherNature = buildVerificationTable(data.infoBeforeEvent);
 
       const payload: SaveArticleWizardPayload = {
         articleTitle:               data.articleTitle,

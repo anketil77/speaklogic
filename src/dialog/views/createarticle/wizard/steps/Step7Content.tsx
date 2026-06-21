@@ -69,20 +69,6 @@ export function Step7Content({ data, onChange, onNext, onBack, onCancel, config,
                 onVerificationChange={(v) => updateEntryVerification(entry.id, v)}
               />
             ))}
-
-            {entries.length > 0 && (
-              <SectionBox
-                title="Additional considerations"
-                showHelp
-                helpText="This is the verification of the information identified before event. For example, I am informing you about an event. I have identified the information you are aware of before the event, here I verify that information. Here, I provide an example that I have properly identified that information."
-              >
-                <RichField
-                  placeholder="Add considerations"
-                  value={data.motherNatureConsiderations}
-                  onChange={(v) => onChange({ motherNatureConsiderations: v })}
-                />
-              </SectionBox>
-            )}
           </>
         )}
 
