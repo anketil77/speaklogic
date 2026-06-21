@@ -17,16 +17,26 @@ export type SignalKey = "green" | "red" | "blue";
 
 export interface SignalFolderDef {
   key: SignalKey;
-  /** Folder display name (emoji prefix is the client-approved substitute for colored icons). */
+  /**
+   * Folder display name. The numeric prefix forces the client-requested order
+   * (Good → Feedback → Bad) — Outlook always sorts folders alphabetically by
+   * name and exposes no API to set a custom order, so the order has to live in
+   * the name. The emoji is the client-approved substitute for colored icons.
+   */
   name: string;
   /** The value stamped in the subject: "Communication Signal [<signal>]". */
   signal: string;
+  /**
+   * Earlier names this folder may already exist under (no/old prefix). Used to
+   * rename in place instead of creating a duplicate when re-running setup.
+   */
+  legacyNames: string[];
 }
 
 export const SIGNAL_FOLDERS: SignalFolderDef[] = [
-  { key: "green", name: "🟢 Good Messages", signal: "Green" },
-  { key: "red", name: "🔴 Bad Messages", signal: "Red" },
-  { key: "blue", name: "🔵 Feedback", signal: "Blue" },
+  { key: "green", name: "1 🟢 Good Messages", signal: "Green", legacyNames: ["🟢 Good Messages"] },
+  { key: "blue", name: "2 🔵 Feedback", signal: "Blue", legacyNames: ["🔵 Feedback"] },
+  { key: "red", name: "3 🔴 Bad Messages", signal: "Red", legacyNames: ["🔴 Bad Messages"] },
 ];
 
 interface GraphFolder { id: string; displayName: string }
@@ -69,11 +79,23 @@ export async function ensureSignalFolders(token: string): Promise<Record<string,
   for (const def of SIGNAL_FOLDERS) {
     let id = byName.get(def.name);
     if (!id) {
-      const created = await graphFetch<GraphFolder>(token, "/me/mailFolders", {
-        method: "POST",
-        body: JSON.stringify({ displayName: def.name }),
-      });
-      id = created.id;
+      // Rename an existing legacy folder (old/no prefix) in place so the user's
+      // already-filed mail is kept — only create from scratch if none is found.
+      const legacyName = def.legacyNames.find((n) => byName.has(n));
+      const legacyId = legacyName ? byName.get(legacyName) : undefined;
+      if (legacyId) {
+        const renamed = await graphFetch<GraphFolder>(token, `/me/mailFolders/${legacyId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ displayName: def.name }),
+        });
+        id = renamed.id;
+      } else {
+        const created = await graphFetch<GraphFolder>(token, "/me/mailFolders", {
+          method: "POST",
+          body: JSON.stringify({ displayName: def.name }),
+        });
+        id = created.id;
+      }
     }
     result[def.signal] = id;
   }
