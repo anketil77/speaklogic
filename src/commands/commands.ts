@@ -3575,7 +3575,7 @@ async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Even
     communicationSignal: "",
     projectName: "",
     peopleList,
-    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonName: commConfig?.personName || personName || personEmail || "",
     communicationPersonEmail: commConfig?.personEmail ?? "",
   };
 
@@ -3605,6 +3605,11 @@ async function openRequestSLFeedbackDialog(addInEvent: Office.AddinCommands.Even
           case "SAVE_REQUEST_SL_FEEDBACK": {
             const p = m.payload as SaveRequestSLFeedbackPayload;
             try {
+              // User supplied their name because Comm Config had none → remember it on this host
+              if (p.persistName && p.fromPerson.trim()) {
+                const cc = getCommunicationConfig();
+                saveCommunicationConfig({ personName: p.fromPerson.trim(), personEmail: cc?.personEmail ?? "" });
+              }
               saveCommSignalInfo({
                 fromPerson: p.fromPerson,
                 toPerson: "Speak Logic",

@@ -1468,11 +1468,16 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=request-sl-feedback`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: buildPeopleList(commConfig?.personName), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: buildPeopleList(commConfig?.personName), communicationPersonName: commConfig?.personName || personName || personEmail || "", communicationPersonEmail: commConfig?.personEmail ?? "" }),
       (dialog, action) => {
         if (action.action === "SAVE_REQUEST_SL_FEEDBACK") {
           const p = action.payload as SaveRequestSLFeedbackPayload;
           try {
+            // User supplied their name because Comm Config had none → remember it on this host
+            if (p.persistName && (p.fromPerson ?? "").trim()) {
+              const cc = getCommunicationConfig();
+              saveCommunicationConfig({ personName: (p.fromPerson ?? "").trim(), personEmail: cc?.personEmail ?? "" });
+            }
             saveCommSignalInfo({ fromPerson: p.fromPerson ?? "", toPerson: "Speak Logic", toPersonEmail: "support@speaklogic.org", applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignalType: (p as { communicationSignalType?: string }).communicationSignalType ?? "", communicationSubject: p.communicationSubject ?? "", actualCommunication: p.actualCommunication ?? "", actualSelection: "", selectionType: "Speak Logic Request", entitySelected: `Speak Logic feedback request on ${formatDisplayDate(nowDate())}`, files: (p as { files?: AttachFileToProject[] }).files ?? [] });
             try { saveFeedbackHistory({ selectionAction: "Requested Feedback From Speak Logic", entityName: p.fromPerson ?? "", actualSelection: p.applicationName ?? "", selectionType: "Speak Logic Request", source: getSource(), applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignal: "", projectName: "", personName: p.fromPerson ?? "", personEmail: "" }); } catch { /* non-critical */ }
           } catch (err) { setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false }); }

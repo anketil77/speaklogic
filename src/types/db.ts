@@ -794,6 +794,8 @@ export interface SaveRequestSLFeedbackPayload {
   communicationSubject: string;
   actualCommunication: string;
   files?: Omit<AttachFileToProject, "id" | "analysisId" | "feedbackId" | "flagId" | "articleId">[];
+  /** true when From Person was typed by the user (Comm Config had no name) — host persists it back to Comm Config */
+  persistName?: boolean;
 }
 
 export type DialogAction =

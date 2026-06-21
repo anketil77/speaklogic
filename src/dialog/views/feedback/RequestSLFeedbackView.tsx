@@ -213,6 +213,8 @@ export default function RequestSLFeedbackView() {
   const { initData, submitSave, saving, closeDialog, mailtoUrl } = useDialogComm();
   const editorRef = useRef<HTMLDivElement>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+  // true when Comm Config + userProfile gave no name → From Person becomes editable and is persisted on save
+  const [fromPersonEditable, setFromPersonEditable] = useState(false);
   const [footerBtnHover, setFooterBtnHover] = useState(false);
   const [activeTab, setActiveTab] = useState<TabValue>("feedback");
   const [attachedFiles, setAttachedFiles] = useState<FileDraft[]>([]);
@@ -230,9 +232,12 @@ export default function RequestSLFeedbackView() {
 
   useEffect(() => {
     if (!initData) return;
+    const resolvedName = initData.communicationPersonName || "";
+    // No identity available from any source (e.g. personal Outlook.com) → let the user supply it
+    if (!resolvedName) setFromPersonEditable(true);
     setForm((prev) => ({
       ...prev,
-      fromPerson: prev.fromPerson || initData.communicationPersonName || "",
+      fromPerson: prev.fromPerson || resolvedName,
       applicationName: prev.applicationName || initData.applicationName || "",
       communicationFunction: prev.communicationFunction || initData.communicationFunction || "",
     }));
@@ -270,10 +275,11 @@ export default function RequestSLFeedbackView() {
       communicationSubject: form.communicationSubject,
       actualCommunication: requestText ? form.actualCommunication : "",
       files: attachedFiles.length > 0 ? attachedFiles : undefined,
+      persistName: fromPersonEditable && !!form.fromPerson.trim(),
     };
 
     submitSave({ action: "SAVE_REQUEST_SL_FEEDBACK", payload });
-  }, [form, attachedFiles, initData, submitSave]);
+  }, [form, attachedFiles, initData, submitSave, fromPersonEditable]);
 
   if (!initData) {
     return (
@@ -393,10 +399,20 @@ export default function RequestSLFeedbackView() {
         {/* ── About Feedback tab ──────────────────────────────────────────── */}
         {activeTab === "feedback" && (
           <>
-            {/* From Person — account holder, locked read-only */}
+            {/* From Person — account holder. Locked read-only when an identity is
+                resolved; editable (and persisted to Comm Config on save) when none exists. */}
             <div style={rowStyle}>
               <span style={labelStyle}>From Person</span>
-              <div style={readonlyDisplayStyle}>{form.fromPerson}</div>
+              {fromPersonEditable ? (
+                <input
+                  style={inputStyle}
+                  value={form.fromPerson}
+                  onChange={(e) => updateForm("fromPerson", e.target.value)}
+                  placeholder="Enter your name"
+                />
+              ) : (
+                <div style={readonlyDisplayStyle}>{form.fromPerson}</div>
+              )}
             </div>
 
             <div style={sectionDivider} />
