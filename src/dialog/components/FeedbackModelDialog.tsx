@@ -16,7 +16,7 @@ import {
   NOT_APPLICABLE,
 } from "@/dialog/components/modelShared";
 
-type ModelTab = "model1" | "model2";
+type ModelTab = "model1" | "model2" | "model3";
 
 // ─── State messages (client spec) ───────────────────────────────────────────────
 const FB_PROVIDED_MSG =
@@ -453,6 +453,168 @@ function Model2({ feedback }: { feedback: ProjectFeedback }) {
   );
 }
 
+// ─── Model 3 ───────────────────────────────────────────────────────────────────
+// Client spec (point 20): a horizontal box-flow whose shape depends on feedbackType.
+//   Provided / Requested / Received → 3 boxes: From Person → Feedback → To Person
+//   Applied                         → 2 boxes: Feedback → Feedback Application Result
+// The Feedback box carries a text/chat icon → click → popup the per-state text:
+//   Provided  → the feedback text
+//   Applied   → the ECF text (same as the pen icon inside the ECF)
+//   Requested → the request text (e.g. the selected text requested)
+//   Received  → the received feedback text (e.g. Outlook blue-signal / template content)
+
+const M3_BOX_W = 158;
+const M3_BOX_H = 104;
+const M3_ARROW = 44;
+
+function M3Arrow() {
+  return (
+    <svg width={M3_ARROW} height={20} style={{ flexShrink: 0, overflow: "visible" }}>
+      <defs>
+        <marker id="m3arr" markerWidth="9" markerHeight="9" refX="6" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7.5,3.5 Z" fill={LINE_COLOR} />
+        </marker>
+      </defs>
+      <line
+        x1={2} y1={10} x2={M3_ARROW - 4} y2={10}
+        stroke={LINE_COLOR} strokeWidth="1.8" strokeLinecap="round" markerEnd="url(#m3arr)"
+      />
+    </svg>
+  );
+}
+
+function M3PersonBox({ name, bg, color }: { name: string; bg: string; color: string }) {
+  const display = name?.trim() || NOT_APPLICABLE;
+  return (
+    <div style={{
+      width: M3_BOX_W, height: M3_BOX_H, flexShrink: 0,
+      border: `2px solid ${BORDER_COLOR}`, borderRadius: 12, background: colors.white,
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      gap: 8, padding: "0 10px", boxSizing: "border-box",
+    }}>
+      <InitialAvatar name={display} size={44} bg={bg} color={color} />
+      <div style={{
+        fontSize: "11px", fontWeight: 600, color: colors.grey11, textAlign: "center",
+        lineHeight: "14px", maxWidth: M3_BOX_W - 18, overflow: "hidden",
+        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+      }}>
+        {display}
+      </div>
+    </div>
+  );
+}
+
+function M3FeedbackBox({
+  label, text, onOpen,
+}: {
+  label: string; text: string; onOpen: (title: string, text: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onOpen(label, text)}
+      title="Click to view the feedback text"
+      style={{
+        width: M3_BOX_W, height: M3_BOX_H, flexShrink: 0,
+        border: `2px solid ${BORDER_COLOR}`, borderRadius: 12, background: colors.white,
+        cursor: "pointer", padding: "10px 12px", boxSizing: "border-box",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        gap: 8, fontFamily: "inherit",
+      }}
+    >
+      <ChatBubbleIcon color="#7a807c" size={22} />
+      <span style={{ fontSize: "11.5px", fontWeight: 700, color: colors.grey11, textAlign: "center" }}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function M3ResultBox({
+  label, text, onOpen,
+}: {
+  label: string; text: string; onOpen: (title: string, text: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onOpen(label, text)}
+      title="Click to view the feedback application result"
+      style={{
+        width: M3_BOX_W, height: M3_BOX_H, flexShrink: 0,
+        border: `2px solid ${BORDER_COLOR}`, borderRadius: 12, background: colors.white,
+        cursor: "pointer", padding: "10px 12px", boxSizing: "border-box",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        gap: 6, fontFamily: "inherit",
+      }}
+    >
+      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: "11px", fontWeight: 700, color: colors.grey11, textAlign: "center" }}>
+          {label}
+        </span>
+        <PencilIcon color="#a8a8a8" />
+      </span>
+      {!text.trim() && (
+        <span style={{ fontSize: "9.5px", color: "#9aa09c", fontWeight: 600 }}>{NOT_APPLICABLE}</span>
+      )}
+    </button>
+  );
+}
+
+function Model3({ feedback }: { feedback: ProjectFeedback }) {
+  const [popup, setPopup] = useState<{ title: string; htmlContent?: string; plainText?: string } | null>(null);
+  const m = deriveModel(feedback);
+  const isReceived = m.ft === "Received";
+
+  const onOpen = (title: string, text: string) =>
+    setPopup({
+      title,
+      htmlContent: text.trim() ? text : undefined,
+      plainText: text.trim() ? undefined : NOT_APPLICABLE,
+    });
+
+  // Per-state feedback-box text.
+  const fbText = m.isApplied ? m.ecfText : m.feedbackItem;
+  // Per-state feedback-box label.
+  const fbLabel = m.isRequested ? "Request" : isReceived ? "Received Feedback" : "Feedback";
+
+  return (
+    <div style={{ position: "relative", padding: "8px 4px 4px" }}>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        gap: 0, flexWrap: "nowrap", minWidth: "min-content",
+      }}>
+        {m.isApplied ? (
+          <>
+            <M3FeedbackBox label={fbLabel} text={fbText} onOpen={onOpen} />
+            <M3Arrow />
+            <M3ResultBox
+              label="Feedback Application Result"
+              text={m.hasResult ? m.resultText : ""}
+              onOpen={onOpen}
+            />
+          </>
+        ) : (
+          <>
+            <M3PersonBox name={m.provider} bg="#C8B5DC" color="#5C3B7A" />
+            <M3Arrow />
+            <M3FeedbackBox label={fbLabel} text={fbText} onOpen={onOpen} />
+            <M3Arrow />
+            <M3PersonBox name={m.recipient} bg="#86c6e9" color="#1B5E8A" />
+          </>
+        )}
+      </div>
+
+      {popup && (
+        <InlinePopup
+          title={popup.title}
+          htmlContent={popup.htmlContent}
+          plainText={popup.plainText}
+          onClose={() => setPopup(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Main dialog ───────────────────────────────────────────────────────────────
 
 interface Props {
@@ -467,6 +629,7 @@ export function FeedbackModelDialog({ feedback, onClose }: Props) {
   const tabs: { value: ModelTab; label: string }[] = [
     { value: "model1", label: "Model 1" },
     { value: "model2", label: "Model 2" },
+    { value: "model3", label: "Model 3" },
   ];
 
   return createPortal(
@@ -568,6 +731,11 @@ export function FeedbackModelDialog({ feedback, onClose }: Props) {
             </div>
           )}
           {activeTab === "model2" && <Model2 feedback={feedback} />}
+          {activeTab === "model3" && (
+            <div style={{ padding: "24px 30px", overflowX: "auto" }}>
+              <Model3 feedback={feedback} />
+            </div>
+          )}
         </div>
       </div>
     </>,
