@@ -130,7 +130,7 @@ function buildCtxMarker(ctx: CommCtxValues): string {
     `<tr><td style="${labelStyle}">Comm. Function</td><td style="${labelStyle}">Comm. Signal</td></tr>` +
     `<tr><td style="${valueStyle}">${encodeCtxValue(ctx.commFunction) || "-"}</td><td style="${valueStyle.replace("#424242", signalColor)};font-weight:600">${encodeCtxValue(ctx.commSignal) || "-"}</td></tr>` +
     `</table>` +
-    `<span id="sl-comm-ctx-data" style="display:none;mso-hide:all;font-size:1px;max-height:0;overflow:hidden">${encodeCtxValue(ctx.appName)}|${encodeCtxValue(ctx.commFunction)}|${encodeCtxValue(ctx.commSignal)}|${encodeCtxValue(ctx.projectName)}</span>` +
+    `<span id="sl-comm-ctx-data" style="display:none;mso-hide:all;font-size:0;line-height:0;height:0;max-height:0;width:0;overflow:hidden;color:transparent">${encodeCtxValue(ctx.appName)}|${encodeCtxValue(ctx.commFunction)}|${encodeCtxValue(ctx.commSignal)}|${encodeCtxValue(ctx.projectName)}</span>` +
     `</div>`
   );
 }
