@@ -8,6 +8,7 @@ const DIALOG_BASE = window.location.origin;
 import { initDb, nowDate, nowTime, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
 import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback, getAllErrors, findAnalysisIdByErrorText, addCompensatorToAnalysis } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
+import { getStatsOverview } from "@/db/queries/stats";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
 import { getPeopleNames, getPeopleEmailMap, upsertPersonName, upsertPersonWithEmail, getAllPeople, updatePersonById, deletePersonById, addPersonContact } from "@/db/queries/people";
@@ -156,6 +157,9 @@ function registerHandlers(): void {
   );
   Office.actions.associate("listRetained", (event) =>
     openRetainedHistoryDialog(event)
+  );
+  Office.actions.associate("statsOverview", (event) =>
+    openStatsOverviewDialog(event)
   );
   Office.actions.associate("listSelection", (event) =>
     void openListSelectionDialog(event)
@@ -1582,14 +1586,14 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
   );
 }
 
-function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 0): void {
+function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 0, initialFilter?: string, autoRequested = false): void {
   _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=feedback-history`,
     { ...DIALOG_SIZE, displayInIframe: true },
     (result) => {
       if (result.status === Office.AsyncResultStatus.Failed) {
         if ((result.error as { code: number }).code === 12007 && attempt < 15) {
-          setTimeout(() => openFeedbackHistoryDialog(event, attempt + 1), 300);
+          setTimeout(() => openFeedbackHistoryDialog(event, attempt + 1, initialFilter, autoRequested), 300);
           return;
         }
         handleDialogOpenError(result.error, event);
@@ -1604,6 +1608,19 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
         if (m.action === "READY") {
           const { personName, personEmail } = getUserIdentity();
+          // Opened directly on the "List of Feedback Requested" sub-view from the
+          // Stats Overview "Feedback Requested" card — navigate straight there so
+          // this opener's existing DELETE/BACK handlers are reused.
+          if (autoRequested) {
+            const reqPayload: DialogInitPayload = {
+              selection: "", mode: "selection", source: getSource(),
+              personName, personEmail, applicationName: "", communicationFunction: "",
+              communicationSignal: "", projectName: "", peopleList: [],
+              commSignalRequests: getCommSignalRequests(),
+            };
+            dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "list-feedback-requested", payload: reqPayload } as HostMessage));
+            return;
+          }
           const feedbacks = getAllFeedbacks().map((f) => {
             if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
             return {
@@ -1630,6 +1647,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
               projectName: "",
               peopleList: [],
               feedbacks,
+              feedbackFilter: initialFilter,
             },
           };
           dialog.messageChild(JSON.stringify(hostMsg));
@@ -1768,6 +1786,64 @@ function openRetainedHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         if (m.action === "DELETE_ANALYSIS") {
           try { deleteAnalysis((m as { action: string; id: number }).id); }
           catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+        }
+        if (m.action === "CLOSE") {
+          try { dialog.close(); } catch { }
+          complete();
+        }
+      });
+    }
+  );
+}
+
+// Point 14 — Stats Overview dashboard. On a card click it closes itself and
+// delegates to the relevant dedicated list opener (reusing the same event), so
+// each target list keeps its full message-handler set.
+function openStatsOverviewDialog(event: Office.AddinCommands.Event, attempt = 0): void {
+  _trackDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=stats-overview`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openStatsOverviewDialog(event, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      const complete = makeEventCompleter(event);
+      let transitioning = false;
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+        if (!transitioning) complete();
+      });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        if (m.action === "READY") {
+          const { personName, personEmail } = getUserIdentity();
+          const hostMsg: HostMessage = {
+            type: "INIT",
+            payload: {
+              selection: "", mode: "selection", source: getSource(),
+              personName, personEmail, applicationName: "", communicationFunction: "",
+              communicationSignal: "", projectName: "", peopleList: [],
+              stats: getStatsOverview(),
+            },
+          };
+          dialog.messageChild(JSON.stringify(hostMsg));
+        }
+        if (m.action === "OPEN_STATS_LIST") {
+          const nav = m as { action: string; target: string; feedbackFilter?: string };
+          transitioning = true;
+          try { dialog.close(); } catch { }
+          if (nav.target === "feedback") {
+            openFeedbackHistoryDialog(event, 0, nav.feedbackFilter);
+          } else if (nav.target === "requested") {
+            openFeedbackHistoryDialog(event, 0, undefined, true);
+          } else {
+            openAnalysisHistoryDialog(event);
+          }
         }
         if (m.action === "CLOSE") {
           try { dialog.close(); } catch { }

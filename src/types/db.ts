@@ -197,6 +197,19 @@ export interface ProjectCorrectedItem {
   analysisId?: number;
 }
 
+// A guideline reference inserted into an analysis's Actual Analysis content
+// (GuidelineReferenceDialog). Stored as a record so it can be counted (Point 14).
+export interface GuidelineReference {
+  id?: number;
+  guidelineText: string;   // e.g. "refer to analysis guideline number 5"
+  guidelineNumber: number; // 1–501
+  guidelineLink: string;
+  useLink: 0 | 1;
+  guidelineDate?: string;
+  guidelineTime?: string;
+  analysisId?: number;
+}
+
 export interface Article {
   id?: number;
   articleTitle: string;
@@ -736,6 +749,10 @@ export interface DialogInitPayload {
    * feedback appears under the "Received" filter / List of Feedback Received.
    */
   feedbackTypeOverride?: string;
+  /** Aggregate counts for the Stats Overview dialog (Point 14). */
+  stats?: StatsOverview;
+  /** Initial feedback-type filter when feedback-history is opened pre-filtered. */
+  feedbackFilter?: string;
 }
 
 // User-defined "information" item shown in the wizard's "Select Information"
@@ -855,7 +872,30 @@ export type DialogAction =
   | { action: "OPEN_MAILTO"; url: string }
   | { action: "ADD_CONTACT"; personName: string; emailAddress: string }
   | { action: "UPDATE_CONTACT"; id: number; personName: string; emailAddress: string }
-  | { action: "DELETE_CONTACT"; id: number };
+  | { action: "DELETE_CONTACT"; id: number }
+  | { action: "OPEN_STATS_LIST"; target: StatsListTarget; feedbackFilter?: string };
+
+/** Aggregate entity counts shown in the Stats Overview dialog (Point 14). */
+export interface StatsOverview {
+  analyses: number;
+  feedbackProvided: number;
+  feedbackRequested: number;
+  feedbackReceived: number;
+  feedbackApplied: number;
+  errors: number;
+  compensators: number;
+  problemsIdentified: number;
+  problemsSolved: number;
+  questions: number;
+  answeredQuestions: number;
+  guidelines: number;
+}
+
+/** Which list a Stats Overview card click should open (Point 14). */
+export type StatsListTarget =
+  | "analysis"        // List of Analysis
+  | "feedback"        // List of Feedback (optionally pre-filtered via feedbackFilter)
+  | "requested";      // List of Feedback Requested
 
 export interface SaveRelatedSelectionPayload {
   record: Omit<SelectionWithPrinciple, "id">;
@@ -910,6 +950,9 @@ export interface SaveAnalysisPayload {
   compensators: Omit<ProjectCompensator, "id" | "analysisId">[];
   problems: Omit<ProjectProblem, "id" | "analysisId">[];
   files: Omit<AttachFileToProject, "id" | "analysisId">[];
+  /** Guideline references inserted into the analysis (Point 14 stats). Optional —
+   *  inline/on-the-fly analyses (Point 9) don't carry any. */
+  guidelineReferences?: Omit<GuidelineReference, "id" | "analysisId">[];
 }
 
 export type HostMessage =

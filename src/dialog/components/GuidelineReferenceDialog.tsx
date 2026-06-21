@@ -28,9 +28,17 @@ const C = {
   white: "#FFFFFF",
 } as const;
 
+/** Structured data for the inserted reference, recorded for stats (Point 14). */
+export interface GuidelineRefMeta {
+  guidelineText: string;
+  guidelineNumber: number;
+  guidelineLink: string;
+  useLink: 0 | 1;
+}
+
 interface Props {
-  /** Receives the HTML to insert at the editor caret. */
-  onInsert: (html: string) => void;
+  /** Receives the HTML to insert at the editor caret, plus the structured ref. */
+  onInsert: (html: string, meta: GuidelineRefMeta) => void;
   onClose: () => void;
 }
 
@@ -75,11 +83,17 @@ export function GuidelineReferenceDialog({ onInsert, onClose }: Props) {
   const handleApply = useCallback(() => {
     const num = clampNumber(guidelineNumber);
     const referenceText = `${reference.trim()} ${num}`;
+    const meta: GuidelineRefMeta = {
+      guidelineText: referenceText,
+      guidelineNumber: num,
+      guidelineLink: link.trim(),
+      useLink: useLink ? 1 : 0,
+    };
     if (useLink) {
       const href = `${link.trim()}#${num}`;
-      onInsert(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(referenceText)}</a>`);
+      onInsert(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(referenceText)}</a>`, meta);
     } else {
-      onInsert(escapeHtml(referenceText));
+      onInsert(escapeHtml(referenceText), meta);
     }
     onClose();
   }, [reference, guidelineNumber, link, useLink, clampNumber, onInsert, onClose]);

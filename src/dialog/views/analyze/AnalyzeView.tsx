@@ -21,7 +21,7 @@ import { useAnalyzePanels } from "@/dialog/views/analyze/useAnalyzePanels";
 import { AnalyzeSubDialogs } from "@/dialog/views/analyze/AnalyzeSubDialogs";
 import { SaveSplitButton } from "@/dialog/views/analyze/SaveSplitButton";
 import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
-import { GuidelineReferenceDialog } from "@/dialog/components/GuidelineReferenceDialog";
+import { GuidelineReferenceDialog, type GuidelineRefMeta } from "@/dialog/components/GuidelineReferenceDialog";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import { InsertConfirmToast } from "@/dialog/components/InsertConfirmToast";
 
@@ -398,6 +398,9 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
   const analysisQuestionRangeRef = useRef<Range | null>(null);
   const analysisGuidelineRangeRef = useRef<Range | null>(null);
   const [guidelineDialogOpen, setGuidelineDialogOpen] = useState(false);
+  // Guideline references inserted during this analysis — persisted on save so
+  // they can be counted in Stats Overview (Point 14).
+  const [guidelineRefs, setGuidelineRefs] = useState<GuidelineRefMeta[]>([]);
 
   function insertHighlightSpan(rangeRef: React.MutableRefObject<Range | null>, bg: string, fg: string) {
     const range = rangeRef.current;
@@ -428,7 +431,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
     insertHighlightSpan(analysisQuestionRangeRef, "#FFFF00", "#000");
   }, []);
 
-  const insertGuidelineHtml = useCallback((html: string) => {
+  const insertGuidelineHtml = useCallback((html: string, meta: GuidelineRefMeta) => {
     const editor = editorRef.current;
     if (!editor) return;
     const range = analysisGuidelineRangeRef.current;
@@ -444,6 +447,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
     }
     updateForm("actualAnalysis", editor.innerHTML);
     analysisGuidelineRangeRef.current = null;
+    setGuidelineRefs((prev) => [...prev, meta]);
   }, []);
 
   useEffect(() => {
@@ -583,10 +587,11 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
           })),
           problems: panels.problems,
           files: panels.files.map((f) => ({ ...f, fileDate: f.fileDate || nowDate(), fileTime: f.fileTime || nowTime() })),
+          guidelineReferences: guidelineRefs.map((g) => ({ ...g, guidelineDate: nowDate(), guidelineTime: nowTime() })),
         } satisfies SaveAnalysisPayload,
       });
     },
-    [form, panels.questions, panels.answers, panels.errors, panels.compensators, panels.problems, panels.files, initData, submitSave]
+    [form, panels.questions, panels.answers, panels.errors, panels.compensators, panels.problems, panels.files, guidelineRefs, initData, submitSave]
   );
 
   const tabCount = useMemo(

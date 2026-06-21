@@ -34,6 +34,7 @@ import {
 import { saveArticle, updateArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById, publishArticle } from "@/db/queries/article";
 import { getUserInformationItems, addUserInformationItem, deleteUserInformationItem } from "@/db/queries/information";
 import { saveProblemSolution } from "@/db/queries/problem";
+import { getStatsOverview } from "@/db/queries/stats";
 import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
 import { deleteFlag, getAllFlaggedSelections, saveFlag, getAllSelectionHistories, deleteSelectionHistory } from "@/db/queries/flag";
 import {
@@ -369,6 +370,7 @@ const GROUPS: GroupDef[] = [
       { id: "listAnalysis",     label: "List of Analysis",  icon: "btn-list-analysis-32.png" },
       { id: "listFeedback",     label: "List of Feedback",  icon: "btn-list-feedback-32.png" },
       { id: "listRetained",     label: "List of Retained",  icon: "btn-list-retained-32.png" },
+      { id: "statsOverview",    label: "Stats Overview",    icon: "btn-list-analysis-32.png" },
     ],
   },
   {
@@ -953,7 +955,7 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
-  const handleFeedbackHistory = useCallback(() => {
+  const handleFeedbackHistory = useCallback((initialFilter?: string) => {
     if (!dbReady) return;
     const { personName, personEmail } = getUserIdentity();
 
@@ -962,7 +964,7 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=feedback-history`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], feedbacks: buildFeedbacks() }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], feedbacks: buildFeedbacks(), feedbackFilter: initialFilter }),
       (dialog, action) => {
         if (action.action === "DELETE_FEEDBACK") {
           try { deleteFeedback((action as { action: string; id: number }).id); }
@@ -1013,6 +1015,52 @@ export function OutlookTaskPane() {
       }
     );
   }, [dbReady, openManagedDialog]);
+
+  // Opens the requested-feedback list directly (Stats Overview "Feedback Requested"
+  // card). Its Back button returns to the full feedback list.
+  const handleListFeedbackRequestedDirect = useCallback(() => {
+    if (!dbReady) return;
+    const { personName, personEmail } = getUserIdentity();
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=list-feedback-requested`,
+      DIALOG_SIZE,
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], commSignalRequests: getCommSignalRequests() }),
+      (dialog, action) => {
+        if (action.action === "DELETE_COMM_SIGNAL_REQUEST") {
+          try { deleteCommSignalRequest((action as { action: string; id: number }).id); }
+          catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
+        }
+        if (action.action === "BACK_TO_FEEDBACK_HISTORY") {
+          dialog.close(); dialogRef.current = null;
+          setTimeout(() => handleFeedbackHistory(), 300);
+        }
+      }
+    );
+  }, [dbReady, openManagedDialog, handleFeedbackHistory]);
+
+  // Point 14 — Stats Overview dashboard (Outlook taskpane parity). A card click
+  // closes this dialog and opens the relevant list (Office.js allows one dialog
+  // at a time, so close + reopen after a short delay).
+  const handleStatsOverview = useCallback(() => {
+    if (!dbReady) return;
+    const { personName, personEmail } = getUserIdentity();
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=stats-overview`,
+      DIALOG_SIZE,
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], stats: getStatsOverview() }),
+      (dialog, action) => {
+        if (action.action === "OPEN_STATS_LIST") {
+          const nav = action as { action: string; target: string; feedbackFilter?: string };
+          dialog.close(); dialogRef.current = null;
+          setTimeout(() => {
+            if (nav.target === "feedback") handleFeedbackHistory(nav.feedbackFilter);
+            else if (nav.target === "requested") handleListFeedbackRequestedDirect();
+            else handleAnalysisHistory();
+          }, 300);
+        }
+      }
+    );
+  }, [dbReady, openManagedDialog, handleAnalysisHistory, handleFeedbackHistory, handleListFeedbackRequestedDirect]);
 
   const handleListSelection = useCallback(() => {
     if (!dbReady) return;
@@ -1461,6 +1509,7 @@ export function OutlookTaskPane() {
       case "listAnalysis":       handleAnalysisHistory(); break;
       case "listFeedback":       handleFeedbackHistory(); break;
       case "listRetained":       handleRetainedHistory(); break;
+      case "statsOverview":      handleStatsOverview(); break;
       case "listSelection":                  handleListSelection(); break;
       case "listIdentifiedPrinciple":         handleListIdentifiedPrinciple(); break;
       case "listInterpretedPrinciple":        handleListInterpretedPrinciple(); break;
@@ -1476,7 +1525,7 @@ export function OutlookTaskPane() {
       case "about":              handleSimple("about"); break;
       default: break;
     }
-  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleListSelection, handleListIdentifiedPrinciple, handleListInterpretedPrinciple, handleListSelectionRelatedPrinciple, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleKeywordSettings, handleKeywordHistory, handleSetupFolders, handleRequestSLFeedback, handleSimple]);
+  }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleStatsOverview, handleListSelection, handleListIdentifiedPrinciple, handleListInterpretedPrinciple, handleListSelectionRelatedPrinciple, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleKeywordSettings, handleKeywordHistory, handleSetupFolders, handleRequestSLFeedback, handleSimple]);
 
   // ── render ────────────────────────────────────────────────────────────────
 

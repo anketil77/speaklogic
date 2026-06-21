@@ -191,6 +191,12 @@
                   <Icon><bt:Image size="16" resid="listFeedback.Icon16"/><bt:Image size="32" resid="listFeedback.Icon32"/><bt:Image size="80" resid="listFeedback.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
                 </Control>
+                <Control xsi:type="Button" id="statsOverview">
+                  <Label resid="statsOverview.Label"/>
+                  <Supertip><Title resid="statsOverview.Label"/><Description resid="statsOverview.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>statsOverview</FunctionName></Action>
+                </Control>
                 <Control xsi:type="Button" id="listRetained">
                   <Label resid="listRetained.Label"/>
                   <Supertip><Title resid="listRetained.Label"/><Description resid="listRetained.Tooltip"/></Supertip>
@@ -433,6 +439,12 @@
                   <Supertip><Title resid="listFeedback.Label"/><Description resid="listFeedback.Tooltip"/></Supertip>
                   <Icon><bt:Image size="16" resid="listFeedback.Icon16"/><bt:Image size="32" resid="listFeedback.Icon32"/><bt:Image size="80" resid="listFeedback.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
+                </Control>
+                <Control xsi:type="Button" id="statsOverview_PPT">
+                  <Label resid="statsOverview.Label"/>
+                  <Supertip><Title resid="statsOverview.Label"/><Description resid="statsOverview.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>statsOverview</FunctionName></Action>
                 </Control>
                 <Control xsi:type="Button" id="listRetained_PPT">
                   <Label resid="listRetained.Label"/>
@@ -678,6 +690,7 @@
         <bt:String id="listAnalysis.Label" DefaultValue="List of Analysis"/>
         <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
         <bt:String id="listRetained.Label" DefaultValue="List of Retained"/>
+        <bt:String id="statsOverview.Label" DefaultValue="Stats Overview"/>
         <bt:String id="listSelection.Label" DefaultValue="List of Selection"/>
         <bt:String id="listIdentifiedPrinciple.Label" DefaultValue="List Identified Principle"/>
         <bt:String id="listInterpretedPrinciple.Label" DefaultValue="List Interpreted Principle"/>
@@ -711,6 +724,7 @@
         <bt:String id="listAnalysis.Tooltip" DefaultValue="View all saved analyses"/>
         <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>
         <bt:String id="listRetained.Tooltip" DefaultValue="View retained analyses"/>
+        <bt:String id="statsOverview.Tooltip" DefaultValue="View counts of analyses, feedback and identified items"/>
         <bt:String id="listSelection.Tooltip" DefaultValue="View selection history audit trail"/>
         <bt:String id="listIdentifiedPrinciple.Tooltip" DefaultValue="View all identified principles"/>
         <bt:String id="listInterpretedPrinciple.Tooltip" DefaultValue="View all interpreted principles"/>
@@ -876,6 +890,12 @@
                     <Supertip><Title resid="listFeedback.Label"/><Description resid="listFeedback.Tooltip"/></Supertip>
                     <Icon><bt:Image size="16" resid="listFeedback.Icon16"/><bt:Image size="32" resid="listFeedback.Icon32"/><bt:Image size="80" resid="listFeedback.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="statsOverview_OL">
+                    <Label resid="statsOverview.Label"/>
+                    <Supertip><Title resid="statsOverview.Label"/><Description resid="statsOverview.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>statsOverview</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Button" id="listRetained_OL">
                     <Label resid="listRetained.Label"/>
@@ -1054,6 +1074,12 @@
                     <Icon><bt:Image size="16" resid="listFeedback.Icon16"/><bt:Image size="32" resid="listFeedback.Icon32"/><bt:Image size="80" resid="listFeedback.Icon80"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
                   </Control>
+                  <Control xsi:type="Button" id="statsOverview_OLC">
+                    <Label resid="statsOverview.Label"/>
+                    <Supertip><Title resid="statsOverview.Label"/><Description resid="statsOverview.Tooltip"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>statsOverview</FunctionName></Action>
+                  </Control>
                   <Control xsi:type="Button" id="listRetained_OLC">
                     <Label resid="listRetained.Label"/>
                     <Supertip><Title resid="listRetained.Label"/><Description resid="listRetained.Tooltip"/></Supertip>
@@ -1211,6 +1237,7 @@
           <bt:String id="listAnalysis.Label" DefaultValue="List of Analysis"/>
           <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
           <bt:String id="listRetained.Label" DefaultValue="List of Retained"/>
+        <bt:String id="statsOverview.Label" DefaultValue="Stats Overview"/>
           <bt:String id="communicationConfig.Label" DefaultValue="Communication Config"/>
           <bt:String id="people.Label" DefaultValue="Contacts"/>
           <bt:String id="requestSLFeedback.Label" DefaultValue="Request SL Feedback"/>
@@ -1241,6 +1268,7 @@
           <bt:String id="listAnalysis.Tooltip" DefaultValue="View all saved analyses"/>
           <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>
           <bt:String id="listRetained.Tooltip" DefaultValue="View retained analyses"/>
+        <bt:String id="statsOverview.Tooltip" DefaultValue="View counts of analyses, feedback and identified items"/>
           <bt:String id="communicationConfig.Tooltip" DefaultValue="Configure your name and email for analysis and feedback"/>
           <bt:String id="people.Tooltip" DefaultValue="Manage your contacts for feedback and analysis"/>
           <bt:String id="requestSLFeedback.Tooltip" DefaultValue="Send feedback to the Speak Logic team"/>

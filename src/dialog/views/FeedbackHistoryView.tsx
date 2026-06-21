@@ -75,6 +75,17 @@ export default function FeedbackHistoryView() {
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [filterType, setFilterType] = useState<string | null>(null);
+  // Apply an initial filter when opened pre-filtered from Stats Overview (INIT
+  // arrives async after first render, so set it via effect, once).
+  const appliedInitialFilter = useRef(false);
+  useEffect(() => {
+    if (appliedInitialFilter.current) return;
+    const f = initData?.feedbackFilter;
+    if (f) {
+      setFilterType(f);
+      appliedInitialFilter.current = true;
+    }
+  }, [initData?.feedbackFilter]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const [viewFeedback, setViewFeedback] = useState<ProjectFeedback | null>(null);

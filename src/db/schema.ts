@@ -169,6 +169,17 @@ CREATE TABLE IF NOT EXISTS ProjectCorrectedItem (
   analysisId INTEGER REFERENCES ProjectAnalysis(id)
 );
 
+CREATE TABLE IF NOT EXISTS GuidelineReference (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guidelineText TEXT,
+  guidelineNumber INTEGER DEFAULT 0,
+  guidelineLink TEXT,
+  useLink INTEGER DEFAULT 0,
+  guidelineDate TEXT,
+  guidelineTime TEXT,
+  analysisId INTEGER REFERENCES ProjectAnalysis(id)
+);
+
 CREATE TABLE IF NOT EXISTS Article (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   articleTitle TEXT,

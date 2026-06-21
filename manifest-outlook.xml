@@ -203,6 +203,12 @@
                   <Icon><bt:Image size="16" resid="listFeedback.Icon16"/><bt:Image size="32" resid="listFeedback.Icon32"/><bt:Image size="80" resid="listFeedback.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
                 </Control>
+                <Control xsi:type="Button" id="statsOverview_OL">
+                  <Label resid="statsOverview.Label"/>
+                  <Supertip><Title resid="statsOverview.Label"/><Description resid="statsOverview.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="listAnalysis.Icon16"/><bt:Image size="32" resid="listAnalysis.Icon32"/><bt:Image size="80" resid="listAnalysis.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>statsOverview</FunctionName></Action>
+                </Control>
                 <Control xsi:type="Button" id="listRetained_OL">
                   <Label resid="listRetained.Label"/>
                   <Supertip><Title resid="listRetained.Label"/><Description resid="listRetained.Tooltip"/></Supertip>
@@ -372,6 +378,7 @@
         <bt:String id="listAnalysis.Label" DefaultValue="List of Analysis"/>
         <bt:String id="listFeedback.Label" DefaultValue="List of Feedback"/>
         <bt:String id="listRetained.Label" DefaultValue="List of Retained"/>
+        <bt:String id="statsOverview.Label" DefaultValue="Stats Overview"/>
         <bt:String id="listSelection.Label" DefaultValue="List of Selection"/>
         <bt:String id="listIdPrinciple.Label" DefaultValue="List Identified Principle"/>
         <bt:String id="listIntPrinciple.Label" DefaultValue="List Interpreted Principle"/>
@@ -406,6 +413,7 @@
         <bt:String id="listAnalysis.Tooltip" DefaultValue="View all saved analyses"/>
         <bt:String id="listFeedback.Tooltip" DefaultValue="View all feedback records"/>
         <bt:String id="listRetained.Tooltip" DefaultValue="View retained analyses"/>
+        <bt:String id="statsOverview.Tooltip" DefaultValue="View counts of analyses, feedback and identified items"/>
         <bt:String id="listSelection.Tooltip" DefaultValue="View selection history audit trail"/>
         <bt:String id="listIdPrinciple.Tooltip" DefaultValue="View all identified principles"/>
         <bt:String id="listIntPrinciple.Tooltip" DefaultValue="View all interpreted principles"/>
@@ -575,6 +583,12 @@
                     <Icon><bt:Image size="16" resid="listFeedback.Icon16.v11"/><bt:Image size="32" resid="listFeedback.Icon32.v11"/><bt:Image size="80" resid="listFeedback.Icon80.v11"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
                   </Control>
+                  <Control xsi:type="Button" id="statsOverview_OL_v11">
+                    <Label resid="statsOverview.Label.v11"/>
+                    <Supertip><Title resid="statsOverview.Label.v11"/><Description resid="statsOverview.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listAnalysis.Icon16.v11"/><bt:Image size="32" resid="listAnalysis.Icon32.v11"/><bt:Image size="80" resid="listAnalysis.Icon80.v11"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>statsOverview</FunctionName></Action>
+                  </Control>
                   <Control xsi:type="Button" id="listRetained_OL_v11">
                     <Label resid="listRetained.Label.v11"/>
                     <Supertip><Title resid="listRetained.Label.v11"/><Description resid="listRetained.Tooltip.v11"/></Supertip>
@@ -733,6 +747,12 @@
                     <Supertip><Title resid="listFeedback.Label.v11"/><Description resid="listFeedback.Tooltip.v11"/></Supertip>
                     <Icon><bt:Image size="16" resid="listFeedback.Icon16.v11"/><bt:Image size="32" resid="listFeedback.Icon32.v11"/><bt:Image size="80" resid="listFeedback.Icon80.v11"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>listFeedback</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="statsOverview_OLC">
+                    <Label resid="statsOverview.Label.v11"/>
+                    <Supertip><Title resid="statsOverview.Label.v11"/><Description resid="statsOverview.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="listAnalysis.Icon16.v11"/><bt:Image size="32" resid="listAnalysis.Icon32.v11"/><bt:Image size="80" resid="listAnalysis.Icon80.v11"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>statsOverview</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Button" id="listRetained_OLC">
                     <Label resid="listRetained.Label.v11"/>
@@ -901,6 +921,7 @@
           <bt:String id="listAnalysis.Label.v11" DefaultValue="List of Analysis"/>
           <bt:String id="listFeedback.Label.v11" DefaultValue="List of Feedback"/>
           <bt:String id="listRetained.Label.v11" DefaultValue="List of Retained"/>
+          <bt:String id="statsOverview.Label.v11" DefaultValue="Stats Overview"/>
           <bt:String id="listSelection.Label.v11" DefaultValue="List of Selection"/>
           <bt:String id="listIdPrinciple.Label.v11" DefaultValue="List Identified Principle"/>
           <bt:String id="listIntPrinciple.Label.v11" DefaultValue="List Interpreted Principle"/>
@@ -934,6 +955,7 @@
           <bt:String id="listAnalysis.Tooltip.v11" DefaultValue="View all saved analyses"/>
           <bt:String id="listFeedback.Tooltip.v11" DefaultValue="View all feedback records"/>
           <bt:String id="listRetained.Tooltip.v11" DefaultValue="View retained analyses"/>
+          <bt:String id="statsOverview.Tooltip.v11" DefaultValue="View counts of analyses, feedback and identified items"/>
           <bt:String id="listSelection.Tooltip.v11" DefaultValue="View selection history audit trail"/>
           <bt:String id="listIdPrinciple.Tooltip.v11" DefaultValue="View all identified principles"/>
           <bt:String id="listIntPrinciple.Tooltip.v11" DefaultValue="View all interpreted principles"/>
