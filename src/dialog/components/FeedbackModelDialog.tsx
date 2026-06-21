@@ -156,6 +156,14 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
           strokeLinecap="round" strokeLinejoin="round" markerEnd="url(#arr)"
         />
 
+        {/* Entity under analysis (contains the error) → ECF top.
+            Starts from the left box right-edge center → right → straight down into ECF. */}
+        <path
+          d={`M ${LP_X + LP_W} ${LP_Y + LP_H / 2} L ${ECF_CX} ${LP_Y + LP_H / 2} L ${ECF_CX} ${ECF_TOP - 2}`}
+          fill="none" stroke={LINE_COLOR} strokeWidth="1.7"
+          strokeLinecap="round" strokeLinejoin="round" markerEnd="url(#arr)"
+        />
+
         {/* ECF diamond */}
         <polygon
           points={`${ECF_CX},${ECF_TOP} ${ECF_RIGHT},${ECF_CY} ${ECF_CX},${ECF_BOT} ${ECF_LEFT},${ECF_CY}`}
@@ -256,9 +264,9 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
         }
         title="Click to view feedback"
         style={{
-          position: "absolute", left: lfbCX - FB_W / 2, top: FB_CY - FB_H / 2,
+          position: "absolute", left: lfbCX - FB_W / 2, top: FB_CY - FB_H - 4,
           width: FB_W, height: FB_H,
-          background: colors.white, border: "none", cursor: "pointer", padding: 0,
+          background: "none", border: "none", cursor: "pointer", padding: 0,
           display: "flex", alignItems: "center", justifyContent: "center",
           gap: 6, color: "#a4aaa6", fontSize: "12px", fontFamily: "inherit",
           fontWeight: 600, zIndex: 3,
@@ -275,9 +283,9 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
         }
         title="Click to view feedback"
         style={{
-          position: "absolute", left: rfbCX - FB_W / 2, top: FB_CY - FB_H / 2,
+          position: "absolute", left: rfbCX - FB_W / 2, top: FB_CY - FB_H - 4,
           width: FB_W, height: FB_H,
-          background: colors.white, border: "none", cursor: "pointer", padding: 0,
+          background: "none", border: "none", cursor: "pointer", padding: 0,
           display: "flex", alignItems: "center", justifyContent: "center",
           gap: 6, color: "#a4aaa6", fontSize: "12px", fontFamily: "inherit",
           fontWeight: 600, zIndex: 3,
@@ -404,8 +412,9 @@ function Model2({ feedback }: { feedback: ProjectFeedback }) {
             <path d="M0,0 L0,6 L7,3 Z" fill={LINE_COLOR} />
           </marker>
         </defs>
-        {/* central stem */}
-        <line x1={cx} y1={0} x2={cx} y2={26} stroke={LINE_COLOR} strokeWidth="1.2" />
+        {/* central stem — downward arrow into the split junction */}
+        <line x1={cx} y1={0} x2={cx} y2={26} stroke={LINE_COLOR} strokeWidth="1.2"
+          markerEnd="url(#m2arr)" />
         {/* provider branch (left) */}
         <line x1={cx} y1={26} x2={leftX} y2={26} stroke={LINE_COLOR} strokeWidth="1.2" />
         <line x1={leftX} y1={26} x2={leftX} y2={64}
