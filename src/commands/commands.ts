@@ -25,7 +25,8 @@ import {
   buildApplyFeedbackEmail,
   buildRequestFeedbackEmail,
 } from "@/dialog/utils/emailTemplates";
-import type { ProjectAnalysis } from "@/types/db";
+import { parseFeedbackEmail } from "@/dialog/utils/parseFeedbackEmail";
+import type { ProjectAnalysis, AnalysisDataForApply } from "@/types/db";
 
 function buildPeopleList(commPersonName?: string): string[] {
   const names = getPeopleNames();
@@ -122,6 +123,7 @@ function registerHandlers(): void {
   Office.actions.associate("applySelection", (event) =>
     openApplyDialogFromRibbon("selection", event)
   );
+  Office.actions.associate("applyEmail", (event) => openApplyEmailDialog(event));
   Office.actions.associate("applyParagraph", (event) =>
     openApplyDialogFromRibbon("paragraph", event)
   );
@@ -379,6 +381,19 @@ async function getOutlookText(mode: SelectionMode): Promise<string> {
       if (mode === "selection") { resolve(""); return; }
       getFullBody();
     }
+  });
+}
+
+// Read the full Outlook message body as HTML (Point 11 — Apply Email needs the
+// HTML so the embedded feedback marker / labelled template can be parsed).
+async function getOutlookBodyHtml(): Promise<string> {
+  return new Promise<string>((resolve) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const item = (Office.context.mailbox.item) as any;
+    if (!item?.body?.getAsync) { resolve(""); return; }
+    item.body.getAsync(Office.CoercionType.Html, (result: Office.AsyncResult<string>) => {
+      resolve(result.status === Office.AsyncResultStatus.Failed ? "" : (result.value ?? ""));
+    });
   });
 }
 
@@ -3299,6 +3314,54 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
     communicationPersonEmail: commConfig?.personEmail ?? "",
     analyses,
     feedbacks,
+  }, event);
+}
+
+// Point 11 — "Apply Email": treat the currently-open received email as feedback.
+// Reads the message HTML, parses any Speak Logic feedback template into the Apply
+// dialog (errors/compensators/problems/questions/answers + entity + analysis), and
+// stores the result as feedbackType "Received".
+async function openApplyEmailDialog(event: Office.AddinCommands.Event): Promise<void> {
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
+
+  const html = await getOutlookBodyHtml();
+  const { text: bodyText } = await getOutlookTextAndMeta("paragraph");
+  let subject = "";
+  try {
+    const raw = (Office.context.mailbox.item as { subject?: string }).subject;
+    if (typeof raw === "string") subject = raw;
+  } catch { /* ignore */ }
+
+  const parsed = parseFeedbackEmail(html);
+  const { personName, personEmail } = getUserIdentity();
+  const commConfig = getCommunicationConfig();
+
+  const analysisData: AnalysisDataForApply | undefined = parsed
+    ? {
+        ...parsed,
+        id: 0, // no local analysis row — display/prefill only, not a stored FK
+        entityUnderAnalysis: parsed.entityUnderAnalysis || bodyText,
+        analysisSubject: parsed.analysisSubject || subject,
+      }
+    : undefined;
+
+  openApplyDialog({
+    selection: (parsed?.entityUnderAnalysis || bodyText || "").trim(),
+    mode: "paragraph",
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: subject,
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: subject,
+    peopleList: buildPeopleList(commConfig?.personName),
+    peopleEmailMap: getPeopleEmailMap(),
+    contacts: getAllPeople(),
+    communicationPersonName: commConfig?.personName ?? "",
+    communicationPersonEmail: commConfig?.personEmail ?? "",
+    analysisData,
+    feedbackTypeOverride: "Received",
   }, event);
 }
 

@@ -244,6 +244,29 @@ export function PfAnalysisListIcon() {
   );
 }
 
+/**
+ * List rows + green incoming (down-into-tray) arrow — "List of Feedback Received"
+ * in FeedbackHistoryView (~16px). No designer strip exists for this button; this
+ * is an authored icon matching the blue-rows / green-accent family above.
+ */
+export function FbHistoryListReceivedIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* green title bar */}
+      <rect x="0.6" y="0.6" width="16.8" height="3" rx="0.6" fill="#0CBA58" />
+      {/* list rows */}
+      <rect x="0.9" y="5.4" width="10.5" height="1" rx="0.5" fill="#4259C3" />
+      <rect x="0.9" y="8.1" width="10.5" height="1" rx="0.5" fill="#4259C3" />
+      <rect x="0.9" y="10.8" width="7.2" height="1" rx="0.5" fill="#4259C3" />
+      <rect x="0.9" y="13.5" width="7.2" height="1" rx="0.5" fill="#4259C3" />
+      {/* incoming arrow: shaft down + head + tray */}
+      <rect x="13.4" y="5.4" width="1.2" height="5.1" rx="0.6" fill="#0CBA58" />
+      <path d="M11.6 9.6L14 12.2L16.4 9.6" stroke="#0CBA58" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <path d="M11.4 14.4H16.6" stroke="#0CBA58" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** Table-doc + person-chat + green applied badge — "List of Feedback Applied" in FeedbackHistoryView (~16px). */
 export function FbHistoryListAppliedIcon() {
   return (

@@ -53,6 +53,7 @@ import {
 } from "@/db/queries/principle";
 import { openIdentifiedPrincipleReport, openInterpretedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
 import { buildProvideFeedbackEmail, buildApplyFeedbackEmail, buildRequestFeedbackEmail } from "@/dialog/utils/emailTemplates";
+import { parseFeedbackEmail } from "@/dialog/utils/parseFeedbackEmail";
 import type { ProjectAnalysis } from "@/types/db";
 import type {
   AttachFileToProject,
@@ -209,6 +210,18 @@ async function readOutlookText(mode: SelectionMode): Promise<string> {
   });
 }
 
+// Read the full message body as HTML (Point 11 — Apply Email parsing).
+async function readOutlookBodyHtml(): Promise<string> {
+  return new Promise<string>((resolve) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const item = Office.context.mailbox.item as any;
+    if (!item?.body?.getAsync) { resolve(""); return; }
+    item.body.getAsync(Office.CoercionType.Html, (result: Office.AsyncResult<string>) => {
+      resolve(result.status === Office.AsyncResultStatus.Failed ? "" : (result.value ?? ""));
+    });
+  });
+}
+
 async function readSubject(): Promise<string> {
   try {
     const rawSubject = (Office.context.mailbox.item as { subject?: string | { getAsync?: unknown } }).subject;
@@ -336,6 +349,7 @@ const GROUPS: GroupDef[] = [
     items: [
       { id: "applySelection",    label: "Apply Selection",    icon: "btn-apply-sel-32.png" },
       { id: "applyParagraph",    label: "Apply Paragraph",    icon: "btn-apply-para-32.png" },
+      { id: "applyEmail",        label: "Apply Email",        icon: "btn-apply-sel-32.png" },
       { id: "provideFeedback",   label: "Provide Feedback",   icon: "btn-provide-fb-sel-32.png" },
       { id: "feedbackParagraph", label: "Feedback Paragraph", icon: "btn-provide-fb-para-32.png" },
       { id: "requestFeedback",   label: "Request Feedback",   icon: "btn-req-fb-32.png" },
@@ -727,6 +741,50 @@ export function OutlookTaskPane() {
               compensatorReplaced:   sp.compensatorReplaced,
               additionalExplanation: sp.additionalExplanation,
               files:                 sp.files,
+            });
+          } catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); }
+        }
+      }
+    );
+  }, [dbReady, openManagedDialog]);
+
+  // Point 11 — Apply Email: parse the received email's Speak Logic template into
+  // the Apply dialog and store the result as feedbackType "Received".
+  const handleApplyEmail = useCallback(async () => {
+    if (!dbReady) return;
+    const html = await readOutlookBodyHtml();
+    let bodyText = "";
+    try { bodyText = await readOutlookText("paragraph"); } catch { /* fall through */ }
+    const { personName, personEmail } = getUserIdentity();
+    const commConfig = getCommunicationConfig();
+    const subject = await readSubject();
+    const parsed = parseFeedbackEmail(html);
+    const analysisData = parsed
+      ? { ...parsed, id: 0, entityUnderAnalysis: parsed.entityUnderAnalysis || bodyText, analysisSubject: parsed.analysisSubject || subject }
+      : undefined;
+    const initPayload: DialogInitPayload = {
+      selection: (parsed?.entityUnderAnalysis || bodyText || "").trim(), mode: "paragraph", source: getSource(),
+      personName, personEmail, applicationName: subject, communicationFunction: "", communicationSignal: "",
+      projectName: subject, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(),
+      communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "",
+      analysisData, feedbackTypeOverride: "Received",
+    };
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=apply`,
+      DIALOG_SIZE,
+      () => initPayload,
+      (dialog, action) => {
+        if (action.action === "SAVE_FEEDBACK") {
+          const p = action.payload as SaveFeedbackPayload;
+          try { saveFeedback(p); }
+          catch (err) { setStatus({ msg: `Failed to save feedback: ${String(err)}`, ok: false }); dialog.close(); dialogRef.current = null; return; }
+          dialog.close(); dialogRef.current = null;
+        } else if (action.action === "SAVE_PROBLEM_SOLUTION") {
+          const sp = action.payload as import("@/types/db").SaveProblemSolutionPayload;
+          try {
+            saveProblemSolution({
+              actualProblem: sp.actualProblem, feedbackApplied: sp.feedbackApplied, errorCorrected: sp.errorCorrected,
+              compensatorReplaced: sp.compensatorReplaced, additionalExplanation: sp.additionalExplanation, files: sp.files,
             });
           } catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); }
         }
@@ -1395,6 +1453,7 @@ export function OutlookTaskPane() {
       case "selectionConfig":    handleSelectionConfig(); break;
       case "applySelection":     void handleApply("selection"); break;
       case "applyParagraph":     void handleApply("paragraph"); break;
+      case "applyEmail":         void handleApplyEmail(); break;
       case "provideFeedback":    void handleProvideFeedback("selection"); break;
       case "feedbackParagraph":  void handleProvideFeedback("paragraph"); break;
       case "requestFeedback":    void handleRequestFeedback(); break;

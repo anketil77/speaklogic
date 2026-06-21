@@ -20,6 +20,7 @@ import {
   FbHistoryListRequestedIcon,
   FbHistoryListAppliedIcon,
   FbHistoryListProvidedIcon,
+  FbHistoryListReceivedIcon,
 
   FbHistoryViewReportIcon,
 } from "@/dialog/components/Icons";
@@ -32,6 +33,7 @@ const FEEDBACK_TYPE_FILTERS: { label: string; value: string | null }[] = [
   { label: "Applied", value: "Applied" },
   { label: "Provided", value: "Provided" },
   { label: "Requested", value: "Requested" },
+  { label: "Received", value: "Received" },
 ];
 
 const MAIN_LIST_INFO = {
@@ -460,6 +462,26 @@ export default function FeedbackHistoryView() {
           }}
         >
           <FbHistoryListRequestedIcon />
+        </button>
+
+        <button
+          title="List of Feedback Received"
+          onClick={() => handleFilterSelect("Received")}
+          className="sl-icon-btn"
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "none",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <FbHistoryListReceivedIcon />
         </button>
 
         <CmdSepBar />

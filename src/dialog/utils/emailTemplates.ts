@@ -13,10 +13,66 @@ import type {
   ProjectCompensator,
   ProjectQuestion,
   ProjectAnswer,
+  ProjectProblem,
+  AnalysisDataForApply,
 } from "@/types/db";
 import { formatDisplayDate } from "@/db/db";
 
 const GREEN = "#42b634";
+
+// ── Embedded machine-readable payload (Point 11 — Apply Email extraction) ─────
+// Every "with analysis" feedback email carries a hidden, base64 JSON copy of the
+// analysis sub-collections. When the recipient runs "Apply Email", the parser
+// (src/dialog/utils/parseFeedbackEmail.ts) reads this back into the Apply dialog —
+// 100% reliable, independent of the visible HTML layout. Human-typed emails have
+// no marker and therefore cannot be auto-extracted (documented limitation).
+export const SL_FEEDBACK_MARKER = "data-sl-feedback";
+
+function buildEmbeddedData(
+  analysis: ProjectAnalysis,
+  fb: SaveFeedbackPayload["feedback"],
+): string {
+  const data: AnalysisDataForApply = {
+    id: analysis.id ?? 0,
+    entityUnderAnalysis: analysis.entityUnderAnalysis ?? "",
+    analysisSubject: analysis.analysisSubject ?? fb.feedbackSubject ?? "",
+    actualAnalysis: analysis.actualAnalysis ?? "",
+    fromPerson: analysis.fromPerson ?? fb.fromPerson ?? "",
+    errors: (analysis.errors ?? []).map((e) => ({
+      errorNumber: e.errorNumber, actualError: e.actualError, fromActualCommunication: e.fromActualCommunication,
+      entityErrorPointTo: e.entityErrorPointTo, errorDescription: e.errorDescription, errorDate: e.errorDate, errorTime: e.errorTime,
+    })),
+    compensators: (analysis.compensators ?? []).map((c) => ({
+      compensatorNumber: c.compensatorNumber, actualCompensator: c.actualCompensator, actualErrorReplaced: c.actualErrorReplaced,
+      inActualCommunication: c.inActualCommunication, compensatorDescription: c.compensatorDescription, compensatorDate: c.compensatorDate, compensatorTime: c.compensatorTime,
+    })),
+    questions: (analysis.questions ?? []).map((q) => ({
+      questionNumber: q.questionNumber, actualQuestion: q.actualQuestion, entityQuestionPointTo: q.entityQuestionPointTo,
+      responseStatus: q.responseStatus, questionDate: q.questionDate, questionTime: q.questionTime,
+    })),
+    answers: (analysis.answers ?? []).map((a) => ({
+      answerNumber: a.answerNumber, actualQuestion: a.actualQuestion, entityQuestionPointTo: a.entityQuestionPointTo,
+      informationAnswerPointTo: a.informationAnswerPointTo, actualAnswer: a.actualAnswer, answerDate: a.answerDate, answerTime: a.answerTime,
+    })),
+    files: [],
+    correctedItems: [],
+    problems: (analysis.problems ?? []).map((p) => ({
+      problemNumber: p.problemNumber, problemName: p.problemName, actualProblem: p.actualProblem,
+      fromActualError: p.fromActualError, problemDescription: p.problemDescription, problemDate: p.problemDate, problemTime: p.problemTime,
+    })),
+  };
+  // encodeURIComponent → base64 keeps it ASCII-safe inside the HTML attribute and
+  // survives Outlook's HTML round-trip; ES5-safe (no btoa unicode pitfalls here).
+  let encoded = "";
+  try {
+    encoded = typeof btoa === "function"
+      ? btoa(encodeURIComponent(JSON.stringify(data)))
+      : encodeURIComponent(JSON.stringify(data));
+  } catch {
+    encoded = encodeURIComponent(JSON.stringify(data));
+  }
+  return `<div ${SL_FEEDBACK_MARKER}="${encoded}" style="display:none;mso-hide:all;font-size:0;line-height:0;max-height:0;overflow:hidden;">&nbsp;</div>`;
+}
 
 // ── Image base URL ────────────────────────────────────────────────────────────
 // At runtime the add-in is served from the same origin in both dev and prod.
@@ -180,6 +236,17 @@ function buildAnswerRows(answers: ProjectAnswer[]): string {
   ].join("")).join("");
 }
 
+function buildProblemRows(problems: ProjectProblem[]): string {
+  if (!problems.length) return "";
+  return problems.map((p, i) => [
+    fieldRow("Problem Number", esc(String(p.problemNumber ?? i + 1))),
+    fieldRow("Problem Name", esc(p.problemName)),
+    fieldRow("Actual Problem", esc(p.actualProblem)),
+    fieldRow("From Actual Error", esc(p.fromActualError)),
+    blockField("Problem Description", esc(stripHtml(p.problemDescription))),
+  ].join("")).join("");
+}
+
 // ── Provide Feedback ──────────────────────────────────────────────────────────
 
 function buildProvideFeedbackWithAnalysis(
@@ -224,9 +291,13 @@ function buildProvideFeedbackWithAnalysis(
   const aSection = (analysis.answers?.length)
     ? section("icon-answer.png", "About Answer", buildAnswerRows(analysis.answers))
     : "";
+  const pSection = (analysis.problems?.length)
+    ? section("icon-solved.png", "About Problem", buildProblemRows(analysis.problems))
+    : "";
 
   return wrapPage("Provide Feedback", [
-    provideFbSection, msgSection, analysisSection, errorSection, compSection, qSection, aSection,
+    provideFbSection, msgSection, analysisSection, errorSection, compSection, pSection, qSection, aSection,
+    buildEmbeddedData(analysis, fb),
   ].join(""));
 }
 
@@ -315,9 +386,13 @@ function buildApplyFeedbackWithAnalysis(
   const aSection = (analysis.answers?.length)
     ? section("icon-answer.png", "About Answer", buildAnswerRows(analysis.answers))
     : "";
+  const pSection = (analysis.problems?.length)
+    ? section("icon-solved.png", "About Problem", buildProblemRows(analysis.problems))
+    : "";
 
   return wrapPage("Apply Feedback", [
-    applySection, msgSection, analysisSection, errorSection, compSection, qSection, aSection,
+    applySection, msgSection, analysisSection, errorSection, compSection, pSection, qSection, aSection,
+    buildEmbeddedData(analysis, fb),
   ].join(""));
 }
 
@@ -440,9 +515,13 @@ function buildReceiveFeedbackWithAnalysis(
   const aSection = (analysis.answers?.length)
     ? section("icon-answer.png", "About Answer", buildAnswerRows(analysis.answers))
     : "";
+  const pSection = (analysis.problems?.length)
+    ? section("icon-solved.png", "About Problem", buildProblemRows(analysis.problems))
+    : "";
 
   return wrapPage("Receive Feedback", [
-    receiveSection, msgSection, errorSection, compSection, qSection, aSection,
+    receiveSection, msgSection, errorSection, compSection, pSection, qSection, aSection,
+    buildEmbeddedData(analysis, fb),
   ].join(""));
 }
 

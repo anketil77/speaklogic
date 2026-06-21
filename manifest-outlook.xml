@@ -135,6 +135,12 @@
                   <Icon><bt:Image size="16" resid="applyParagraph.Icon16"/><bt:Image size="32" resid="applyParagraph.Icon32"/><bt:Image size="80" resid="applyParagraph.Icon80"/></Icon>
                   <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
                 </Control>
+                <Control xsi:type="Button" id="applyEmail_OL">
+                  <Label resid="applyEmail.Label"/>
+                  <Supertip><Title resid="applyEmail.Label"/><Description resid="applyEmail.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="applySelection.Icon16"/><bt:Image size="32" resid="applySelection.Icon32"/><bt:Image size="80" resid="applySelection.Icon80"/></Icon>
+                  <Action xsi:type="ExecuteFunction"><FunctionName>applyEmail</FunctionName></Action>
+                </Control>
                 <Control xsi:type="Button" id="provideFeedbackSelection_OL">
                   <Label resid="provideFeedbackSelection.Label"/>
                   <Supertip><Title resid="provideFeedbackSelection.Label"/><Description resid="provideFeedbackSelection.Tooltip"/></Supertip>
@@ -355,6 +361,7 @@
         <bt:String id="selectionMenu.Label" DefaultValue="Selection"/>
         <bt:String id="applySelection.Label" DefaultValue="Apply Selection"/>
         <bt:String id="applyParagraph.Label" DefaultValue="Apply Paragraph"/>
+        <bt:String id="applyEmail.Label" DefaultValue="Apply Email"/>
         <bt:String id="provideFeedbackSelection.Label" DefaultValue="Provide Feedback"/>
         <bt:String id="provideFeedbackParagraph.Label" DefaultValue="Feedback Paragraph"/>
         <bt:String id="requestFeedback.Label" DefaultValue="Request Feedback"/>
@@ -388,6 +395,7 @@
         <bt:String id="selectionConfig.Tooltip" DefaultValue="Configure selection behavior"/>
         <bt:String id="applySelection.Tooltip" DefaultValue="Apply analysis as feedback to selection"/>
         <bt:String id="applyParagraph.Tooltip" DefaultValue="Apply analysis as feedback to paragraph"/>
+        <bt:String id="applyEmail.Tooltip" DefaultValue="Apply this received email as feedback (auto-extracts the Speak Logic template)"/>
         <bt:String id="provideFeedbackSelection.Tooltip" DefaultValue="Send analysis as email feedback"/>
         <bt:String id="provideFeedbackParagraph.Tooltip" DefaultValue="Send paragraph analysis as email feedback"/>
         <bt:String id="requestFeedback.Tooltip" DefaultValue="Request feedback from another person"/>
@@ -504,6 +512,12 @@
                     <Supertip><Title resid="applyParagraph.Label.v11"/><Description resid="applyParagraph.Tooltip.v11"/></Supertip>
                     <Icon><bt:Image size="16" resid="applyParagraph.Icon16.v11"/><bt:Image size="32" resid="applyParagraph.Icon32.v11"/><bt:Image size="80" resid="applyParagraph.Icon80.v11"/></Icon>
                     <Action xsi:type="ExecuteFunction"><FunctionName>applyParagraph</FunctionName></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="applyEmail_OL_v11">
+                    <Label resid="applyEmail.Label.v11"/>
+                    <Supertip><Title resid="applyEmail.Label.v11"/><Description resid="applyEmail.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="applySelection.Icon16.v11"/><bt:Image size="32" resid="applySelection.Icon32.v11"/><bt:Image size="80" resid="applySelection.Icon80.v11"/></Icon>
+                    <Action xsi:type="ExecuteFunction"><FunctionName>applyEmail</FunctionName></Action>
                   </Control>
                   <Control xsi:type="Button" id="provideFeedbackSelection_OL_v11">
                     <Label resid="pvFbSel.Label.v11"/>
@@ -877,6 +891,7 @@
           <bt:String id="selectionMenu.Label.v11" DefaultValue="Selection"/>
           <bt:String id="applySelection.Label.v11" DefaultValue="Apply Selection"/>
           <bt:String id="applyParagraph.Label.v11" DefaultValue="Apply Paragraph"/>
+          <bt:String id="applyEmail.Label.v11" DefaultValue="Apply Email"/>
           <bt:String id="pvFbSel.Label.v11" DefaultValue="Provide Feedback"/>
           <bt:String id="pvFbPar.Label.v11" DefaultValue="Feedback Paragraph"/>
           <bt:String id="requestFeedback.Label.v11" DefaultValue="Request Feedback"/>
@@ -909,6 +924,7 @@
           <bt:String id="selectionConfig.Tooltip.v11" DefaultValue="Configure selection behavior"/>
           <bt:String id="applySelection.Tooltip.v11" DefaultValue="Apply analysis as feedback to selection"/>
           <bt:String id="applyParagraph.Tooltip.v11" DefaultValue="Apply analysis as feedback to paragraph"/>
+          <bt:String id="applyEmail.Tooltip.v11" DefaultValue="Apply this received email as feedback (auto-extracts the Speak Logic template)"/>
           <bt:String id="pvFbSel.Tooltip.v11" DefaultValue="Send analysis as email feedback"/>
           <bt:String id="pvFbPar.Tooltip.v11" DefaultValue="Send paragraph analysis as email feedback"/>
           <bt:String id="requestFeedback.Tooltip.v11" DefaultValue="Request feedback from another person"/>

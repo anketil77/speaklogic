@@ -675,6 +675,8 @@ export interface AnalysisDataForApply {
   answers: Array<Omit<ProjectAnswer, "id" | "analysisId" | "questionId">>;
   files: Array<Omit<AttachFileToProject, "id" | "analysisId">>;
   correctedItems: Array<Omit<ProjectCorrectedItem, "id" | "analysisId">>;
+  /** Problems extracted from a received feedback email (Point 11 — Apply Email). */
+  problems?: Array<Omit<ProjectProblem, "id" | "analysisId" | "feedbackId">>;
 }
 
 export interface ContactPerson {
@@ -728,6 +730,12 @@ export interface DialogInitPayload {
   keywordHistory?: KeywordHistory[];
   /** Existing error texts for the inline Compensator dialog dropdown (Point 9). */
   inlineErrors?: string[];
+  /**
+   * Overrides the feedbackType the Apply dialog stores on save (default "Applied").
+   * Set to "Received" by the Apply Email flow (Point 11) so applied-from-email
+   * feedback appears under the "Received" filter / List of Feedback Received.
+   */
+  feedbackTypeOverride?: string;
 }
 
 // User-defined "information" item shown in the wizard's "Select Information"

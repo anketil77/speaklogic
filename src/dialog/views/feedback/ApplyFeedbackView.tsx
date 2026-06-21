@@ -140,6 +140,8 @@ export default function ApplyView() {
       setAnswers(ad.answers.map((a) => ({ ...a })));
       setFiles(ad.files.map((f) => ({ ...f })));
       setCorrectedItems((ad.correctedItems ?? []).map((ci) => ({ ...ci })));
+      // Problems extracted from a received feedback email (Point 11 — Apply Email).
+      if (ad.problems?.length) setProblems(ad.problems.map((p) => ({ ...p })));
     }
   }, [initData]);
 
@@ -321,13 +323,15 @@ export default function ApplyView() {
       feedback: {
         feedbackApplication: form.feedbackApplication, feedbackDate: nowDate(), feedbackTime: nowTime(),
         fromPerson: form.fromPerson || analysisData?.fromPerson || "", toPerson: form.toPerson || analysisData?.fromPerson || "",
-        feedbackSubject: form.feedbackSubject, internalFeedbackName: "", feedbackType: "Applied",
+        feedbackSubject: form.feedbackSubject, internalFeedbackName: "", feedbackType: initData.feedbackTypeOverride || "Applied",
         actualSelection: selectionHtml || initData.selection,
         selectionType: initData.mode === "selection" ? "Selection" : "Paragraph",
         actualErrorSubstituted: form.errorSubstituted, actualCompensatorReplaced: form.compensatorReplaced,
         source: initData.source, applicationName: form.applicationName, communicationFunction: form.communicationFunction,
         communicationSignal: initData.communicationSignal, projectName: initData.projectName,
-        personName: initData.personName, personEmail: initData.personEmail, analysisId: analysisData?.id,
+        personName: initData.personName, personEmail: initData.personEmail,
+        // id 0 = extracted-from-email (no local analysis row) → store no FK.
+        analysisId: analysisData?.id && analysisData.id > 0 ? analysisData.id : undefined,
       },
       files: newFiles, newCorrectedItems,
       problems: problems.map((pr) => ({
