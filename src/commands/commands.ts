@@ -3561,8 +3561,14 @@ function openKeywordHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
         }
         const dialog = result.value;
         const complete = makeEventCompleter(event);
+        // The OnMessageSend checker runs in a separate runtime and writes history
+        // to localStorage. Reload from storage before every read/write so this
+        // opener sees those rows (no full browser refresh needed) AND never
+        // persists a stale in-memory DB back over the checker's writes.
         const sendInit = () =>
-          dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+          reloadDbFromStorage().then(() =>
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage))
+          );
         dialog.addEventHandler(Office.EventType.DialogEventReceived, () => complete());
         dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
           const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -3571,12 +3577,14 @@ function openKeywordHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
               sendInit();
               break;
             case "DELETE_KEYWORD_HISTORY":
-              try { deleteKeywordHistoryById(m.id); sendInit(); }
-              catch (err) { replyError(dialog, `Failed to delete history: ${String(err)}`); }
+              reloadDbFromStorage()
+                .then(() => { deleteKeywordHistoryById(m.id); return sendInit(); })
+                .catch((err) => replyError(dialog, `Failed to delete history: ${String(err)}`));
               break;
             case "CLEAR_KEYWORD_HISTORY":
-              try { clearKeywordHistory(); sendInit(); }
-              catch (err) { replyError(dialog, `Failed to clear history: ${String(err)}`); }
+              reloadDbFromStorage()
+                .then(() => { clearKeywordHistory(); return sendInit(); })
+                .catch((err) => replyError(dialog, `Failed to clear history: ${String(err)}`));
               break;
             case "CLOSE":
               try { dialog.close(); } catch { /* already closed */ }

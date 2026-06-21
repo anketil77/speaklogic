@@ -1,7 +1,7 @@
 /* global Office */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { initDb, nowDate, formatDisplayDate } from "@/db/db";
+import { initDb, nowDate, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
 import { dbg } from "@/debug/log";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { getKeywordRules, getKeywordSetting, saveKeywordRules, getKeywordHistory, deleteKeywordHistoryById, clearKeywordHistory } from "@/db/queries/keywords";
@@ -1308,7 +1308,7 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
-  const handleKeywordHistory = useCallback(() => {
+  const handleKeywordHistory = useCallback(async () => {
     if (!dbReady) return;
     const buildPayload = (): DialogInitPayload => ({
       selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "",
@@ -1316,20 +1316,26 @@ export function OutlookTaskPane() {
       communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName,
       peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), keywordHistory: getKeywordHistory(),
     });
+    // The OnMessageSend checker runs in a separate runtime and writes history to
+    // localStorage. Reload before reading so freshly-flagged sends show without a
+    // full browser refresh — and before any write so we never persist a stale DB
+    // back over the checker's rows.
+    await reloadDbFromStorage();
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=keyword-history`,
       { height: 70, width: 38 },
       buildPayload,
       (dialog, action) => {
-        try {
-          if (action.action === "DELETE_KEYWORD_HISTORY") {
-            deleteKeywordHistoryById(action.id);
-            dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
-          } else if (action.action === "CLEAR_KEYWORD_HISTORY") {
-            clearKeywordHistory();
-            dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
-          }
-        } catch (err) { setStatus({ msg: `Failed to update history: ${String(err)}`, ok: false }); }
+        const refresh = () => dialog.messageChild(JSON.stringify({ type: "INIT", payload: buildPayload() } as HostMessage));
+        if (action.action === "DELETE_KEYWORD_HISTORY") {
+          reloadDbFromStorage()
+            .then(() => { deleteKeywordHistoryById(action.id); refresh(); })
+            .catch((err) => setStatus({ msg: `Failed to delete history: ${String(err)}`, ok: false }));
+        } else if (action.action === "CLEAR_KEYWORD_HISTORY") {
+          reloadDbFromStorage()
+            .then(() => { clearKeywordHistory(); refresh(); })
+            .catch((err) => setStatus({ msg: `Failed to clear history: ${String(err)}`, ok: false }));
+        }
       }
     );
   }, [dbReady, openManagedDialog]);
