@@ -12,7 +12,7 @@ import React, {
 } from "react";
 import ReactDOM from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
-import { ArticleCloseIcon } from "@/dialog/components/Icons";
+import { CloseIcon } from "@/dialog/components/Icons";
 import {
   AirplaneRegular,
   BeakerRegular,
@@ -278,7 +278,7 @@ export function CategoryPickerPanel({
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F0F0F0"; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
         >
-          <ArticleCloseIcon />
+          <CloseIcon />
         </button>
       </div>
 

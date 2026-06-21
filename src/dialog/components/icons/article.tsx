@@ -39,15 +39,6 @@ export function ArticleHeaderIcon() {
   );
 }
 
-export function ArticleCloseIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <line x1="1.5" y1="1.5" x2="9.5" y2="9.5" stroke="#616161" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="9.5" y1="1.5" x2="1.5" y2="9.5" stroke="#616161" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 export function ArticleCaretDownIcon({ color = "#ADADAD" }: { color?: string }) {
   return (
     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">

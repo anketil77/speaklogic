@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Spinner } from "@fluentui/react-components";
 import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterButtons";
+import { CloseIcon } from "@/dialog/components/Icons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { colors } from "@/styles/tokens";
 import type { ContactPerson } from "@/types/db";
@@ -56,14 +57,6 @@ function TrashIcon({ color = "#616161" }: { color?: string }) {
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M2 3.5h10M5 3.5V2.5a.5.5 0 01.5-.5h3a.5.5 0 01.5.5v1M5.5 6v4.5M8.5 6v4.5M3 3.5l.75 8a.5.5 0 00.5.5h5.5a.5.5 0 00.5-.5L11 3.5"
         stroke={color} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function CloseXIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <path d="M1 1l10 10M11 1L1 11" stroke="#616161" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   );
 }
@@ -309,13 +302,15 @@ export default function PeopleView() {
               <button
                 onClick={cancelForm}
                 title="Cancel"
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F0F0F0"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                 style={{
                   width: "22px", height: "22px", border: "none", background: "transparent",
                   cursor: "pointer", borderRadius: "4px", display: "flex",
                   alignItems: "center", justifyContent: "center", padding: 0,
                 }}
               >
-                <CloseXIcon />
+                <CloseIcon />
               </button>
             </div>
 

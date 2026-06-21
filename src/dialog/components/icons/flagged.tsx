@@ -66,8 +66,8 @@ export function PrincipleDropdownTriggerIcon() {
 export function ProvideSelFbMenuIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1" y="2.5" width="12" height="9" rx="1" stroke="#0078D4" strokeWidth="1.2" />
-      <path d="M1 4.5L7 8.5L13 4.5" stroke="#0078D4" strokeWidth="1.1" strokeLinecap="round" />
+      <rect x="1" y="2.5" width="12" height="9" rx="1" stroke="#4259C3" strokeWidth="1.2" />
+      <path d="M1 4.5L7 8.5L13 4.5" stroke="#4259C3" strokeWidth="1.1" strokeLinecap="round" />
     </svg>
   );
 }
@@ -76,9 +76,9 @@ export function ProvideSelFbMenuIcon() {
 export function ApplySelFbMenuIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1.5" y="2" width="8" height="11" rx="1" stroke="#0078D4" strokeWidth="1.2" />
-      <path d="M3.5 6H7.5M3.5 8.5H6.5" stroke="#0078D4" strokeWidth="1" strokeLinecap="round" />
-      <path d="M10 5L13 8M13 8L10 11M13 8H7" stroke="#0078D4" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="1.5" y="2" width="8" height="11" rx="1" stroke="#4259C3" strokeWidth="1.2" />
+      <path d="M3.5 6H7.5M3.5 8.5H6.5" stroke="#4259C3" strokeWidth="1" strokeLinecap="round" />
+      <path d="M10 5L13 8M13 8L10 11M13 8H7" stroke="#4259C3" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -87,9 +87,9 @@ export function ApplySelFbMenuIcon() {
 export function RequestSelFbMenuIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1" y="2.5" width="12" height="9" rx="1" stroke="#0078D4" strokeWidth="1.2" />
-      <path d="M1 4.5L7 8.5L13 4.5" stroke="#0078D4" strokeWidth="1.1" strokeLinecap="round" />
-      <path d="M7 7.5V11" stroke="#0078D4" strokeWidth="1.1" strokeLinecap="round" />
+      <rect x="1" y="2.5" width="12" height="9" rx="1" stroke="#4259C3" strokeWidth="1.2" />
+      <path d="M1 4.5L7 8.5L13 4.5" stroke="#4259C3" strokeWidth="1.1" strokeLinecap="round" />
+      <path d="M7 7.5V11" stroke="#4259C3" strokeWidth="1.1" strokeLinecap="round" />
     </svg>
   );
 }
@@ -112,7 +112,7 @@ export function DeleteSelectionIcon() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="1.5" y="3.5" width="9" height="9" rx="1" stroke="#4259C3" strokeWidth="1.1" />
       <path d="M3.5 7H8M3.5 9.5H7" stroke="#4259C3" strokeWidth="1" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="3.2" fill="#D13438" />
+      <circle cx="12" cy="12" r="3.2" fill="#FF0000" />
       <path d="M10.8 10.8L13.2 13.2M13.2 10.8L10.8 13.2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   );

@@ -173,6 +173,7 @@ export function PrincipleModelDialog(props: Props) {
             </div>
           </div>
           <button
+            className="sl-close-btn"
             onClick={onClose}
             style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", flexShrink: 0, padding: 0 }}
             title="Close"

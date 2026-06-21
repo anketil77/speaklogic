@@ -14,7 +14,7 @@
 
 import React, { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { ArticleCloseIcon, WizardSearchIcon } from "@/dialog/components/Icons";
+import { CloseIcon, WizardSearchIcon } from "@/dialog/components/Icons";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 
 export interface InfoItem {
@@ -155,7 +155,7 @@ function PanelHeader({ onClose, onDragStart }: { onClose: () => void; onDragStar
           cursor: "pointer", flexShrink: 0,
         }}
       >
-        <ArticleCloseIcon />
+        <CloseIcon />
       </button>
     </div>
   );

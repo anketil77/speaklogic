@@ -44,7 +44,7 @@ export function AnswerIcon({ color = "#0078D4" }: { color?: string } = {}) {
   );
 }
 
-export function ErrorIcon({ color = "#D13438" }: { color?: string } = {}) {
+export function ErrorIcon({ color = "#FF0000" }: { color?: string } = {}) {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <circle cx="9" cy="9" r="7" stroke={color} strokeWidth="1.5" />
@@ -72,7 +72,7 @@ export function IdentifyProblemStarIcon({ color = "#0078D4" }: { color?: string 
   );
 }
 
-export function ProblemIcon({ color = "#D13438" }: { color?: string } = {}) {
+export function ProblemIcon({ color = "#FF0000" }: { color?: string } = {}) {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <rect x="1" y="1" width="16" height="16" rx="3" stroke={color} strokeWidth="1.4" />

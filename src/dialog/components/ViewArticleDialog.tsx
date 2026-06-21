@@ -7,7 +7,7 @@ import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import { createPortal } from "react-dom";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { ResizeHandles } from "@/dialog/components/ResizeHandles";
-import { ArticleHeaderIcon, ArticleCloseIcon } from "@/dialog/components/Icons";
+import { ArticleHeaderIcon, CloseIcon } from "@/dialog/components/Icons";
 import { HtmlContent } from "@/dialog/components/HtmlContent";
 import { CategoryIcon } from "@/dialog/views/createarticle/CategoryPickerPanel";
 import type { Article } from "@/types/db";
@@ -391,6 +391,8 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
           <button
             onClick={onClose}
             title="Close"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F0F0F0"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
             style={{
               width: 24,
               height: 24,
@@ -405,7 +407,7 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
               padding: 0,
             }}
           >
-            <ArticleCloseIcon />
+            <CloseIcon />
           </button>
         </div>
 
