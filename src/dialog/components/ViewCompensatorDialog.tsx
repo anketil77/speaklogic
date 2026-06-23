@@ -225,7 +225,7 @@ export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200 }
       <EntityModelDialog
         title="Compensator Model"
         subtitle="View the compensator model representation."
-        left={{ label: "Actual Error Replaced", content: compensator.actualErrorReplaced }}
+        left={{ label: "Actual Error", content: compensator.actualErrorReplaced }}
         right={{ label: "Actual Compensator", content: compensator.actualCompensator }}
         arrowLabel="replaced by"
         onClose={() => setShowModel(false)}
