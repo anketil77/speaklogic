@@ -139,9 +139,11 @@ function ModelBox({
   );
 }
 
-// ─── Model 2 — Principle box with the attached Principle Communication box ─────────
-// Client (point 21): "model 2 will show the principle box like this … you include a
-// principle communication box. You can add below it like (click to view)."
+// ─── Model 2 — Principle box with the Principle Communication nested inside ────────
+// Client (point 21, revised): the communication principle is NOT a separate box
+// stacked below the principle. Instead it is nested INSIDE the principle box,
+// split off by a vertical divider — showing the communication principle is
+// attached to / part of the actual principle.
 function Model2({
   principleHtml,
   commPrincipleHtml,
@@ -151,97 +153,71 @@ function Model2({
   commPrincipleHtml: string;
   onOpen: (title: string, html: string) => void;
 }) {
-  const BOX2_W = 300;
+  const BOX2_W = 360;
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 0,
-        padding: "8px 0 4px",
-      }}
-    >
-      {/* Principle box (blue header) */}
-      <ModelBoxStatic
-        w={BOX2_W}
-        label="Principle"
-        blueHeader
-        onClick={() => onOpen("Principle", principleHtml)}
-      />
-
-      {/* Connector — the communication principle is attached to the actual principle */}
-      <div style={{ width: 2, height: 26, background: BORDER_COLOR }} />
-
-      {/* Principle Communication box (click to view) */}
-      <ModelBoxStatic
-        w={BOX2_W}
-        label="Principle Communication"
-        onClick={() => onOpen("Communication Principle", commPrincipleHtml)}
-      />
-    </div>
-  );
-}
-
-// Flow-positioned variant of ModelBox (no absolute coords) for Model 2's vertical stack.
-function ModelBoxStatic({
-  w,
-  label,
-  blueHeader,
-  onClick,
-}: {
-  w: number;
-  label: string;
-  blueHeader?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={`Click to view the ${label.toLowerCase()}`}
-      style={{
-        position: "relative",
-        width: w,
-        minHeight: 92,
-        border: `2px solid ${BORDER_COLOR}`,
-        borderRadius: 12,
-        background: colors.white,
-        cursor: "pointer",
-        padding: 0,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: "inherit",
-      }}
-    >
-      {blueHeader ? (
-        <>
-          <div style={{
+    <div style={{ display: "flex", justifyContent: "center", padding: "16px 0 8px" }}>
+      <div
+        style={{
+          width: BOX2_W,
+          border: `2px solid ${BORDER_COLOR}`,
+          borderRadius: 12,
+          background: colors.white,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Blue header — click to view the principle */}
+        <button
+          onClick={() => onOpen("Principle", principleHtml)}
+          title="Click to view the principle"
+          style={{
             height: 34, background: colors.azure42, color: colors.white,
             display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "0 12px", fontSize: "12px", fontWeight: 700, flexShrink: 0,
-          }}>
-            <span>{label}</span>
-            <ChatBubbleIcon color={colors.white} size={15} />
-          </div>
-          <div style={{
-            flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "11px", color: "#7a807c", fontWeight: 600, padding: "16px 0",
-          }}>
+            border: "none", cursor: "pointer", fontFamily: "inherit", width: "100%",
+          }}
+        >
+          <span>Principle</span>
+          <ChatBubbleIcon color={colors.white} size={15} />
+        </button>
+
+        {/* Body split by a vertical divider: left = principle, right = its
+            attached communication principle. */}
+        <div style={{ display: "flex", alignItems: "stretch", minHeight: 92 }}>
+          <button
+            onClick={() => onOpen("Principle", principleHtml)}
+            title="Click to view the principle"
+            style={{
+              flex: 1, border: "none", background: colors.white, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "11px", color: "#7a807c", fontWeight: 600, fontFamily: "inherit",
+              padding: "16px 12px",
+            }}
+          >
             Click to view
-          </div>
-        </>
-      ) : (
-        <div style={{
-          flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-          gap: 8, fontSize: "12px", color: "#4b524e", fontWeight: 600, padding: "16px 12px",
-        }}>
-          <span>{label}</span>
-          <ChatBubbleIcon color="#7a807c" size={16} />
-          <span style={{ fontSize: "11px", color: "#7a807c", fontWeight: 600 }}>(click to view)</span>
+          </button>
+
+          {/* Divider — the communication principle is attached to the principle */}
+          <div style={{ width: 2, background: BORDER_COLOR, flexShrink: 0 }} />
+
+          <button
+            onClick={() => onOpen("Communication Principle", commPrincipleHtml)}
+            title="Click to view the communication principle"
+            style={{
+              flex: 1, border: "none", background: colors.white, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              gap: 6, fontSize: "12px", color: "#4b524e", fontWeight: 600,
+              fontFamily: "inherit", padding: "16px 12px", textAlign: "center",
+            }}
+          >
+            <span>Principle Communication</span>
+            <ChatBubbleIcon color="#7a807c" size={16} />
+            <span style={{ fontSize: "11px", color: "#7a807c", fontWeight: 600 }}>(click to view)</span>
+          </button>
         </div>
-      )}
-    </button>
+      </div>
+    </div>
   );
 }
 
