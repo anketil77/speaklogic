@@ -207,6 +207,7 @@ export function ViewAnswerDialog({ answer, onClose, zIndexBase = 200 }: ViewAnsw
           left={{ label: "Actual Question", content: answer.actualQuestion }}
           right={{ label: "Actual Answer", content: answer.actualAnswer }}
           arrowLabel="answered by"
+          zIndexBase={zIndexBase + 20}
           onClose={() => setShowModel(false)}
         />
       )}

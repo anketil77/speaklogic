@@ -141,25 +141,32 @@ export function getAllErrors(): ProjectError[] {
   });
 }
 
-// Returns errors that belong to analyses of a single document (matched by the
-// analysis applicationName / Entity Name). Used to scope the inline Compensator
+// Returns errors that belong to analyses of a single document, matched by the
+// analysis applicationName / Entity Name. Used to scope the inline Compensator
 // "Actual Error To Replace" dropdown to the current document.
+//
+// The match ignores any trailing "  Page: N" segment that buildEntityName may
+// append: the page suffix is (a) opt-in config and (b) populated inconsistently
+// across host code paths, so two identifications in the SAME document can differ
+// only by page. Stripping it keeps the filter document-scoped (not page-scoped).
+function stripPageSuffix(s: string): string {
+  return (s || "").replace(/\s*Page:\s*\S+\s*$/i, "").trim();
+}
+
 export function getErrorsByApplicationName(applicationName: string): ProjectError[] {
+  const key = stripPageSuffix(applicationName);
+  const all = getAllErrors();
+  if (!all.length) return [];
+
+  // analysisId → applicationName (page-stripped) lookup.
   const db = getDb();
-  const result = db.exec(
-    `SELECT e.* FROM ProjectError e
-       JOIN ProjectAnalysis a ON e.analysisId = a.id
-      WHERE a.applicationName = ?
-      ORDER BY e.id DESC`,
-    [applicationName]
-  );
-  if (!result.length) return [];
-  const cols = result[0].columns;
-  return result[0].values.map((row) => {
-    const obj: Record<string, unknown> = {};
-    cols.forEach((col, i) => { obj[col] = row[i]; });
-    return obj as unknown as ProjectError;
-  });
+  const res = db.exec("SELECT id, applicationName FROM ProjectAnalysis");
+  const appById = new Map<number, string>();
+  if (res.length) {
+    res[0].values.forEach((r) => appById.set(r[0] as number, stripPageSuffix(r[1] as string)));
+  }
+
+  return all.filter((e) => e.analysisId != null && appById.get(e.analysisId) === key);
 }
 
 // Finds the analysis a given error text belongs to (most recent match), so an

@@ -231,6 +231,7 @@ export function ViewProblemDialog({ problem, onClose, zIndexBase = 200 }: ViewPr
           left={{ label: "From Actual Error", content: problem.fromActualError }}
           right={{ label: "Actual Problem", content: problem.actualProblem }}
           arrowLabel="gives rise to"
+          zIndexBase={zIndexBase + 20}
           onClose={() => setShowModel(false)}
         />
       )}
