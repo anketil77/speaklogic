@@ -7,7 +7,19 @@
 import React, { useMemo, useCallback } from "react";
 import { FooterBar, FooterStatusText, DismissBtn } from "@/dialog/components/FooterButtons";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
-import { AnalysisHistoryHeaderIcon } from "@/dialog/components/Icons";
+import {
+  AnalysisHistoryHeaderIcon,
+  FbHistoryListProvidedIcon,
+  FbHistoryListRequestedIcon,
+  FbHistoryListReceivedIcon,
+  FbHistoryListAppliedIcon,
+  ErrorIcon,
+  CompensatorIcon,
+  ProblemIcon,
+  QuestionIcon,
+  AnswerIcon,
+  GuidelineReferenceIcon,
+} from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
 import type { StatsOverview, StatsListTarget } from "@/types/db";
 
@@ -16,6 +28,7 @@ interface CardDef {
   value: number;
   target: StatsListTarget;
   feedbackFilter?: string;
+  icon: React.ReactNode;
 }
 
 const EMPTY_STATS: StatsOverview = {
@@ -30,18 +43,18 @@ export default function StatsOverviewView(): React.ReactElement {
 
   const cards: CardDef[] = useMemo(
     () => [
-      { label: "Analysis",          value: stats.analyses,          target: "analysis" },
-      { label: "Feedback Provided", value: stats.feedbackProvided,  target: "feedback", feedbackFilter: "Provided" },
-      { label: "Feedback Requested", value: stats.feedbackRequested, target: "requested" },
-      { label: "Feedback Received", value: stats.feedbackReceived,   target: "feedback", feedbackFilter: "Received" },
-      { label: "Feedback Applied",  value: stats.feedbackApplied,    target: "feedback", feedbackFilter: "Applied" },
-      { label: "Errors Identified", value: stats.errors,            target: "analysis" },
-      { label: "Compensator",       value: stats.compensators,      target: "analysis" },
-      { label: "Problem Identified", value: stats.problemsIdentified, target: "analysis" },
-      { label: "Problem Solved",    value: stats.problemsSolved,    target: "analysis" },
-      { label: "Analysis Question", value: stats.questions,         target: "analysis" },
-      { label: "Answered Question", value: stats.answeredQuestions, target: "analysis" },
-      { label: "Guideline",         value: stats.guidelines,        target: "analysis" },
+      { label: "Analysis",          value: stats.analyses,          target: "analysis", icon: <AnalysisHistoryHeaderIcon /> },
+      { label: "Feedback Provided", value: stats.feedbackProvided,  target: "feedback", feedbackFilter: "Provided", icon: <FbHistoryListProvidedIcon /> },
+      { label: "Feedback Requested", value: stats.feedbackRequested, target: "requested", icon: <FbHistoryListRequestedIcon /> },
+      { label: "Feedback Received", value: stats.feedbackReceived,   target: "feedback", feedbackFilter: "Received", icon: <FbHistoryListReceivedIcon /> },
+      { label: "Feedback Applied",  value: stats.feedbackApplied,    target: "feedback", feedbackFilter: "Applied", icon: <FbHistoryListAppliedIcon /> },
+      { label: "Errors Identified", value: stats.errors,            target: "analysis", icon: <ErrorIcon /> },
+      { label: "Compensator",       value: stats.compensators,      target: "analysis", icon: <CompensatorIcon /> },
+      { label: "Problem Identified", value: stats.problemsIdentified, target: "analysis", icon: <ProblemIcon /> },
+      { label: "Problem Solved",    value: stats.problemsSolved,    target: "analysis", icon: <ProblemIcon /> },
+      { label: "Analysis Question", value: stats.questions,         target: "analysis", icon: <QuestionIcon /> },
+      { label: "Answered Question", value: stats.answeredQuestions, target: "analysis", icon: <AnswerIcon /> },
+      { label: "Guideline",         value: stats.guidelines,        target: "analysis", icon: <GuidelineReferenceIcon /> },
     ],
     [stats]
   );
@@ -125,9 +138,26 @@ export default function StatsOverviewView(): React.ReactElement {
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
-              <span style={{ fontWeight: 700, fontSize: 22, lineHeight: "26px", color: colors.grey11 }}>
-                {c.value}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span
+                  aria-hidden
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 7,
+                    background: "#EBF3FC",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  {c.icon}
+                </span>
+                <span style={{ fontWeight: 700, fontSize: 22, lineHeight: "26px", color: colors.grey11 }}>
+                  {c.value}
+                </span>
+              </div>
               <span style={{ fontSize: 12.5, lineHeight: "16px", color: colors.grey38 }}>
                 {c.label}
               </span>
