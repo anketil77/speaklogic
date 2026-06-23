@@ -1591,6 +1591,69 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
   );
 }
 
+// Stats Overview → Errors / Compensator cards. Opens a flat item list (error-list
+// or compensator-list view) and sends the same hydrated analyses payload so the
+// view can flatten items and open ViewAnalysisDialog from each item's analysis.
+function openStatsItemListDialog(event: Office.AddinCommands.Event, kind: "errors" | "compensators", attempt = 0): void {
+  const view = kind === "errors" ? "error-list" : "compensator-list";
+  _trackDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=${view}`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openStatsItemListDialog(event, kind, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      const complete = makeEventCompleter(event);
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => { complete(); });
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        if (m.action === "READY") {
+          const { personName, personEmail } = getUserIdentity();
+          const analyses = getAllAnalyses().map((a) => {
+            if (!a.id) return a;
+            return {
+              ...a,
+              questions: getQuestionsByAnalysis(a.id),
+              errors: getErrorsByAnalysis(a.id),
+              compensators: getCompensatorsByAnalysis(a.id),
+              answers: getAnswersByAnalysis(a.id),
+              problems: getProblemsByAnalysis(a.id),
+              files: getFilesByAnalysis(a.id),
+            };
+          });
+          const hostMsg: HostMessage = {
+            type: "INIT",
+            payload: {
+              selection: "",
+              mode: "selection",
+              source: getSource(),
+              personName,
+              personEmail,
+              applicationName: "",
+              communicationFunction: "",
+              communicationSignal: "",
+              projectName: "",
+              peopleList: [],
+              analyses,
+            },
+          };
+          dialog.messageChild(JSON.stringify(hostMsg));
+        }
+        if (m.action === "CLOSE") {
+          try { dialog.close(); } catch { }
+          complete();
+        }
+      });
+    }
+  );
+}
+
 function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 0, initialFilter?: string, autoRequested = false): void {
   _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=feedback-history`,
@@ -1846,6 +1909,8 @@ function openStatsOverviewDialog(event: Office.AddinCommands.Event, attempt = 0)
             openFeedbackHistoryDialog(event, 0, nav.feedbackFilter);
           } else if (nav.target === "requested") {
             openFeedbackHistoryDialog(event, 0, undefined, true);
+          } else if (nav.target === "errors" || nav.target === "compensators") {
+            openStatsItemListDialog(event, nav.target);
           } else {
             openAnalysisHistoryDialog(event);
           }

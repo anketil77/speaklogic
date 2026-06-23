@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
-import { CompensatorIcon, CloseIcon, EditQuestionIcon, QuestionCheckIcon, FlagCommunicationIcon, FeedbackModelIcon } from "@/dialog/components/Icons";
+import { CompensatorIcon, CloseIcon, EditQuestionIcon, QuestionCheckIcon, FlagCommunicationIcon, FeedbackModelIcon, ViewListAnalysisIcon } from "@/dialog/components/Icons";
 import { EntityModelDialog } from "@/dialog/components/EntityModelDialog";
 import type { ProjectCompensator } from "@/types/db";
 
@@ -14,6 +14,9 @@ export interface ViewCompensatorDialogProps {
   compensator: CompensatorDraft;
   onClose: () => void;
   zIndexBase?: number;
+  /** When provided, a "View Analysis" button appears in the command bar that opens
+   *  the analysis this compensator belongs to (used by the Stats Overview list). */
+  onViewAnalysis?: () => void;
 }
 
 const C = {
@@ -76,7 +79,7 @@ const readonlyInput: React.CSSProperties = {
   cursor: "default",
 };
 
-export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200 }: ViewCompensatorDialogProps) {
+export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200, onViewAnalysis }: ViewCompensatorDialogProps) {
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
   const [showModel, setShowModel] = useState(false);
 
@@ -165,6 +168,20 @@ export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200 }
         >
           <FeedbackModelIcon color={C.grey38} />
         </button>
+        {onViewAnalysis && (
+          <>
+            <CmdSep />
+            <button
+              className="sl-icon-btn"
+              onClick={onViewAnalysis}
+              style={{ height: 28, padding: "0 10px", display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }}
+              title="View the analysis this compensator belongs to"
+            >
+              <ViewListAnalysisIcon />
+              <span style={{ fontSize: "11.6px", fontWeight: 700, color: C.grey11, whiteSpace: "nowrap" }}>View Analysis</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* ── Tab bar ── */}

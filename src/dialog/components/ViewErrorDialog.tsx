@@ -5,7 +5,7 @@ import { formatDisplayDate } from "@/db/db";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
-import { ErrorIcon, CloseIcon, QuestionCheckIcon, FlagCommunicationIcon, EditQuestionIcon, FeedbackModelIcon } from "@/dialog/components/Icons";
+import { ErrorIcon, CloseIcon, QuestionCheckIcon, FlagCommunicationIcon, EditQuestionIcon, FeedbackModelIcon, ViewListAnalysisIcon } from "@/dialog/components/Icons";
 import { EntityModelDialog } from "@/dialog/components/EntityModelDialog";
 import type { ProjectError } from "@/types/db";
 
@@ -15,6 +15,9 @@ export interface ViewErrorDialogProps {
   error: ErrorDraft;
   onClose: () => void;
   zIndexBase?: number;
+  /** When provided, a "View Analysis" button appears in the command bar that opens
+   *  the analysis this error belongs to (used by the Stats Overview error list). */
+  onViewAnalysis?: () => void;
 }
 
 const C = {
@@ -77,7 +80,7 @@ const readonlyInput: React.CSSProperties = {
   cursor: "default",
 };
 
-export function ViewErrorDialog({ error, onClose, zIndexBase = 200 }: ViewErrorDialogProps) {
+export function ViewErrorDialog({ error, onClose, zIndexBase = 200, onViewAnalysis }: ViewErrorDialogProps) {
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
   const [showModel, setShowModel] = useState(false);
 
@@ -166,6 +169,20 @@ export function ViewErrorDialog({ error, onClose, zIndexBase = 200 }: ViewErrorD
         >
           <FeedbackModelIcon color={C.grey38} />
         </button>
+        {onViewAnalysis && (
+          <>
+            <CmdSep />
+            <button
+              className="sl-icon-btn"
+              onClick={onViewAnalysis}
+              style={{ height: 28, padding: "0 10px", display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }}
+              title="View the analysis this error belongs to"
+            >
+              <ViewListAnalysisIcon />
+              <span style={{ fontSize: "11.6px", fontWeight: 700, color: C.grey11, whiteSpace: "nowrap" }}>View Analysis</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* ── Tab bar ── */}

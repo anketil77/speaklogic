@@ -902,7 +902,9 @@ export interface StatsOverview {
 export type StatsListTarget =
   | "analysis"        // List of Analysis
   | "feedback"        // List of Feedback (optionally pre-filtered via feedbackFilter)
-  | "requested";      // List of Feedback Requested
+  | "requested"       // List of Feedback Requested
+  | "errors"          // Flat list of identified errors (StatsItemListView)
+  | "compensators";   // Flat list of identified compensators (StatsItemListView)
 
 export interface SaveRelatedSelectionPayload {
   record: Omit<SelectionWithPrinciple, "id">;

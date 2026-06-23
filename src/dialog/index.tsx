@@ -46,6 +46,7 @@ const FlaggedHistoryView = lazy(() => import("@/dialog/views/FlaggedHistoryView"
 const FeedbackHistoryView = lazy(() => import("@/dialog/views/FeedbackHistoryView"));
 const RetainedHistoryView = lazy(() => import("@/dialog/views/RetainedHistoryView"));
 const StatsOverviewView = lazy(() => import("@/dialog/views/StatsOverviewView"));
+const StatsItemListView = lazy(() => import("@/dialog/views/StatsItemListView"));
 const ListFeedbackRequestedView = lazy(() => import("@/dialog/views/ListFeedbackRequestedView"));
 const SelectionHistoryView = lazy(() => import("@/dialog/views/SelectionHistoryView"));
 const FlaggedArticlesView = lazy(() => import("@/dialog/views/FlaggedArticlesView"));
@@ -260,6 +261,10 @@ function DialogApp() {
         return <RetainedHistoryView />;
       case "stats-overview":
         return <StatsOverviewView />;
+      case "error-list":
+        return <StatsItemListView kind="errors" />;
+      case "compensator-list":
+        return <StatsItemListView kind="compensators" />;
       case "message": {
         const title = params.get("title") ?? "";
         const text = params.get("text") ?? "";
