@@ -139,37 +139,80 @@ function ModelBox({
   );
 }
 
-// ─── Model 2 — Principle box with the Principle Communication nested inside ────────
-// Client (point 21, revised): the communication principle is NOT a separate box
-// stacked below the principle. Instead it is nested INSIDE the principle box,
-// split off by a vertical divider — showing the communication principle is
-// attached to / part of the actual principle.
+// ─── Model 2 — the SAME relationship diagram as Model 1, but the Principle box
+// nests the Principle Communication inside it via a vertical divider ──────────────
+// Client (point 21, revised): "show the same model, but nested inside" — i.e. the
+// Selection → Related → Relationship flow is unchanged; only the Principle box is
+// split, with "Principle Communication (click to view)" on the right, showing the
+// communication principle is attached to / part of the actual principle.
+const P2_W = 250;                 // wider Principle box to hold the two columns
+const P2_RIGHT = BL_X + P2_W;     // right edge where the connector starts
+
 function Model2({
-  principleHtml,
-  commPrincipleHtml,
+  m,
   onOpen,
 }: {
-  principleHtml: string;
-  commPrincipleHtml: string;
+  m: ReturnType<typeof deriveModel>;
   onOpen: (title: string, html: string) => void;
 }) {
-  const BOX2_W = 360;
   return (
-    <div style={{ display: "flex", justifyContent: "center", padding: "16px 0 8px" }}>
+    <div style={{ position: "relative", width: M_W, height: M_H, flexShrink: 0, userSelect: "none", margin: "0 auto" }}>
+      <svg
+        style={{ position: "absolute", inset: 0, overflow: "visible", pointerEvents: "none" }}
+        width={M_W} height={M_H}
+      >
+        <defs>
+          <marker id="pm2arr" markerWidth="9" markerHeight="9" refX="6.5" refY="3.5" orient="auto">
+            <path d="M0,0 L0,7 L8,3.5 Z" fill={LINE_COLOR} />
+          </marker>
+        </defs>
+
+        {/* Selection box → down into circle top */}
+        <path
+          d={`M ${TL_RIGHT} ${TL_CY} L ${CIR_CX} ${TL_CY} L ${CIR_CX} ${CIR_CY - CIR_R - 4}`}
+          fill="none" stroke={LINE_COLOR} strokeWidth="1.7"
+          strokeLinecap="round" strokeLinejoin="round" markerEnd="url(#pm2arr)"
+        />
+
+        {/* Principle box (divided) → up into circle bottom */}
+        <path
+          d={`M ${P2_RIGHT} ${BL_CY} L ${CIR_CX} ${BL_CY} L ${CIR_CX} ${CIR_CY + CIR_R + 4}`}
+          fill="none" stroke={LINE_COLOR} strokeWidth="1.7"
+          strokeLinecap="round" strokeLinejoin="round" markerEnd="url(#pm2arr)"
+        />
+
+        {/* Circle join node */}
+        <circle cx={CIR_CX} cy={CIR_CY} r={CIR_R} fill={colors.white} stroke={BORDER_COLOR} strokeWidth="2" />
+        <text
+          x={CIR_CX} y={CIR_CY}
+          textAnchor="middle" dominantBaseline="central"
+          fontSize="13" fontWeight="600" fill={colors.grey11}
+          fontFamily="'Inter','Segoe UI',sans-serif"
+        >
+          Related
+        </text>
+
+        {/* Circle → Relationship box */}
+        <line
+          x1={CIR_CX + CIR_R} y1={CIR_CY} x2={RB_LEFT - 4} y2={RB_CY}
+          stroke={LINE_COLOR} strokeWidth="1.7" strokeLinecap="round" markerEnd="url(#pm2arr)"
+        />
+      </svg>
+
+      {/* Selection + Relationship boxes — identical to Model 1 */}
+      <ModelBox x={TL_X} y={TL_Y} w={BOX_W} h={BOX_H} label="Selection" onClick={() => onOpen("Selection", m.selectionHtml)} />
+      <ModelBox x={RB_X} y={RB_Y} w={RB_W} h={RB_H} label="Relationship" onClick={() => onOpen("Relationship", m.relationshipHtml)} />
+
+      {/* Divided Principle box (blue header + nested Principle Communication) */}
       <div
         style={{
-          width: BOX2_W,
-          border: `2px solid ${BORDER_COLOR}`,
-          borderRadius: 12,
-          background: colors.white,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
+          position: "absolute", left: BL_X, top: BL_Y, width: P2_W, height: BOX_H,
+          border: `2px solid ${BORDER_COLOR}`, borderRadius: 12, background: colors.white,
+          overflow: "hidden", display: "flex", flexDirection: "column", zIndex: 5,
         }}
       >
-        {/* Blue header — click to view the principle */}
         <button
-          onClick={() => onOpen("Principle", principleHtml)}
+          onClick={() => onOpen("Principle", m.principleHtml)}
           title="Click to view the principle"
           style={{
             height: 34, background: colors.azure42, color: colors.white,
@@ -182,38 +225,37 @@ function Model2({
           <ChatBubbleIcon color={colors.white} size={15} />
         </button>
 
-        {/* Body split by a vertical divider: left = principle, right = its
-            attached communication principle. */}
-        <div style={{ display: "flex", alignItems: "stretch", minHeight: 92 }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "stretch" }}>
           <button
-            onClick={() => onOpen("Principle", principleHtml)}
+            onClick={() => onOpen("Principle", m.principleHtml)}
             title="Click to view the principle"
             style={{
               flex: 1, border: "none", background: colors.white, cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "11px", color: "#7a807c", fontWeight: 600, fontFamily: "inherit",
-              padding: "16px 12px",
+              padding: "8px",
             }}
           >
             Click to view
           </button>
 
-          {/* Divider — the communication principle is attached to the principle */}
+          {/* Divider — communication principle attached to the principle */}
           <div style={{ width: 2, background: BORDER_COLOR, flexShrink: 0 }} />
 
           <button
-            onClick={() => onOpen("Communication Principle", commPrincipleHtml)}
+            onClick={() => onOpen("Communication Principle", m.commPrincipleHtml)}
             title="Click to view the communication principle"
             style={{
               flex: 1, border: "none", background: colors.white, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              gap: 6, fontSize: "12px", color: "#4b524e", fontWeight: 600,
-              fontFamily: "inherit", padding: "16px 12px", textAlign: "center",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              gap: 3, fontFamily: "inherit", padding: "8px", textAlign: "center",
             }}
           >
-            <span>Principle Communication</span>
-            <ChatBubbleIcon color="#7a807c" size={16} />
-            <span style={{ fontSize: "11px", color: "#7a807c", fontWeight: 600 }}>(click to view)</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: "10.5px", color: "#4b524e", fontWeight: 600 }}>Principle Communication</span>
+              <ChatBubbleIcon color="#7a807c" size={13} />
+            </span>
+            <span style={{ fontSize: "9px", color: "#7a807c", fontWeight: 600 }}>(click to view)</span>
           </button>
         </div>
       </div>
@@ -366,7 +408,7 @@ export function PrincipleModelDialog(props: Props) {
           )}
 
           {activeTab === "model2" && (
-            <Model2 principleHtml={m.principleHtml} commPrincipleHtml={m.commPrincipleHtml} onOpen={open} />
+            <Model2 m={m} onOpen={open} />
           )}
 
           {popup && (
