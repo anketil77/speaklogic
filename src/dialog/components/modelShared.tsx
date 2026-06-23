@@ -3,6 +3,7 @@
 // Keep these in one place — do NOT duplicate inside the model dialogs.
 
 import React from "react";
+import { createPortal } from "react-dom";
 import { CloseIcon } from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
 
@@ -74,7 +75,12 @@ export function PencilIcon({ color: c = colors.grey38 }: { color?: string } = {}
   );
 }
 
-// ─── Small floating popup inside a relative container ─────────────────────────────
+// ─── Content popup for the diagram boxes ──────────────────────────────────────────
+// Portaled to <body> and centered in the viewport (NOT absolutely positioned inside
+// the short diagram container) so it can never float up over the dialog header / hide
+// its own close button. A transparent click-away backdrop lets the user dismiss it
+// without closing the whole model dialog. zIndex sits above all model dialogs
+// (EntityModelDialog can reach ~321 when opened from the Analysis dialog).
 export function InlinePopup({
   title,
   htmlContent,
@@ -86,27 +92,33 @@ export function InlinePopup({
   plainText?: string;
   onClose: () => void;
 }) {
-  return (
-    <div
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -58%)",
-        zIndex: 230,
-        background: colors.white,
-        border: `1px solid ${colors.grey88}`,
-        borderRadius: 6,
-        boxShadow: "0 6px 24px rgba(0,0,0,0.18)",
-        width: 300,
-        maxHeight: 210,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: "'Inter','Segoe UI',sans-serif",
-      }}
-    >
+  return createPortal(
+    <>
+      <div
+        onClick={onClose}
+        style={{ position: "fixed", inset: 0, zIndex: 2000, background: "transparent" }}
+      />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 2001,
+          background: colors.white,
+          border: `1px solid ${colors.grey88}`,
+          borderRadius: 6,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.22)",
+          width: 320,
+          maxWidth: "92vw",
+          maxHeight: "70vh",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          fontFamily: "'Inter','Segoe UI',sans-serif",
+        }}
+      >
       <div
         style={{
           display: "flex",
@@ -142,6 +154,8 @@ export function InlinePopup({
           plainText || NOT_APPLICABLE
         )}
       </div>
-    </div>
+      </div>
+    </>,
+    document.body
   );
 }
