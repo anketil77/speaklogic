@@ -741,8 +741,13 @@ export interface DialogInitPayload {
   keywordSendMode?: KeywordSendMode;
   /** Logged flagged-send events (KeywordHistoryView). */
   keywordHistory?: KeywordHistory[];
-  /** Existing error texts for the inline Compensator dialog dropdown (Point 9). */
+  /** Error texts from the CURRENT document, for the inline Compensator dialog
+   *  dropdown (Point 9). Default shown; the "Only Error From Current Document"
+   *  checkbox toggles to inlineErrorsAll. */
   inlineErrors?: string[];
+  /** Error texts across ALL documents, shown when the current-document filter is
+   *  unchecked in the inline Compensator dialog. */
+  inlineErrorsAll?: string[];
   /**
    * Overrides the feedbackType the Apply dialog stores on save (default "Applied").
    * Set to "Received" by the Apply Email flow (Point 11) so applied-from-email

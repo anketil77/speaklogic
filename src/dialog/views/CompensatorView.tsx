@@ -92,8 +92,13 @@ export default function CompensatorView({ existingErrors }: CompensatorViewProps
 
   // Inline flow (Point 9): the green-selected text is the actual compensator;
   // the error list comes from inlineErrors so "Actual Error To Replace" is a
-  // dropdown of errors already identified in the document.
-  const errorOptions = existingErrors ?? initData?.inlineErrors ?? [];
+  // dropdown of errors already identified. Defaults to the current document;
+  // unchecking "Only Error From Current Document" reveals errors from all
+  // documents (inlineErrorsAll).
+  const [onlyCurrentDoc, setOnlyCurrentDoc] = useState(true);
+  const currentDocErrors = existingErrors ?? initData?.inlineErrors ?? [];
+  const allDocErrors = initData?.inlineErrorsAll ?? currentDocErrors;
+  const errorOptions = onlyCurrentDoc ? currentDocErrors : allDocErrors;
   const prefilledRef = useRef(false);
   useEffect(() => {
     if (prefilledRef.current || !initData) return;
@@ -325,24 +330,37 @@ export default function CompensatorView({ existingErrors }: CompensatorViewProps
             />
           </FormRow>
 
-          <FormRow label="Actual Error To Replace">
-            {errorOptions.length > 0 ? (
-              <StyledSelect value={actualErrorReplaced} onChange={setActualErrorReplaced}>
-                <option value="">Select actual error</option>
-                {errorOptions.map((err, i) => (
-                  <option key={i} value={err}>
-                    {err}
-                  </option>
-                ))}
-              </StyledSelect>
-            ) : (
-              <input
-                style={inputStyle}
-                placeholder="Enter actual error to replace"
-                value={actualErrorReplaced}
-                onChange={(e) => setActualErrorReplaced(e.target.value)}
-              />
-            )}
+          <FormRow label="Actual Error To Replace" alignTop={allDocErrors.length > 0}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {errorOptions.length > 0 ? (
+                <StyledSelect value={actualErrorReplaced} onChange={setActualErrorReplaced}>
+                  <option value="">Select actual error</option>
+                  {errorOptions.map((err, i) => (
+                    <option key={i} value={err}>
+                      {err}
+                    </option>
+                  ))}
+                </StyledSelect>
+              ) : (
+                <input
+                  style={inputStyle}
+                  placeholder={onlyCurrentDoc ? "No error in this document — enter actual error to replace" : "Enter actual error to replace"}
+                  value={actualErrorReplaced}
+                  onChange={(e) => setActualErrorReplaced(e.target.value)}
+                />
+              )}
+              {allDocErrors.length > 0 && (
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "11.4px", color: C.grey38, cursor: "pointer", userSelect: "none" }}>
+                  <input
+                    type="checkbox"
+                    checked={onlyCurrentDoc}
+                    onChange={(e) => { setOnlyCurrentDoc(e.target.checked); setActualErrorReplaced(""); }}
+                    style={{ cursor: "pointer", margin: 0 }}
+                  />
+                  Only Error From Current Document
+                </label>
+              )}
+            </div>
           </FormRow>
 
           <FormRow label="In Actual App / Comm">

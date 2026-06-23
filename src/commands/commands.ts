@@ -6,7 +6,7 @@ const DIALOG_BASE = window.location.origin;
 
 
 import { initDb, nowDate, nowTime, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
-import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback, getAllErrors, findAnalysisIdByErrorText, addCompensatorToAnalysis } from "@/db/queries/analysis";
+import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback, getAllErrors, getErrorsByApplicationName, findAnalysisIdByErrorText, addCompensatorToAnalysis } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { getStatsOverview } from "@/db/queries/stats";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
@@ -1100,8 +1100,13 @@ async function openInlineIdentifyDialog(
     peopleList: buildPeopleList(commConfig?.personName),
     communicationPersonName: commConfig?.personName ?? "",
     communicationPersonEmail: commConfig?.personEmail ?? "",
-    // Compensator dialog: dropdown of errors already identified in the document.
+    // Compensator dialog: dropdown of errors already identified. Default to the
+    // current document (matched by Entity Name / applicationName); inlineErrorsAll
+    // backs the "Only Error From Current Document" checkbox when unchecked.
     inlineErrors: kind === "compensator"
+      ? Array.from(new Set(getErrorsByApplicationName(appName).map((e) => e.actualError).filter(Boolean)))
+      : undefined,
+    inlineErrorsAll: kind === "compensator"
       ? Array.from(new Set(getAllErrors().map((e) => e.actualError).filter(Boolean)))
       : undefined,
   };

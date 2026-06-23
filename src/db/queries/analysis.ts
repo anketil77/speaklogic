@@ -141,6 +141,27 @@ export function getAllErrors(): ProjectError[] {
   });
 }
 
+// Returns errors that belong to analyses of a single document (matched by the
+// analysis applicationName / Entity Name). Used to scope the inline Compensator
+// "Actual Error To Replace" dropdown to the current document.
+export function getErrorsByApplicationName(applicationName: string): ProjectError[] {
+  const db = getDb();
+  const result = db.exec(
+    `SELECT e.* FROM ProjectError e
+       JOIN ProjectAnalysis a ON e.analysisId = a.id
+      WHERE a.applicationName = ?
+      ORDER BY e.id DESC`,
+    [applicationName]
+  );
+  if (!result.length) return [];
+  const cols = result[0].columns;
+  return result[0].values.map((row) => {
+    const obj: Record<string, unknown> = {};
+    cols.forEach((col, i) => { obj[col] = row[i]; });
+    return obj as unknown as ProjectError;
+  });
+}
+
 // Finds the analysis a given error text belongs to (most recent match), so an
 // inline compensator can be attached to the same on-the-fly analysis.
 export function findAnalysisIdByErrorText(actualError: string): number | null {
