@@ -182,6 +182,7 @@ export function ViewQuestionDialog({ question, onClose, zIndexBase = 200 }: View
         left={{ label: "Actual Question", content: question.actualQuestion }}
         right={{ label: "Entity", content: question.entityQuestionPointTo }}
         arrowLabel="points to"
+        zIndexBase={zIndexBase + 20}
         onClose={() => setShowModel(false)}
       />
     )}

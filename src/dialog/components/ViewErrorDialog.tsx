@@ -229,6 +229,7 @@ export function ViewErrorDialog({ error, onClose, zIndexBase = 200 }: ViewErrorD
         left={{ label: "Actual Error", content: error.actualError }}
         right={{ label: "Entity Error Points To", content: error.entityErrorPointTo }}
         arrowLabel="points to"
+        zIndexBase={zIndexBase + 20}
         onClose={() => setShowModel(false)}
       />
     )}

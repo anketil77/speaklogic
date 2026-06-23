@@ -33,6 +33,10 @@ interface Props {
   /** Text rendered above the connector arrow (e.g. "points to"). */
   arrowLabel?: string;
   onClose: () => void;
+  /** Base z-index for the overlay; the dialog sits at base + 1. Pass the parent
+   *  dialog's z-index + a margin so the model always stacks above its opener
+   *  (e.g. View Error opened at 300 from the Analysis dialog). */
+  zIndexBase?: number;
 }
 
 // ─── Diagram geometry ──────────────────────────────────────────────────────────
@@ -91,7 +95,7 @@ function ModelBox({
   );
 }
 
-export function EntityModelDialog({ title, subtitle, left, right, arrowLabel, onClose }: Props) {
+export function EntityModelDialog({ title, subtitle, left, right, arrowLabel, onClose, zIndexBase = 215 }: Props) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [popup, setPopup] = useState<{ title: string; htmlContent?: string; plainText?: string } | null>(null);
 
@@ -106,14 +110,14 @@ export function EntityModelDialog({ title, subtitle, left, right, arrowLabel, on
 
   return createPortal(
     <>
-      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.12)", zIndex: 215 }} onClick={onClose} />
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.12)", zIndex: zIndexBase }} onClick={onClose} />
       <div
         style={{
           position: "fixed",
           left: `calc(50% + ${pos.x}px)`,
           top: `calc(50% + ${pos.y}px)`,
           transform: "translate(-50%, -50%)",
-          zIndex: 216,
+          zIndex: zIndexBase + 1,
           background: colors.white,
           borderRadius: 8,
           boxShadow: "0px 8px 32px rgba(0,0,0,0.14), 0px 2px 8px rgba(0,0,0,0.06)",

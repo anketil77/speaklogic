@@ -228,6 +228,7 @@ export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200 }
         left={{ label: "Actual Error", content: compensator.actualErrorReplaced }}
         right={{ label: "Actual Compensator", content: compensator.actualCompensator }}
         arrowLabel="replaced by"
+        zIndexBase={zIndexBase + 20}
         onClose={() => setShowModel(false)}
       />
     )}
