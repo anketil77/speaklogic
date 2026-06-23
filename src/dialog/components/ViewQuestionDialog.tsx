@@ -180,7 +180,7 @@ export function ViewQuestionDialog({ question, onClose, zIndexBase = 200 }: View
         title="Question Model"
         subtitle="View the question model representation."
         left={{ label: "Actual Question", content: question.actualQuestion }}
-        right={{ label: "Entity Question Points To", content: question.entityQuestionPointTo }}
+        right={{ label: "Entity", content: question.entityQuestionPointTo }}
         arrowLabel="points to"
         onClose={() => setShowModel(false)}
       />
