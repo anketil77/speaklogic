@@ -671,6 +671,13 @@ export interface KeywordHistory {
   words: string;      // comma-joined flagged words
   action: KeywordSendMode; // "warn" | "stop"
   subject: string;
+  /** Best-effort EWS itemId captured at send time, used by "View message" to
+   *  reopen the email via displayMessageFormAsync. Empty when unavailable
+   *  (e.g. legacy rows, or hosts where the id can't be obtained at send). */
+  itemId?: string;
+  /** Conversation id captured at send time (durable across the send), kept for
+   *  diagnostics / future fallback. Not directly openable by displayMessageForm. */
+  conversationId?: string;
 }
 
 export type SelectionMode = "selection" | "paragraph";
@@ -818,6 +825,7 @@ export type DialogAction =
   | { action: "SAVE_KEYWORD_RULES"; payload: SaveKeywordRulesPayload }
   | { action: "DELETE_KEYWORD_HISTORY"; id: number }
   | { action: "CLEAR_KEYWORD_HISTORY" }
+  | { action: "VIEW_KEYWORD_MESSAGE"; itemId: string }
   | { action: "SAVE_FLAG"; payload: FlagEntityForAnalysis }
   | { action: "SAVE_USER_INFO_ITEM"; name: string; html: string }
   | { action: "DELETE_USER_INFO_ITEM"; id: number }

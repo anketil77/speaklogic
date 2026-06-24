@@ -572,6 +572,8 @@ CREATE TABLE IF NOT EXISTS KeywordHistory (
   recipients TEXT NOT NULL DEFAULT '',
   words TEXT NOT NULL DEFAULT '',
   action TEXT NOT NULL DEFAULT 'warn',
-  subject TEXT NOT NULL DEFAULT ''
+  subject TEXT NOT NULL DEFAULT '',
+  itemId TEXT NOT NULL DEFAULT '',
+  conversationId TEXT NOT NULL DEFAULT ''
 );
 `;

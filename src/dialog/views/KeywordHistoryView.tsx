@@ -11,6 +11,7 @@ import { FooterBar, DismissBtn, FooterStatusText } from "@/dialog/components/Foo
 import { Spinner } from "@fluentui/react-components";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { HamburgerIcon, DeleteSelectedIcon } from "@/dialog/components/Icons";
+import { PanelContextMenu, type PanelMenuEntry } from "@/dialog/components/PanelContextMenu";
 import { colors } from "@/styles/tokens";
 import { formatDisplayDate } from "@/db/db";
 import type { KeywordHistory } from "@/types/db";
@@ -31,6 +32,8 @@ export default function KeywordHistoryView() {
   const { initData, sendMessage, closeDialog } = useDialogComm();
   const [rows, setRows] = useState<KeywordHistory[]>([]);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; row: KeywordHistory } | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initData) return;
@@ -42,6 +45,17 @@ export default function KeywordHistoryView() {
     if (id == null) return;
     sendMessage({ action: "DELETE_KEYWORD_HISTORY", id });
   }, [sendMessage]);
+
+  const viewMessage = useCallback((row: KeywordHistory) => {
+    // Best-effort: route to host, which opens the email via displayMessageFormAsync.
+    // Only enabled when an itemId was captured at send time (see context menu).
+    if (row.itemId) sendMessage({ action: "VIEW_KEYWORD_MESSAGE", itemId: row.itemId });
+  }, [sendMessage]);
+
+  const openCtxMenu = useCallback((e: React.MouseEvent, row: KeywordHistory) => {
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY, row });
+  }, []);
 
   const clearAll = useCallback(() => {
     sendMessage({ action: "CLEAR_KEYWORD_HISTORY" });
@@ -113,7 +127,7 @@ export default function KeywordHistoryView() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} onContextMenu={(e) => openCtxMenu(e, r)}>
                   <td style={tdStyle}>{formatDisplayDate(r.sentDate) || "—"}</td>
                   <td style={tdStyle}>{r.sentTime || "—"}</td>
                   <td style={{ ...tdStyle, wordBreak: "break-word" }}>{r.recipients || "—"}</td>
@@ -148,6 +162,46 @@ export default function KeywordHistoryView() {
           </table>
         )}
       </div>
+
+      {/* Row context menu (right-click): View message + Remove from history */}
+      {ctxMenu && (
+        <PanelContextMenu
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          width={220}
+          onClose={() => setCtxMenu(null)}
+          items={[
+            {
+              label: "View message",
+              disabled: !ctxMenu.row.itemId,
+              onClick: () => {
+                if (ctxMenu.row.itemId) viewMessage(ctxMenu.row);
+                else setNote("The original message link wasn't captured for this entry, so it can't be opened.");
+              },
+            },
+            { isSep: true } as PanelMenuEntry,
+            { label: "Remove from history", onClick: () => deleteRow(ctxMenu.row.id) },
+          ]}
+        />
+      )}
+
+      {/* Transient note (e.g. message link unavailable) */}
+      {note && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 320 }}>
+          <div style={{ background: colors.white, borderRadius: "8px", padding: "22px", width: "320px", boxShadow: "0px 8px 24px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column", gap: "14px" }}>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: colors.grey11 }}>View Message</span>
+            <span style={{ fontSize: "12px", color: colors.grey38, lineHeight: "18px" }}>{note}</span>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setNote(null)}
+                style={{ height: "32px", padding: "0 16px", borderRadius: "4px", border: "none", background: colors.azure42, color: colors.white, fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Clear-all confirmation */}
       {confirmClear && (

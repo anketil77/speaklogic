@@ -4000,6 +4000,29 @@ function openKeywordHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
                 .then(() => { clearKeywordHistory(); return sendInit(); })
                 .catch((err) => replyError(dialog, `Failed to clear history: ${String(err)}`));
               break;
+            case "VIEW_KEYWORD_MESSAGE": {
+              // Best-effort: open the original email by its captured itemId. The
+              // sent item may have a different id (or be deleted), so try/catch and
+              // tell the user plainly when it can't be opened. Never throws.
+              const targetId = (m as { itemId?: string }).itemId ?? "";
+              let opened = false;
+              try {
+                if (targetId) {
+                  Office.context.mailbox.displayMessageFormAsync(targetId, (r) => {
+                    if (r.status !== Office.AsyncResultStatus.Succeeded) {
+                      replyError(dialog, "The original message can no longer be opened (it may have been moved or deleted).");
+                    }
+                  });
+                  opened = true;
+                }
+              } catch {
+                opened = false;
+              }
+              if (!opened) {
+                replyError(dialog, "The original message can no longer be opened (it may have been moved or deleted).");
+              }
+              break;
+            }
             case "CLOSE":
               try { dialog.close(); } catch { /* already closed */ }
               complete();
@@ -4019,6 +4042,36 @@ function openKeywordHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
 type SmartAlertsEvent = Office.AddinCommands.Event & {
   completed: (options?: { allowEvent?: boolean; errorMessage?: string; sendModeOverride?: string }) => void;
 };
+
+// Best-effort capture of identifiers for the flagged message at send time, used
+// later by the Keywords History "View message" action. conversationId is read
+// synchronously (always present in compose); itemId comes from getItemIdAsync,
+// which only resolves once the draft is saved — so it may be empty, and even when
+// present the SENT item can receive a different id. "View message" therefore
+// try/catches and falls back gracefully. Never throws / never blocks the send.
+function getSendMessageIdsAsync(): Promise<{ itemId: string; conversationId: string }> {
+  return new Promise((resolve) => {
+    let conversationId = "";
+    try {
+      conversationId = String((Office.context.mailbox.item as { conversationId?: string }).conversationId ?? "");
+    } catch { /* not available */ }
+
+    let settled = false;
+    const finish = (itemId: string) => { if (!settled) { settled = true; resolve({ itemId, conversationId }); } };
+    // Guard against getItemIdAsync hanging — never delay a send by more than ~1.5s.
+    const timer = setTimeout(() => finish(""), 1500);
+    try {
+      const item = Office.context.mailbox.item as Office.MessageCompose;
+      item.getItemIdAsync((r) => {
+        clearTimeout(timer);
+        finish(r.status === Office.AsyncResultStatus.Succeeded && r.value ? String(r.value) : "");
+      });
+    } catch {
+      clearTimeout(timer);
+      finish("");
+    }
+  });
+}
 
 function getRecipientsAsync(): Promise<Array<{ name?: string; email?: string }>> {
   return new Promise((resolve) => {
@@ -4091,6 +4144,7 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
         .map((r) => r.name || r.email || "")
         .filter(Boolean)
         .join(", ");
+      const { itemId, conversationId } = await getSendMessageIdsAsync();
       addKeywordHistory({
         sentDate: nowDate(),
         sentTime: nowTime(),
@@ -4098,6 +4152,8 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
         words: wordList,
         action: mode,
         subject,
+        itemId,
+        conversationId,
       });
     } catch {
       /* never block send on audit failure */

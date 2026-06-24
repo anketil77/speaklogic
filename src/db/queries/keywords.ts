@@ -115,8 +115,8 @@ export function addKeywordHistory(entry: Omit<KeywordHistory, "id">): void {
   try {
     const db = getDb();
     db.run(
-      "INSERT INTO KeywordHistory (sentDate, sentTime, recipients, words, action, subject) VALUES (?, ?, ?, ?, ?, ?)",
-      [entry.sentDate, entry.sentTime, entry.recipients, entry.words, entry.action, entry.subject]
+      "INSERT INTO KeywordHistory (sentDate, sentTime, recipients, words, action, subject, itemId, conversationId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [entry.sentDate, entry.sentTime, entry.recipients, entry.words, entry.action, entry.subject, entry.itemId ?? "", entry.conversationId ?? ""]
     );
     persistDb();
   } catch {
@@ -129,7 +129,7 @@ export function getKeywordHistory(): KeywordHistory[] {
   try {
     const db = getDb();
     const result = db.exec(
-      "SELECT id, sentDate, sentTime, recipients, words, action, subject FROM KeywordHistory ORDER BY sentDate DESC, sentTime DESC, id DESC"
+      "SELECT id, sentDate, sentTime, recipients, words, action, subject, itemId, conversationId FROM KeywordHistory ORDER BY sentDate DESC, sentTime DESC, id DESC"
     );
     if (!result.length) return [];
     return result[0].values.map((row) => ({
@@ -140,6 +140,8 @@ export function getKeywordHistory(): KeywordHistory[] {
       words: String(row[4] ?? ""),
       action: (String(row[5] ?? "warn") === "stop" ? "stop" : "warn") as KeywordSendMode,
       subject: String(row[6] ?? ""),
+      itemId: String(row[7] ?? ""),
+      conversationId: String(row[8] ?? ""),
     }));
   } catch {
     return [];
