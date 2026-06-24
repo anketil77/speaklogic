@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
-import { ViewQuestionHeaderIcon, CloseIcon, QuestionCheckIcon, QuestionBookmarkIcon, FlagCommunicationIcon, EditQuestionIcon, FeedbackModelIcon } from "@/dialog/components/Icons";
+import { ViewQuestionHeaderIcon, CloseIcon, QuestionCheckIcon, QuestionBookmarkIcon, FlagCommunicationIcon, EditQuestionIcon, FeedbackModelIcon, ViewListAnalysisIcon } from "@/dialog/components/Icons";
 import { EntityModelDialog } from "@/dialog/components/EntityModelDialog";
 import type { ProjectQuestion } from "@/types/db";
 
@@ -14,6 +14,8 @@ export interface ViewQuestionDialogProps {
   question: QuestionDraft;
   onClose: () => void;
   zIndexBase?: number;
+  /** When provided, a "View Analysis" button opens the analysis this question belongs to. */
+  onViewAnalysis?: () => void;
 }
 
 const C = {
@@ -80,7 +82,7 @@ const readonlyInput: React.CSSProperties = {
   cursor: "default",
 };
 
-export function ViewQuestionDialog({ question, onClose, zIndexBase = 200 }: ViewQuestionDialogProps) {
+export function ViewQuestionDialog({ question, onClose, zIndexBase = 200, onViewAnalysis }: ViewQuestionDialogProps) {
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
   const [showModel, setShowModel] = useState(false);
 
@@ -142,6 +144,15 @@ export function ViewQuestionDialog({ question, onClose, zIndexBase = 200 }: View
         <button className="sl-icon-btn" onClick={() => setShowModel(true)} style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", padding: 0, flexShrink: 0 }} title="View Question Model">
           <FeedbackModelIcon color={C.grey38} />
         </button>
+        {onViewAnalysis && (
+          <>
+            <CmdSep />
+            <button className="sl-icon-btn" onClick={onViewAnalysis} style={{ height: 28, padding: "0 10px", display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }} title="View the analysis this question belongs to">
+              <ViewListAnalysisIcon />
+              <span style={{ fontSize: "11.6px", fontWeight: 700, color: C.grey11, whiteSpace: "nowrap" }}>View Analysis</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* ── Tab bar ── */}

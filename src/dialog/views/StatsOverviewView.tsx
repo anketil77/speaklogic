@@ -50,10 +50,10 @@ export default function StatsOverviewView(): React.ReactElement {
       { label: "Feedback Applied",  value: stats.feedbackApplied,    target: "feedback", feedbackFilter: "Applied", icon: <FbHistoryListAppliedIcon /> },
       { label: "Errors Identified", value: stats.errors,            target: "errors", icon: <ErrorIcon /> },
       { label: "Compensator",       value: stats.compensators,      target: "compensators", icon: <CompensatorIcon /> },
-      { label: "Problem Identified", value: stats.problemsIdentified, target: "analysis", icon: <ProblemIcon /> },
+      { label: "Problem Identified", value: stats.problemsIdentified, target: "problems", icon: <ProblemIcon /> },
       { label: "Problem Solved",    value: stats.problemsSolved,    target: "analysis", icon: <ProblemIcon /> },
-      { label: "Analysis Question", value: stats.questions,         target: "analysis", icon: <QuestionIcon /> },
-      { label: "Answered Question", value: stats.answeredQuestions, target: "analysis", icon: <AnswerIcon /> },
+      { label: "Analysis Question", value: stats.questions,         target: "questions", icon: <QuestionIcon /> },
+      { label: "Answered Question", value: stats.answeredQuestions, target: "answers", icon: <AnswerIcon /> },
       { label: "Guideline",         value: stats.guidelines,        target: "analysis", icon: <GuidelineReferenceIcon /> },
     ],
     [stats]

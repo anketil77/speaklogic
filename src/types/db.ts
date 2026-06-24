@@ -904,7 +904,10 @@ export type StatsListTarget =
   | "feedback"        // List of Feedback (optionally pre-filtered via feedbackFilter)
   | "requested"       // List of Feedback Requested
   | "errors"          // Flat list of identified errors (StatsItemListView)
-  | "compensators";   // Flat list of identified compensators (StatsItemListView)
+  | "compensators"    // Flat list of identified compensators (StatsItemListView)
+  | "questions"       // Flat list of analysis questions (StatsItemListView)
+  | "answers"         // Flat list of answered questions (StatsItemListView)
+  | "problems";       // Flat list of identified problems (StatsItemListView)
 
 export interface SaveRelatedSelectionPayload {
   record: Omit<SelectionWithPrinciple, "id">;

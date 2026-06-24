@@ -1594,8 +1594,14 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
 // Stats Overview → Errors / Compensator cards. Opens a flat item list (error-list
 // or compensator-list view) and sends the same hydrated analyses payload so the
 // view can flatten items and open ViewAnalysisDialog from each item's analysis.
-function openStatsItemListDialog(event: Office.AddinCommands.Event, kind: "errors" | "compensators", attempt = 0): void {
-  const view = kind === "errors" ? "error-list" : "compensator-list";
+function openStatsItemListDialog(event: Office.AddinCommands.Event, kind: "errors" | "compensators" | "questions" | "answers" | "problems", attempt = 0): void {
+  const view = {
+    errors: "error-list",
+    compensators: "compensator-list",
+    questions: "question-list",
+    answers: "answer-list",
+    problems: "problem-list",
+  }[kind];
   _trackDialogAsync(
     `${DIALOG_BASE}/dialog.html?view=${view}`,
     { ...DIALOG_SIZE, displayInIframe: true },
@@ -1909,7 +1915,7 @@ function openStatsOverviewDialog(event: Office.AddinCommands.Event, attempt = 0)
             openFeedbackHistoryDialog(event, 0, nav.feedbackFilter);
           } else if (nav.target === "requested") {
             openFeedbackHistoryDialog(event, 0, undefined, true);
-          } else if (nav.target === "errors" || nav.target === "compensators") {
+          } else if (nav.target === "errors" || nav.target === "compensators" || nav.target === "questions" || nav.target === "answers" || nav.target === "problems") {
             openStatsItemListDialog(event, nav.target);
           } else {
             openAnalysisHistoryDialog(event);

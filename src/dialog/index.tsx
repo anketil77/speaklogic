@@ -265,6 +265,12 @@ function DialogApp() {
         return <StatsItemListView kind="errors" />;
       case "compensator-list":
         return <StatsItemListView kind="compensators" />;
+      case "question-list":
+        return <StatsItemListView kind="questions" />;
+      case "answer-list":
+        return <StatsItemListView kind="answers" />;
+      case "problem-list":
+        return <StatsItemListView kind="problems" />;
       case "message": {
         const title = params.get("title") ?? "";
         const text = params.get("text") ?? "";
