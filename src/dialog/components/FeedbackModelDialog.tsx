@@ -24,11 +24,20 @@ const FB_PROVIDED_MSG =
 const FB_REQUESTED_MSG =
   "The feedback is requested and has not been provided and applied; there is no result for that feedback to show a correction was made";
 
+// ─── Request variant empty-state messages (client spec) ─────────────────────────
+const REQ_FEEDBACK_EMPTY = "This is a feedback request, there is no feedback provided";
+const REQ_ECF_EMPTY      = "No feedback is provided to apply";
+const REQ_RESULT_EMPTY   = "No feedback application result, because no feedback is applied";
+// ─── Received variant empty-state messages (client spec) ────────────────────────
+const RCV_ENTITY_EMPTY = "No entity under analysis";
+const RCV_RESULT_EMPTY = "No feedback application";
+
 // ─── Derived feedback model (maps a ProjectFeedback to the diagram) ──────────────
 function deriveModel(feedback: ProjectFeedback) {
   const ft = feedback.feedbackType;
   const isApplied = ft === "Applied";
   const isRequested = ft === "Requested";
+  const isReceived = ft === "Received";
 
   // Recipient (left box) — the person the feedback is given TO.
   const recipient = feedback.toPerson?.trim() || "";
@@ -66,15 +75,18 @@ function deriveModel(feedback: ProjectFeedback) {
 
   // Message shown when there is no result to display.
   const resultMessage = isRequested
-    ? FB_REQUESTED_MSG
-    : !isApplied
-      ? FB_PROVIDED_MSG
-      : "";
+    ? REQ_RESULT_EMPTY
+    : isReceived
+      ? RCV_RESULT_EMPTY
+      : !isApplied
+        ? FB_PROVIDED_MSG
+        : "";
 
   return {
     ft,
     isApplied,
     isRequested,
+    isReceived,
     recipient,
     provider,
     entityText,
@@ -228,7 +240,7 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
       {/* Message icon — click to view entity under analysis */}
       <button
         onClick={() =>
-          open("Entity Under Analysis", { htmlContent: m.entityText || undefined, plainText: m.entityText ? undefined : NOT_APPLICABLE })
+          open("Entity Under Analysis", { htmlContent: m.entityText || undefined, plainText: m.entityText ? undefined : (m.isReceived ? RCV_ENTITY_EMPTY : NOT_APPLICABLE) })
         }
         title="Entity Under Analysis"
         style={{
@@ -260,7 +272,7 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
       {/* Left Feedback label (return feedback) — white bg masks the line */}
       <button
         onClick={() =>
-          open("Feedback", { htmlContent: m.feedbackItem || undefined, plainText: m.feedbackItem ? undefined : NOT_APPLICABLE })
+          open("Feedback", { htmlContent: m.feedbackItem || undefined, plainText: m.feedbackItem ? undefined : (m.isRequested ? REQ_FEEDBACK_EMPTY : NOT_APPLICABLE) })
         }
         title="Click to view feedback"
         style={{
@@ -279,7 +291,7 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
       {/* Right Feedback label */}
       <button
         onClick={() =>
-          open("Feedback", { htmlContent: m.feedbackItem || undefined, plainText: m.feedbackItem ? undefined : NOT_APPLICABLE })
+          open("Feedback", { htmlContent: m.feedbackItem || undefined, plainText: m.feedbackItem ? undefined : (m.isRequested ? REQ_FEEDBACK_EMPTY : NOT_APPLICABLE) })
         }
         title="Click to view feedback"
         style={{
@@ -298,7 +310,7 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
       {/* ECF clickable overlay — feedback application */}
       <button
         onClick={() =>
-          open("Feedback Application", { htmlContent: m.ecfText || undefined, plainText: m.ecfText ? undefined : NOT_APPLICABLE })
+          open("Feedback Application", { htmlContent: m.ecfText || undefined, plainText: m.ecfText ? undefined : (m.isRequested ? REQ_ECF_EMPTY : NOT_APPLICABLE) })
         }
         title="Click to view feedback application"
         style={{
