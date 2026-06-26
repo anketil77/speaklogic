@@ -51,8 +51,12 @@ export function sanitizeWordHtml(html: string): string {
 
   const fix = (el: HTMLElement) => {
     // Apply class-based highlights extracted from the style block (dark theme).
-    if (el.className) {
-      for (const cls of el.className.split(/\s+/)) {
+    // Use getAttribute("class") (always a string) instead of el.className, which is
+    // an SVGAnimatedString — not a string — on SVG elements (e.g. a pasted diagram),
+    // where .split() throws "className.split is not a function" and crashes the editor.
+    const classAttr = el.getAttribute("class") || "";
+    if (classAttr) {
+      for (const cls of classAttr.split(/\s+/)) {
         if (highlightByClass[cls]) { el.style.backgroundColor = highlightByClass[cls]; break; }
       }
     }
