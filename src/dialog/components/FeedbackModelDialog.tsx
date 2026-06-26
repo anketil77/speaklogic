@@ -32,6 +32,16 @@ const REQ_RESULT_EMPTY   = "No feedback application result, because no feedback 
 const RCV_ENTITY_EMPTY = "No entity under analysis";
 const RCV_RESULT_EMPTY = "No feedback application";
 
+// Renders the ECF popup body: the bad word substituted out and the good word
+// replaced in, each under its own label. Missing sides are simply omitted.
+function buildEcfHtml(errorSubstituted: string, compensatorReplaced: string): string {
+  const block = (label: string, value: string) =>
+    value
+      ? `<div style="margin-bottom:10px"><div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">${label}</div><div>${value}</div></div>`
+      : "";
+  return block("Actual Error Substituted", errorSubstituted) + block("Actual Compensator Replaced", compensatorReplaced);
+}
+
 // ─── Derived feedback model (maps a ProjectFeedback to the diagram) ──────────────
 function deriveModel(feedback: ProjectFeedback) {
   const ft = feedback.feedbackType;
@@ -63,14 +73,18 @@ function deriveModel(feedback: ProjectFeedback) {
       feedback.feedbackSubject?.trim() ||
       "";
 
-  // ECF = the feedback application ("I changed Word 1 to Word 2").
-  const ecfText = feedback.feedbackApplication?.trim() || "";
+  // ECF = the error→compensator FUNCTION: it removes the bad word (error) and
+  // replaces it with the good word (compensator). (Client correction 06-22: the
+  // ECF node shows the substitution — Actual Error Substituted / Actual
+  // Compensator Replaced — NOT the feedback application.)
+  const ecfErrorSubstituted = feedback.actualErrorSubstituted?.trim() || "";
+  const ecfCompensatorReplaced = feedback.actualCompensatorReplaced?.trim() || "";
+  const hasEcf = !!(ecfErrorSubstituted || ecfCompensatorReplaced);
 
-  // Feedback Application Result = the corrected text (Word 2 substituted).
-  const resultText =
-    feedback.actualErrorSubstituted?.trim() ||
-    feedback.actualCompensatorReplaced?.trim() ||
-    "";
+  // Feedback Application Result = the feedback application itself (the corrected
+  // text/paragraph). (Client correction 06-22: the result always shows the
+  // feedback application, e.g. the resulting paragraph after the correction.)
+  const resultText = feedback.feedbackApplication?.trim() || "";
   const hasResult = isApplied && !!resultText;
 
   // Message shown when there is no result to display.
@@ -91,7 +105,9 @@ function deriveModel(feedback: ProjectFeedback) {
     provider,
     entityText,
     feedbackItem,
-    ecfText,
+    ecfErrorSubstituted,
+    ecfCompensatorReplaced,
+    hasEcf,
     resultText,
     hasResult,
     resultMessage,
@@ -307,12 +323,14 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
         <span>Feedback</span>
       </button>
 
-      {/* ECF clickable overlay — feedback application */}
+      {/* ECF clickable overlay — the error→compensator function (bad word out, good word in) */}
       <button
         onClick={() =>
-          open("Feedback Application", { htmlContent: m.ecfText || undefined, plainText: m.ecfText ? undefined : (m.isRequested ? REQ_ECF_EMPTY : NOT_APPLICABLE) })
+          open("ECF — Error / Compensator Function", m.hasEcf
+            ? { htmlContent: buildEcfHtml(m.ecfErrorSubstituted, m.ecfCompensatorReplaced) }
+            : { plainText: m.isRequested ? REQ_ECF_EMPTY : NOT_APPLICABLE })
         }
-        title="Click to view feedback application"
+        title="Click to view the error/compensator function"
         style={{
           position: "absolute",
           left: ECF_LEFT, top: ECF_TOP,
@@ -330,7 +348,7 @@ function Model1({ feedback }: { feedback: ProjectFeedback }) {
       <button
         onClick={() => {
           if (m.hasResult) {
-            open("Feedback Application Result", { plainText: m.resultText });
+            open("Feedback Application Result", { htmlContent: m.resultText });
           } else {
             open("Feedback Application Result", { plainText: m.resultMessage || NOT_APPLICABLE });
           }
@@ -583,8 +601,9 @@ function Model3({ feedback }: { feedback: ProjectFeedback }) {
       plainText: text.trim() ? undefined : NOT_APPLICABLE,
     });
 
-  // Per-state feedback-box text.
-  const fbText = m.isApplied ? m.ecfText : m.feedbackItem;
+  // Per-state feedback-box text. For applied feedback this is the feedback
+  // application (the corrected text), carried on resultText.
+  const fbText = m.isApplied ? m.resultText : m.feedbackItem;
   // Per-state feedback-box label.
   const fbLabel = m.isRequested ? "Request" : isReceived ? "Received Feedback" : "Feedback";
 
