@@ -13,6 +13,7 @@ import { ViewCompensatorDialog } from "@/dialog/components/ViewCompensatorDialog
 import { ViewAnswerDialog } from "@/dialog/components/ViewAnswerDialog";
 import { ViewFileInformationDialog } from "@/dialog/components/ViewFileInformationDialog";
 import { ViewProblemDialog } from "@/dialog/components/ViewProblemDialog";
+import { AnalysisModelDialog } from "@/dialog/components/AnalysisModelDialog";
 import {
   CloseIcon,
   AnalysisHistoryHeaderIcon,
@@ -22,6 +23,7 @@ import {
   ProvideFeedbackAnalysisIcon,
   FlagAnalysisCommunicationIcon,
   AnalyzeSelectionCmdIcon,
+  FeedbackModelIcon,
 } from "@/dialog/components/Icons";
 import { CommandDropdown, type CmdDropdownDef } from "@/dialog/components/CommandDropdown";
 import type { ProjectAnalysis, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, ProjectProblem, AttachFileToProject } from "@/types/db";
@@ -580,6 +582,7 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
   // Which flow button is highlighted
   const [flowKey, setFlowKey] = useState<"apply" | "provide" | "flag" | null>(null);
 
+  const [showModel, setShowModel] = useState(false);
   const [openEntityDd, setOpenEntityDd] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<CtxMenu | null>(null);
   const [subDialog, setSubDialog] = useState<SubDialog | null>(null);
@@ -1000,6 +1003,28 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
             <AnalyzeSelectionCmdIcon />
           </button>
 
+          {/* View Analysis Model */}
+          <button
+            className="sl-icon-btn"
+            onClick={() => setShowModel(true)}
+            title="View Analysis Model"
+            style={{
+              width: 28,
+              height: 28,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "transparent",
+              border: "none",
+              borderRadius: 4,
+              cursor: "pointer",
+              padding: 0,
+              flexShrink: 0,
+            }}
+          >
+            <FeedbackModelIcon color={C.grey38} />
+          </button>
+
           <CmdSep />
 
           {/* Entity Under Analysis dropdown — mirrors AnalyzeView entity CommandDropdown */}
@@ -1141,6 +1166,14 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
         <ViewFileInformationDialog
           file={subDialog.item}
           onClose={() => setSubDialog(null)}
+          zIndexBase={300}
+        />
+      )}
+
+      {showModel && (
+        <AnalysisModelDialog
+          analysis={analysis}
+          onClose={() => setShowModel(false)}
           zIndexBase={300}
         />
       )}
