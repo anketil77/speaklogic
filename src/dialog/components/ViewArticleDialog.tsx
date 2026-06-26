@@ -239,6 +239,129 @@ function WizardContent({ article }: { article: Article }) {
   );
 }
 
+// ─── Second View (accordion, no verification table) ────────────────────────────
+// Client feedback (06-22): add a second tab that shows Information Before Event +
+// Mother Nature Consideration WITHOUT the table, so the article is easier to read.
+// The verification table is stored baked into motherNatureConsiderations; here we
+// decompose it back into info/verification pairs and render each as an accordion.
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function decomposeVTable(html: string | null | undefined): { info: string; verification: string }[] {
+  if (!html || !html.includes(VTABLE_MARKER)) return [];
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const table = doc.querySelector('table[data-sl-vtable="1"]');
+    if (!table) return [];
+    return Array.from(table.querySelectorAll("tbody tr")).map((tr) => {
+      const tds = tr.querySelectorAll("td");
+      return { info: tds[0]?.innerHTML ?? "", verification: tds[1]?.innerHTML ?? "" };
+    });
+  } catch { return []; }
+}
+
+function AccordionItem({ title, html, value, open }: { title: string; html?: string | null; value?: string | null; open?: boolean }) {
+  if (!html && !value) return null;
+  return (
+    <details open={open} style={{ borderBottom: "1px solid #F3F4F6" }}>
+      <summary style={{
+        cursor: "pointer", listStyle: "revert", padding: "11px 2px", fontSize: 13, fontWeight: 700,
+        color: "#0057A0", fontFamily: "Inter, Segoe UI, sans-serif", outline: "none",
+      }}>
+        {title}
+      </summary>
+      <div style={{ padding: "2px 2px 14px" }}>
+        {html ? (
+          <HtmlContent className="sl-article-content" style={{ fontSize: 14, lineHeight: 1.7, color: "#374151" }} html={html} />
+        ) : (
+          <div style={{ fontSize: 13.5, color: "#374151", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{value}</div>
+        )}
+      </div>
+    </details>
+  );
+}
+
+function SecondView({ article }: { article: Article }) {
+  const pairs = decomposeVTable(article.motherNatureConsiderations);
+  const hasPairs = pairs.length > 0;
+  return (
+    <div style={{ padding: "20px 28px 32px" }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color: "#0F1419", lineHeight: 1.25, marginBottom: 14, wordBreak: "break-word" }}>
+        {article.articleTitle || "Untitled Article"}
+      </div>
+
+      {hasPairs ? (
+        pairs.map((p, i) => (
+          <React.Fragment key={i}>
+            <AccordionItem title="Information Before Event"     html={p.info}         open={i === 0} />
+            <AccordionItem title="Mother Nature Consideration"  html={p.verification} open={i === 0} />
+          </React.Fragment>
+        ))
+      ) : (
+        <>
+          <AccordionItem title="Information Before Event"      html={article.infoBeforeEvent}            open />
+          {/* fallback branch only runs when there is no baked table, so this is raw text */}
+          <AccordionItem title="Mother Nature Considerations"  html={article.motherNatureConsiderations} open />
+        </>
+      )}
+
+      <AccordionItem title="Negative Function Executed"   html={article.negativeFunction} />
+      <AccordionItem title="Problem Developed"            html={article.problemDetails} />
+      <AccordionItem title="Function Executed from Event" html={article.funcExecuteFromEvent} />
+      <AccordionItem title="Relationship"                 html={article.relationshipDetails} />
+      <AccordionItem title="Pre-event Observation"        html={article.preEventObservation} />
+      <AccordionItem title="Post-event Observation"       html={article.postEventObservation} />
+      {!article.templateName && (
+        <AccordionItem title="Article" html={article.articleContent} open />
+      )}
+    </div>
+  );
+}
+
+// Opens the article as a standalone, full-width page in the system browser — more
+// room to read than the dialog. Best-effort: builds a self-contained HTML doc and
+// window.open()s it via a blob URL.
+function openArticleInBrowser(article: Article): void {
+  const parts: string[] = [];
+  const push = (label: string, html?: string | null) => {
+    if (html && html.trim()) parts.push(`<h2>${escapeHtml(label)}</h2>${html}`);
+  };
+  if (article.articleContent && article.articleContent.trim()) parts.push(article.articleContent);
+  push("Information Before Event", article.infoBeforeEvent);
+  push("Mother Nature Consideration", article.motherNatureConsiderations);
+  push("Negative Function Executed", article.negativeFunction);
+  push("Problem Developed", article.problemDetails);
+  push("Function Executed from Event", article.funcExecuteFromEvent);
+  push("Relationship", article.relationshipDetails);
+  push("Pre-event Observation", article.preEventObservation);
+  push("Post-event Observation", article.postEventObservation);
+
+  const meta = [article.personName, article.articleDate ? formatDisplayDate(article.articleDate) : ""]
+    .filter(Boolean).join("  ·  ");
+  const docHtml =
+    `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+    `<meta name="viewport" content="width=device-width, initial-scale=1">` +
+    `<title>${escapeHtml(article.articleTitle || "Article")}</title>` +
+    `<style>body{font-family:Inter,'Segoe UI',sans-serif;max-width:780px;margin:40px auto;padding:0 22px;` +
+    `color:#1a1a1a;line-height:1.7}h1{font-size:30px;line-height:1.2;margin:0 0 6px}` +
+    `h2{font-size:18px;color:#0057A0;margin:30px 0 8px}.byline{color:#777;margin:0 0 24px}` +
+    `img{max-width:100%;height:auto}table{border-collapse:collapse;width:100%}` +
+    `td,th{border:1px solid #C7C7C7;padding:8px 10px;vertical-align:top}` +
+    `blockquote{border-left:3px solid #C7C7C7;margin:0;padding-left:14px;color:#555}</style></head>` +
+    `<body><h1>${escapeHtml(article.articleTitle || "Untitled Article")}</h1>` +
+    (meta ? `<p class="byline">${escapeHtml(meta)}</p>` : "") +
+    parts.join("") +
+    `</body></html>`;
+
+  try {
+    const url = URL.createObjectURL(new Blob([docHtml], { type: "text/html" }));
+    window.open(url, "_blank", "noopener");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch { /* pop-up blocked or unavailable — best-effort */ }
+}
+
 // ─── MetaRow ──────────────────────────────────────────────────────────────────
 
 function MetaRow({ label, value }: { label: string; value: string }) {
@@ -291,6 +414,9 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
 
   // ── Resize state (8-way handles own all the drag logic) ───────────────────
   const [size, setSize] = useState({ width: initW, height: initH });
+
+  // Active tab: 0 = About Article (existing layout), 1 = Second View (accordion, no table).
+  const [activeTab, setActiveTab] = useState(0);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -396,6 +522,36 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
             </div>
           </div>
           <button
+            onClick={() => openArticleInBrowser(article)}
+            title="Open in browser"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#EBF3FC"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
+            style={{
+              height: 26,
+              padding: "0 11px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "#F5F5F5",
+              color: "#0057A0",
+              border: "1px solid #E0E0E0",
+              borderRadius: 6,
+              cursor: "pointer",
+              flexShrink: 0,
+              fontSize: 11.4,
+              fontWeight: 600,
+              fontFamily: "Inter, Segoe UI, sans-serif",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+            Open in browser
+          </button>
+          <button
             onClick={onClose}
             title="Close"
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F0F0F0"; }}
@@ -430,25 +586,34 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
             background: "#fff",
           }}
         >
-          <div
-            style={{
-              height: 32,
-              display: "flex",
-              alignItems: "center",
-              borderBottom: "2px solid #0078D4",
-              fontSize: 12.4,
-              fontWeight: 600,
-              color: "#0078D4",
-              paddingLeft: 2,
-              paddingRight: 2,
-            }}
-          >
-            About Article
-          </div>
+          {["About Article", "Second View"].map((label, i) => (
+            <button
+              key={label}
+              onClick={() => setActiveTab(i)}
+              style={{
+                height: 32,
+                display: "flex",
+                alignItems: "center",
+                border: "none",
+                background: "none",
+                borderBottom: activeTab === i ? "2px solid #0078D4" : "2px solid transparent",
+                fontSize: 12.4,
+                fontWeight: 600,
+                color: activeTab === i ? "#0078D4" : "#6B7280",
+                cursor: "pointer",
+                padding: "0 2px",
+                marginRight: 18,
+                fontFamily: "Inter, Segoe UI, sans-serif",
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* ── Scrollable body ── */}
         <div style={{ flex: 1, overflow: "auto", background: "#fff" }}>
+        {activeTab === 1 ? <SecondView article={article} /> : (<>
 
           {/* ── Cover banner with action buttons ── */}
           <div
@@ -669,6 +834,7 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
             {/* Wizard content sections — shown for template-based articles */}
             {article.templateName && <WizardContent article={article} />}
           </div>
+        </>)}
         </div>
 
         {/* ── Footer ── */}
