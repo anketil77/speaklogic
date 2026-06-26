@@ -78,6 +78,6 @@ const SYSTEM_DERIVATION_MATH = `
 // Negative ids keep these constant items from colliding with DB-backed
 // user-identified items (which use positive AUTOINCREMENT ids).
 export const SPEAK_LOGIC_INFO_ITEMS: InfoItem[] = [
-  { id: "sl-system-derivation-diagram", name: "System Derivation Information (Diagram)", html: SYSTEM_DERIVATION_DIAGRAM.trim() },
+  { id: "sl-system-derivation-diagram", name: "System Derivation Information (Non-math)", html: SYSTEM_DERIVATION_DIAGRAM.trim() },
   { id: "sl-system-derivation-math",    name: "System Derivation Information (Math)",    html: SYSTEM_DERIVATION_MATH.trim() },
 ];
