@@ -25,13 +25,25 @@ export interface EntityModelBox {
   content: string;
 }
 
+/** One box→arrow→box view; multiple of these render as tabs. */
+export interface EntityModelTab {
+  name: string;
+  left: EntityModelBox;
+  right: EntityModelBox;
+  arrowLabel?: string;
+}
+
 interface Props {
   title: string;
   subtitle: string;
-  left: EntityModelBox;
-  right: EntityModelBox;
+  /** Single-view shorthand (used when `tabs` is not given). */
+  left?: EntityModelBox;
+  right?: EntityModelBox;
   /** Text rendered above the connector arrow (e.g. "points to"). */
   arrowLabel?: string;
+  /** Optional multi-tab models. When given (non-empty), a tab bar is shown and each
+   *  tab supplies its own left/right/arrowLabel; the single-view props are ignored. */
+  tabs?: EntityModelTab[];
   onClose: () => void;
   /** Base z-index for the overlay; the dialog sits at base + 1. Pass the parent
    *  dialog's z-index + a margin so the model always stacks above its opener
@@ -95,9 +107,17 @@ function ModelBox({
   );
 }
 
-export function EntityModelDialog({ title, subtitle, left, right, arrowLabel, onClose, zIndexBase = 215 }: Props) {
+export function EntityModelDialog({ title, subtitle, left, right, arrowLabel, tabs, onClose, zIndexBase = 215 }: Props) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [popup, setPopup] = useState<{ title: string; htmlContent?: string; plainText?: string } | null>(null);
+  const [tab, setTab] = useState(0);
+
+  // Normalize to a list of views: explicit tabs, or a single view from the shorthand props.
+  const views: EntityModelTab[] = tabs && tabs.length
+    ? tabs
+    : [{ name: "", left: left as EntityModelBox, right: right as EntityModelBox, arrowLabel }];
+  const view = views[Math.min(tab, views.length - 1)];
+  const showTabs = views.length > 1;
 
   const open = (b: EntityModelBox) =>
     setPopup({
@@ -156,6 +176,26 @@ export function EntityModelDialog({ title, subtitle, left, right, arrowLabel, on
           </button>
         </div>
 
+        {/* Tab bar (only when multiple models are supplied) */}
+        {showTabs && (
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 18, padding: "0 24px", borderBottom: "1px solid #E5E7EB", flexShrink: 0 }}>
+            {views.map((v, i) => (
+              <button
+                key={v.name || i}
+                onClick={() => { setTab(i); setPopup(null); }}
+                style={{
+                  height: 34, border: "none", background: "none", cursor: "pointer",
+                  borderBottom: tab === i ? `2px solid ${colors.azure42}` : "2px solid transparent",
+                  fontSize: "12.4px", fontWeight: 600, padding: "0 2px",
+                  color: tab === i ? colors.azure42 : colors.grey38, fontFamily: "inherit",
+                }}
+              >
+                {v.name || `Model ${i + 1}`}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Diagram */}
         <div style={{ flex: 1, overflow: "auto", padding: "24px 30px" }}>
           <div style={{ position: "relative", width: M_W, height: M_H, flexShrink: 0, userSelect: "none", margin: "0 auto" }}>
@@ -175,20 +215,20 @@ export function EntityModelDialog({ title, subtitle, left, right, arrowLabel, on
                 stroke={LINE_COLOR} strokeWidth="1.8" strokeLinecap="round" markerEnd="url(#emarr)"
               />
 
-              {arrowLabel && (
+              {view.arrowLabel && (
                 <text
                   x={arrowMidX} y={CY - 10}
                   textAnchor="middle"
                   fontSize="11.5" fontWeight="600" fill="#7a807c"
                   fontFamily="'Inter','Segoe UI',sans-serif"
                 >
-                  {arrowLabel}
+                  {view.arrowLabel}
                 </text>
               )}
             </svg>
 
-            <ModelBox x={L_X} box={left} onClick={() => open(left)} />
-            <ModelBox x={R_X} box={right} onClick={() => open(right)} />
+            <ModelBox x={L_X} box={view.left} onClick={() => open(view.left)} />
+            <ModelBox x={R_X} box={view.right} onClick={() => open(view.right)} />
 
             {popup && (
               <InlinePopup

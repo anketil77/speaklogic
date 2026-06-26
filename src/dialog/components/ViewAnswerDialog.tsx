@@ -215,9 +215,22 @@ export function ViewAnswerDialog({ answer, onClose, zIndexBase = 200, onViewAnal
         <EntityModelDialog
           title="Answer Model"
           subtitle="View the answer model representation."
-          left={{ label: "Actual Question", content: answer.actualQuestion }}
-          right={{ label: "Actual Answer", content: answer.actualAnswer }}
-          arrowLabel="answered by"
+          tabs={[
+            // Model 1 (client 06-22, image23): the answer points to the information it identifies.
+            {
+              name: "Model 1",
+              left: { label: "Actual Answer", content: answer.actualAnswer },
+              right: { label: "Information", content: answer.informationAnswerPointTo },
+              arrowLabel: "point to",
+            },
+            // Model 2 (existing, image24): the question is answered by the answer.
+            {
+              name: "Model 2",
+              left: { label: "Actual Question", content: answer.actualQuestion },
+              right: { label: "Actual Answer", content: answer.actualAnswer },
+              arrowLabel: "answered by",
+            },
+          ]}
           zIndexBase={zIndexBase + 20}
           onClose={() => setShowModel(false)}
         />
