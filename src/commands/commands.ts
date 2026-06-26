@@ -1214,6 +1214,17 @@ async function openInlineIdentifyDialog(
             break;
         }
       });
+
+      // Native close (user clicks the dialog's X without saving). Without this the
+      // ribbon event.completed() never fires, so Office leaves the command pending
+      // and the NEXT inline command (e.g. Identify as Compensator after Identify as
+      // Error) appears frozen / "waiting" and adding no longer works. complete() is
+      // idempotent, so a programmatic close in finish() won't double-complete.
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        const code = (evt as { error?: number }).error;
+        dbg("HOST", "DialogEventReceived (inline identify closed by user or error)", { code });
+        complete();
+      });
     }
   );
 }
