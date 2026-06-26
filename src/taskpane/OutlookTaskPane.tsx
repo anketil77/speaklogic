@@ -243,13 +243,15 @@ function buildRequestMailtoUrl(p: SaveRequestFeedbackPayload): string {
   const email = (p as { toPersonEmail?: string }).toPersonEmail ?? "";
   if (!email) return "";
   const subject = encodeURIComponent(p.communicationSubject ?? "");
-  const bodyText = (p.actualCommunication ?? "").replace(/<[^>]*>/g, "").slice(0, 1800);
+  const prefix = `Application Name: ${p.applicationName}\nCommunication Function: ${p.communicationFunction}\nCommunication Signal: ${p.communicationSignalType}\n${"=".repeat(60)}\n\n`;
+  const bodyText = (prefix + (p.actualCommunication ?? "").replace(/<[^>]*>/g, "")).slice(0, 1800);
   return `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
 }
 
 function buildRequestSLMailtoUrl(p: SaveRequestSLFeedbackPayload): string {
   const subject = encodeURIComponent(p.communicationSubject ?? "");
-  const bodyText = (p.actualCommunication ?? "").replace(/<[^>]*>/g, "").slice(0, 1800);
+  const prefix = `Application Name: ${p.applicationName}\nCommunication Function: ${p.communicationFunction}\nCommunication Signal: ${p.communicationSignalType}\n${"=".repeat(60)}\n\n`;
+  const bodyText = (prefix + (p.actualCommunication ?? "").replace(/<[^>]*>/g, "")).slice(0, 1800);
   return `mailto:support@speaklogic.org?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
 }
 
@@ -846,7 +848,13 @@ export function OutlookTaskPane() {
             const email = (p as { toPersonEmail?: string }).toPersonEmail ?? "";
             if (email) upsertPersonWithEmail((p as { toPerson?: string }).toPerson ?? "", email);
             try { saveFeedbackHistory({ selectionAction: "Requested Feedback With", entityName: p.fromPerson ?? "", actualSelection: p.applicationName ?? "", selectionType: "Request Feedback", source: getSource(), applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignal: (p as { communicationSignalType?: string }).communicationSignalType ?? "", projectName: "", personName: p.fromPerson ?? "", personEmail: "" }); } catch { /* non-critical */ }
-          } catch (err) { setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false }); }
+          } catch (err) {
+            // Save failed (e.g. storage quota) — tell the dialog so it does NOT show
+            // "saved successfully" for a request that was never persisted.
+            setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false });
+            dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+            return;
+          }
           {
             const html = buildRequestFeedbackEmail(p);
             openHtmlEmailDraft(html, (p as { toPersonEmail?: string }).toPersonEmail ?? "", p.communicationSubject ?? "", p.actualCommunication ?? "", (mailtoUrl) => {
@@ -955,8 +963,12 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
-  const handleFeedbackHistory = useCallback((initialFilter?: string) => {
+  const handleFeedbackHistory = useCallback(async (initialFilter?: string) => {
     if (!dbReady) return;
+    // Pull the latest DB from storage first: a request/feedback saved on the other
+    // host runtime (ribbon/commands) won't be in this runtime's in-memory DB otherwise,
+    // so it would appear "missing" from the list.
+    await reloadDbFromStorage();
     const { personName, personEmail } = getUserIdentity();
 
     const buildFeedbacks = () => getAllFeedbacks().map((f) => !f.analysisId ? { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] } : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] });
@@ -1018,8 +1030,10 @@ export function OutlookTaskPane() {
 
   // Opens the requested-feedback list directly (Stats Overview "Feedback Requested"
   // card). Its Back button returns to the full feedback list.
-  const handleListFeedbackRequestedDirect = useCallback(() => {
+  const handleListFeedbackRequestedDirect = useCallback(async () => {
     if (!dbReady) return;
+    // Reload from storage so a request saved on the other host runtime is included.
+    await reloadDbFromStorage();
     const { personName, personEmail } = getUserIdentity();
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=list-feedback-requested`,
@@ -1480,7 +1494,12 @@ export function OutlookTaskPane() {
             }
             saveCommSignalInfo({ fromPerson: p.fromPerson ?? "", toPerson: "Speak Logic", toPersonEmail: "support@speaklogic.org", applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignalType: (p as { communicationSignalType?: string }).communicationSignalType ?? "", communicationSubject: p.communicationSubject ?? "", actualCommunication: p.actualCommunication ?? "", actualSelection: "", selectionType: "Speak Logic Request", entitySelected: `Speak Logic feedback request on ${formatDisplayDate(nowDate())}`, files: (p as { files?: AttachFileToProject[] }).files ?? [] });
             try { saveFeedbackHistory({ selectionAction: "Requested Feedback From Speak Logic", entityName: p.fromPerson ?? "", actualSelection: p.applicationName ?? "", selectionType: "Speak Logic Request", source: getSource(), applicationName: p.applicationName ?? "", communicationFunction: p.communicationFunction ?? "", communicationSignal: "", projectName: "", personName: p.fromPerson ?? "", personEmail: "" }); } catch { /* non-critical */ }
-          } catch (err) { setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false }); }
+          } catch (err) {
+            // Save failed — report ERROR instead of falsely telling the dialog "SAVED".
+            setStatus({ msg: `Failed to save request: ${String(err)}`, ok: false });
+            dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+            return;
+          }
           dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: buildRequestSLMailtoUrl(p) } as HostMessage));
         }
       }
