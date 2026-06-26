@@ -126,6 +126,120 @@ export function saveFullAnalysis(payload: SaveAnalysisPayload): number {
   return analysisId;
 }
 
+export function updateAnalysis(id: number, payload: SaveAnalysisPayload): void {
+  const db = getDb();
+  const a = payload.analysis;
+
+  db.run(
+    `UPDATE ProjectAnalysis SET
+      entityUnderAnalysis = ?, fromPerson = ?, analysisSubject = ?,
+      actualAnalysis = ?, whatToDoWithAnalysis = ?,
+      applicationName = ?, communicationFunction = ?, communicationSignal = ?,
+      projectName = ?, selectionType = ?,
+      errorCount = ?, questionCount = ?, compensatorCount = ?,
+      answerCount = ?, problemCount = ?
+    WHERE id = ?`,
+    [
+      a.entityUnderAnalysis,
+      a.fromPerson ?? "",
+      a.analysisSubject ?? "",
+      a.actualAnalysis,
+      a.whatToDoWithAnalysis,
+      a.applicationName,
+      a.communicationFunction,
+      a.communicationSignal,
+      a.projectName,
+      a.selectionType,
+      payload.errors.length,
+      payload.questions.length,
+      payload.compensators.length,
+      payload.answers.length,
+      payload.problems.length,
+      id,
+    ]
+  );
+
+  // Delete existing child rows, then re-insert from payload (same shape as saveFullAnalysis).
+  db.run("DELETE FROM ProjectError WHERE analysisId = ?", [id]);
+  db.run("DELETE FROM ProjectQuestion WHERE analysisId = ?", [id]);
+  db.run("DELETE FROM ProjectAnswer WHERE analysisId = ?", [id]);
+  db.run("DELETE FROM ProjectCompensator WHERE analysisId = ?", [id]);
+  db.run("DELETE FROM ProjectProblem WHERE analysisId = ?", [id]);
+  db.run("DELETE FROM AttachFileToProject WHERE analysisId = ?", [id]);
+  db.run("DELETE FROM GuidelineReference WHERE analysisId = ?", [id]);
+
+  const date = nowDate();
+  const time = nowTime();
+
+  for (const e of payload.errors) {
+    db.run(
+      `INSERT INTO ProjectError
+        (errorNumber, actualError, fromActualCommunication, entityErrorPointTo, errorDescription, errorDate, errorTime, analysisId)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [e.errorNumber, e.actualError, e.fromActualCommunication, e.entityErrorPointTo, e.errorDescription, date, time, id]
+    );
+  }
+  for (const q of payload.questions) {
+    db.run(
+      `INSERT INTO ProjectQuestion
+        (questionNumber, actualQuestion, entityQuestionPointTo, responseStatus, questionDate, questionTime, analysisId)
+       VALUES (?,?,?,?,?,?,?)`,
+      [q.questionNumber, q.actualQuestion, q.entityQuestionPointTo, q.responseStatus, date, time, id]
+    );
+  }
+  for (const ans of payload.answers) {
+    db.run(
+      `INSERT INTO ProjectAnswer
+        (answerNumber, actualQuestion, entityQuestionPointTo, informationAnswerPointTo, actualAnswer, answerDate, answerTime, analysisId)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [ans.answerNumber, ans.actualQuestion, ans.entityQuestionPointTo, ans.informationAnswerPointTo, ans.actualAnswer, date, time, id]
+    );
+  }
+  for (const c of payload.compensators) {
+    db.run(
+      `INSERT INTO ProjectCompensator
+        (compensatorNumber, actualCompensator, actualErrorReplaced, inActualCommunication, compensatorDescription, compensatorDate, compensatorTime, analysisId)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [c.compensatorNumber, c.actualCompensator, c.actualErrorReplaced, c.inActualCommunication, c.compensatorDescription, date, time, id]
+    );
+  }
+  for (const p of payload.problems) {
+    db.run(
+      `INSERT INTO ProjectProblem
+        (problemNumber, problemName, actualProblem, fromActualError, problemDescription, problemDate, problemTime, analysisId)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [p.problemNumber, p.problemName, p.actualProblem, p.fromActualError, p.problemDescription, date, time, id]
+    );
+  }
+  for (const f of payload.files) {
+    db.run(
+      `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, analysisId) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [
+        f.fileName,
+        f.fileType,
+        f.fileSize,
+        f.fileDirectory,
+        f.fileDescription,
+        f.fileDate || date,
+        f.fileTime || time,
+        f.storageId,
+        f.fullFileName,
+        id,
+      ]
+    );
+  }
+  for (const g of payload.guidelineReferences ?? []) {
+    db.run(
+      `INSERT INTO GuidelineReference
+        (guidelineText, guidelineNumber, guidelineLink, useLink, guidelineDate, guidelineTime, analysisId)
+       VALUES (?,?,?,?,?,?,?)`,
+      [g.guidelineText, g.guidelineNumber, g.guidelineLink, g.useLink, g.guidelineDate || date, g.guidelineTime || time, id]
+    );
+  }
+
+  persistDb();
+}
+
 // ─── Inline Identify (Point 9) ──────────────────────────────────────────────
 // Returns every error across all analyses (newest first). Used to populate the
 // "Actual Error To Replace" dropdown in the inline Compensator dialog.

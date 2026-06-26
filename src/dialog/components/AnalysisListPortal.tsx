@@ -24,7 +24,7 @@ import {
   FilterShowAllIcon,
 } from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
-import type { ProjectAnalysis } from "@/types/db";
+import type { ProjectAnalysis, ProjectFeedback } from "@/types/db";
 import { openAnalysisReport } from "@/dialog/utils/reportGenerator";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -49,9 +49,9 @@ const COLUMNS: PanelTableCol<ProjectAnalysis>[] = [
 ];
 
 // ─── Info messages ───────────────────────────────────────────────────────────
-const MSG_EDIT = {
+const MSG_EDIT_BLOCKED = {
   title: "Edit Analysis Message",
-  text: "By viewing the selected analysis, I can determine if it is possible to edit it. Simply choose view analysis to determine if the selected analysis can be edited.",
+  text: "Since the analysis has been provided or applied as feedback, it can no longer be edited",
 };
 const MSG_PROVIDE = {
   title: "Provide Feedback with Analysis",
@@ -90,15 +90,18 @@ interface AnalysisListPortalProps {
   sendMessage: (msg: unknown) => void;
   onClose: () => void;
   onViewAnalysis: (a: ProjectAnalysis) => void;
+  feedbacks?: ProjectFeedback[];
+  onEdit?: (id: number) => void;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
-export function AnalysisListPortal({ analyses, sendMessage, onClose, onViewAnalysis }: AnalysisListPortalProps) {
+export function AnalysisListPortal({ analyses, sendMessage, onClose, onViewAnalysis, feedbacks, onEdit }: AnalysisListPortalProps) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [filterSource, setFilterSource] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
+  const [pendingEdit, setPendingEdit] = useState<number | null>(null);
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
 
@@ -220,7 +223,17 @@ export function AnalysisListPortal({ analyses, sendMessage, onClose, onViewAnaly
           <button
             title="Edit Selected Analysis"
             disabled={!hasSelection}
-            onClick={() => { if (hasSelection) setInfoMsg(MSG_EDIT); }}
+            onClick={() => {
+              if (!hasSelection || selectedIndex === null) return;
+              const analysis = displayRows[selectedIndex];
+              const feedbacksList = feedbacks ?? [];
+              const canEdit = analysis.whatToDoWithAnalysis === "RetainAnalysisAsNeed" && !feedbacksList.some((f) => f.analysisId === analysis.id);
+              if (!canEdit) {
+                setInfoMsg(MSG_EDIT_BLOCKED);
+              } else {
+                setPendingEdit(analysis.id as number);
+              }
+            }}
             className="sl-icon-btn"
             style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", borderRadius: 4, cursor: hasSelection ? "pointer" : "default", opacity: hasSelection ? 1 : 0.35, flexShrink: 0 }}
           >
@@ -320,6 +333,25 @@ export function AnalysisListPortal({ analyses, sendMessage, onClose, onViewAnaly
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                 <button onClick={() => setPendingDelete(null)} style={{ height: 30, padding: "0 16px", background: colors.white, border: `1px solid ${colors.grey78}`, borderRadius: 4, fontSize: 12.4, fontFamily: "inherit", cursor: "pointer", color: colors.grey11 }}>No</button>
                 <button onClick={confirmDelete} style={{ height: 30, padding: "0 16px", background: colors.azure42, border: "none", borderRadius: 4, fontSize: 12.4, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", color: colors.white }}>Yes</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Edit confirm overlay ── */}
+        {pendingEdit !== null && (
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ background: "#FFFFFF", border: "1px solid #E0E0E0", borderRadius: 6, padding: "20px 24px", maxWidth: 420, boxShadow: "0px 4px 16px rgba(0,0,0,0.12)", fontFamily: "inherit" }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "#1B1B1B", marginBottom: 10 }}>Edit Analysis Message</div>
+              <div style={{ fontSize: 12, color: "#616161", lineHeight: "18px", marginBottom: 18 }}>
+                Since the analysis has not been applied or provided as feedback, it is ok to make changes to it. Do you want to edit the analysis?
+              </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button onClick={() => setPendingEdit(null)} style={{ height: 28, padding: "0 16px", background: "#FFFFFF", border: "1px solid #C7C7C7", borderRadius: 4, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>No</button>
+                <button
+                  onClick={() => { onEdit?.(pendingEdit!); setPendingEdit(null); }}
+                  style={{ height: 28, padding: "0 16px", background: "#0078D4", border: "none", borderRadius: 4, fontSize: 12, fontWeight: 700, color: "#FFFFFF", cursor: "pointer", fontFamily: "inherit" }}
+                >Yes</button>
               </div>
             </div>
           </div>

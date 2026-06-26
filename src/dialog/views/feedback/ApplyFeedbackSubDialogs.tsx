@@ -207,6 +207,7 @@ export function ApplyFeedbackSubDialogs(p: ApplyFeedbackSubDialogsProps) {
       {/* ── List portals ────────────────────────────────────────────────────── */}
       {showAnalysisList && (
         <AnalysisListPortal analyses={availableAnalyses} sendMessage={sendMessage}
+          feedbacks={availableFeedbacks}
           onClose={() => setShowAnalysisList(false)}
           onViewAnalysis={(a) => { setViewAnalysis(a); setShowAnalysisList(false); }} />
       )}

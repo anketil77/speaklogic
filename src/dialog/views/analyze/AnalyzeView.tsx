@@ -456,6 +456,56 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
     }
   }, [initData]);
 
+  // Prefill all form fields and panels when opening in edit mode.
+  useEffect(() => {
+    const d = initData?.editAnalysisData;
+    if (!d) return;
+    setForm({
+      fromPerson: d.fromPerson ?? "",
+      analysisSubject: d.analysisSubject ?? "",
+      actualAnalysis: d.actualAnalysis ?? "",
+    });
+    setEuaHtml(d.entityUnderAnalysis ?? "");
+    panels.setErrors(
+      (d.errors ?? []).map((e) => {
+        const { id: _id, analysisId: _aid, ...rest } = e;
+        return rest;
+      })
+    );
+    panels.setQuestions(
+      (d.questions ?? []).map((q) => {
+        const { id: _id, analysisId: _aid, questionDate: _qd, questionTime: _qt, ...rest } = q;
+        return rest;
+      })
+    );
+    panels.setAnswers(
+      (d.answers ?? []).map((ans) => {
+        const { id: _id, analysisId: _aid, questionId: _qid, ...rest } = ans;
+        return rest;
+      })
+    );
+    panels.setCompensators(
+      (d.compensators ?? []).map((c) => {
+        const { id: _id, analysisId: _aid, ...rest } = c;
+        return rest;
+      })
+    );
+    panels.setProblems(
+      (d.problems ?? []).map((p) => {
+        const { id: _id, analysisId: _aid, ...rest } = p;
+        return rest;
+      })
+    );
+    panels.setFiles(
+      (d.files ?? []).map((f) => {
+        const { id: _id, analysisId: _aid, feedbackId: _fid, flagId: _flid, articleId: _artid, ...rest } = f;
+        return rest;
+      })
+    );
+    if ((d.answers ?? []).length > 0) panels.setShowAnswersTab(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initData?.editAnalysisData]);
+
   function updateForm<K extends keyof typeof form>(key: K, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setValidationError(null);
@@ -554,6 +604,7 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
       submitSave({
         action: "SAVE_ANALYSIS",
         payload: {
+          id: initData.editAnalysisData?.id,
           analysis: {
             entityUnderAnalysis: euaHtml,
             fromPerson: form.fromPerson,

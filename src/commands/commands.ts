@@ -6,7 +6,7 @@ const DIALOG_BASE = window.location.origin;
 
 
 import { initDb, nowDate, nowTime, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
-import { saveFullAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback, getAllErrors, getErrorsByApplicationName, findAnalysisIdByErrorText, addCompensatorToAnalysis } from "@/db/queries/analysis";
+import { saveFullAnalysis, updateAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback, getAllErrors, getErrorsByApplicationName, findAnalysisIdByErrorText, addCompensatorToAnalysis, getGuidelinesByAnalysis } from "@/db/queries/analysis";
 import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
 import { getStatsOverview } from "@/db/queries/stats";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
@@ -1434,8 +1434,9 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
       }
       const dialog = result.value;
       const complete = makeEventCompleter(event);
+      let transitioning = false;
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        complete();
+        if (!transitioning) complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -1467,6 +1468,7 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
               projectName: "",
               peopleList: [],
               analyses,
+              feedbacks: getAllFeedbacks(),
             },
           };
           dialog.messageChild(JSON.stringify(hostMsg));
@@ -1474,6 +1476,20 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         if (m.action === "CLOSE") {
           try { dialog.close(); } catch { }
           complete();
+        }
+        if (m.action === "EDIT_ANALYSIS") {
+          const id = (m as { action: string; id: number }).id;
+          const analysis = getAnalysisById(id);
+          if (!analysis) { replyError(dialog, "Analysis record not found."); return; }
+          analysis.errors = getErrorsByAnalysis(id);
+          analysis.questions = getQuestionsByAnalysis(id);
+          analysis.answers = getAnswersByAnalysis(id);
+          analysis.compensators = getCompensatorsByAnalysis(id);
+          analysis.problems = getProblemsByAnalysis(id);
+          analysis.files = getFilesByAnalysis(id);
+          transitioning = true;
+          try { dialog.close(); } catch { }
+          openEditAnalysisDialog(event, analysis);
         }
         if (m.action === "NAVIGATE_TO_APPLY") {
           const navM = m as { action: string; analysisId: number };
@@ -1831,8 +1847,9 @@ function openRetainedHistoryDialog(event: Office.AddinCommands.Event, attempt = 
       }
       const dialog = result.value;
       const complete = makeEventCompleter(event);
+      let retainTransitioning = false;
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-        complete();
+        if (!retainTransitioning) complete();
       });
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -1864,6 +1881,7 @@ function openRetainedHistoryDialog(event: Office.AddinCommands.Event, attempt = 
               projectName: "",
               peopleList: [],
               analyses,
+              feedbacks: getAllFeedbacks(),
             },
           };
           dialog.messageChild(JSON.stringify(hostMsg));
@@ -1871,6 +1889,20 @@ function openRetainedHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         if (m.action === "DELETE_ANALYSIS") {
           try { deleteAnalysis((m as { action: string; id: number }).id); }
           catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+        }
+        if (m.action === "EDIT_ANALYSIS") {
+          const id = (m as { action: string; id: number }).id;
+          const analysis = getAnalysisById(id);
+          if (!analysis) { replyError(dialog, "Analysis record not found."); return; }
+          analysis.errors = getErrorsByAnalysis(id);
+          analysis.questions = getQuestionsByAnalysis(id);
+          analysis.answers = getAnswersByAnalysis(id);
+          analysis.compensators = getCompensatorsByAnalysis(id);
+          analysis.problems = getProblemsByAnalysis(id);
+          analysis.files = getFilesByAnalysis(id);
+          retainTransitioning = true;
+          try { dialog.close(); } catch { }
+          openEditAnalysisDialog(event, analysis);
         }
         if (m.action === "CLOSE") {
           try { dialog.close(); } catch { }
@@ -2894,6 +2926,78 @@ function openEditArticleDialog(
             }
             try { d.close(); } catch { }
             complete();
+            break;
+          }
+          case "CLOSE":
+            try { d.close(); } catch { }
+            complete();
+            break;
+          default:
+            break;
+        }
+      });
+    }
+  );
+}
+
+/** Opens the analysis editor pre-populated with an existing analysis record. */
+function openEditAnalysisDialog(
+  event: Office.AddinCommands.Event,
+  analysis: ProjectAnalysis,
+  attempt = 0,
+): void {
+  const { personName, personEmail } = getUserIdentity();
+  const editMode = analysis.selectionType === "Paragraph" ? "paragraph" : "selection";
+  const editPayload: DialogInitPayload = {
+    selection: "",
+    mode: editMode as SelectionMode,
+    source: getSource(),
+    personName,
+    personEmail,
+    applicationName: analysis.applicationName ?? "",
+    communicationFunction: analysis.communicationFunction ?? "",
+    communicationSignal: analysis.communicationSignal ?? "",
+    projectName: analysis.projectName ?? "",
+    peopleList: buildPeopleList(analysis.fromPerson),
+    communicationPersonName: analysis.fromPerson ?? "",
+    editAnalysisData: analysis,
+  };
+  _trackDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=analyze&mode=${editMode}`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openEditAnalysisDialog(event, analysis, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const d = result.value;
+      const complete = makeEventCompleter(event);
+      d.addEventHandler(Office.EventType.DialogEventReceived, () => { complete(); });
+      d.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m2 = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m2.action) {
+          case "READY":
+            d.messageChild(JSON.stringify({ type: "INIT", payload: editPayload } as HostMessage));
+            break;
+          case "SAVE_ANALYSIS": {
+            const p = m2.payload as SaveAnalysisPayload;
+            try {
+              if (p.id !== undefined) {
+                updateAnalysis(p.id, p);
+                if (p.analysis.fromPerson) upsertPersonName(p.analysis.fromPerson);
+              } else {
+                saveFullAnalysis(p);
+                if (p.analysis.fromPerson) upsertPersonName(p.analysis.fromPerson);
+              }
+            } catch (err) {
+              d.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+              break;
+            }
+            d.messageChild(JSON.stringify({ type: "RETAIN_SAVED" } as HostMessage));
             break;
           }
           case "CLOSE":

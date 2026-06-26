@@ -740,6 +740,8 @@ export interface DialogInitPayload {
   wizardCategory?: string;
   /** Passed when editing an existing article from the list view. */
   editArticleData?: Article;
+  /** Passed when editing an existing analysis (EDIT_ANALYSIS flow). */
+  editAnalysisData?: ProjectAnalysis;
   contacts?: ContactPerson[];
   /** User-defined "Select Information" items (Article Wizard Step Info). */
   userInfoItems?: UserInformationItem[];
@@ -867,6 +869,7 @@ export type DialogAction =
   | { action: "BACK_TO_PICKER" }
   | { action: "DELETE_ARTICLE"; id: number }
   | { action: "EDIT_ARTICLE"; id: number }
+  | { action: "EDIT_ANALYSIS"; id: number }
   | { action: "FLAG_ARTICLE"; id: number }
   | { action: "ANALYZE_ARTICLE"; id: number }
   | { action: "REQUEST_FEEDBACK_ARTICLE"; id: number }
@@ -963,6 +966,8 @@ export interface SaveInterpretationPayload {
 }
 
 export interface SaveAnalysisPayload {
+  /** Set when updating an existing analysis (edit mode). Absent for new analyses. */
+  id?: number;
   analysis: Omit<ProjectAnalysis, "id">;
   errors: Omit<ProjectError, "id" | "analysisId">[];
   questions: Omit<ProjectQuestion, "id" | "analysisId">[];

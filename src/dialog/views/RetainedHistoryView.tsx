@@ -24,7 +24,7 @@ import {
   FilterShowAllIcon,
 } from "@/dialog/components/Icons";
 import { colors } from "@/styles/tokens";
-import type { ProjectAnalysis } from "@/types/db";
+import type { ProjectAnalysis, ProjectFeedback } from "@/types/db";
 import { openAnalysisReport } from "@/dialog/utils/reportGenerator";
 
 const SOURCE_DISPLAY: Record<string, string> = {
@@ -109,6 +109,7 @@ export default function RetainedHistoryView() {
   const [filterSource, setFilterSource] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
+  const [pendingEdit, setPendingEdit] = useState<number | null>(null);
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
   const [viewAnalysis, setViewAnalysis] = useState<ProjectAnalysis | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -296,10 +297,21 @@ export default function RetainedHistoryView() {
           <DeleteSelectedIcon />
         </button>
 
-        {/* Edit (info-only) */}
+        {/* Edit (gated) */}
         <button
           title="Edit Selected Analysis"
-          onClick={() => showInfo("edit")}
+          disabled={!hasSelection}
+          onClick={() => {
+            if (!hasSelection || selectedIndex === null) return;
+            const analysis = displayRows[selectedIndex];
+            const feedbacksList = (initData?.feedbacks as ProjectFeedback[] | undefined) ?? [];
+            const canEdit = !feedbacksList.some((f) => f.analysisId === analysis.id);
+            if (!canEdit) {
+              setInfoMsg({ title: "Edit Analysis Message", text: "Since the analysis has been provided or applied as feedback, it can no longer be edited" });
+            } else {
+              setPendingEdit(analysis.id as number);
+            }
+          }}
           className="sl-icon-btn"
           style={{
             width: 28,
@@ -310,7 +322,8 @@ export default function RetainedHistoryView() {
             background: "none",
             border: "none",
             borderRadius: 4,
-            cursor: "pointer",
+            cursor: hasSelection ? "pointer" : "default",
+            opacity: hasSelection ? 1 : 0.35,
             flexShrink: 0,
           }}
         >
@@ -594,6 +607,25 @@ export default function RetainedHistoryView() {
         <DismissBtn label="Close" onClick={closeDialog} />
       </FooterBar>
 
+      {/* ── Edit confirm overlay ── */}
+      {pendingEdit !== null && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: colors.white, border: `1px solid ${colors.grey88}`, borderRadius: 6, padding: "20px 24px", maxWidth: 420, boxShadow: "0px 4px 16px rgba(0,0,0,0.12)", fontFamily: "Inter, Segoe UI, sans-serif" }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: "#1B1B1B", marginBottom: 10 }}>Edit Analysis Message</div>
+            <div style={{ fontSize: 12, color: "#616161", lineHeight: "18px", marginBottom: 18 }}>
+              Since the analysis has not been applied or provided as feedback, it is ok to make changes to it. Do you want to edit the analysis?
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setPendingEdit(null)} style={{ height: 28, padding: "0 16px", background: colors.white, border: `1px solid ${colors.grey78}`, borderRadius: 4, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>No</button>
+              <button
+                onClick={() => { sendMessage({ action: "EDIT_ANALYSIS", id: pendingEdit! }); setPendingEdit(null); }}
+                style={{ height: 28, padding: "0 16px", background: colors.azure42, border: "none", borderRadius: 4, fontSize: 12, fontWeight: 700, color: colors.white, cursor: "pointer", fontFamily: "inherit" }}
+              >Yes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Info message overlay ── */}
       {infoMsg && (
         <div
@@ -667,6 +699,7 @@ export default function RetainedHistoryView() {
       {viewAnalysis && (
         <ViewAnalysisDialog
           analysis={viewAnalysis}
+          feedbacks={(initData?.feedbacks as ProjectFeedback[] | undefined) ?? []}
           onClose={() => setViewAnalysis(null)}
           onApply={() => {
             const id = viewAnalysis.id;
@@ -677,6 +710,10 @@ export default function RetainedHistoryView() {
             const id = viewAnalysis.id;
             setViewAnalysis(null);
             if (id !== undefined) sendMessage({ action: "NAVIGATE_TO_PROVIDE", analysisId: id as number });
+          }}
+          onEdit={(id) => {
+            setViewAnalysis(null);
+            sendMessage({ action: "EDIT_ANALYSIS", id });
           }}
         />
       )}

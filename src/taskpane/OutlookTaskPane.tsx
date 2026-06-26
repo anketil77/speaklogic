@@ -21,6 +21,7 @@ import {
   getAllAnalyses,
   getRetainedAnalyses,
   saveFullAnalysis,
+  updateAnalysis,
 } from "@/db/queries/analysis";
 import {
   deleteFeedback,
@@ -919,11 +920,53 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=analysis-history`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], analyses }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], analyses, feedbacks: getAllFeedbacks() }),
       (dialog, action) => {
         if (action.action === "DELETE_ANALYSIS") {
           try { deleteAnalysis((action as { action: string; id: number }).id); }
           catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
+        }
+        if (action.action === "EDIT_ANALYSIS") {
+          const id = (action as { action: string; id: number }).id;
+          const analysis = getAnalysisById(id);
+          if (!analysis) { setStatus({ msg: "Analysis not found.", ok: false }); return; }
+          analysis.errors = getErrorsByAnalysis(id);
+          analysis.questions = getQuestionsByAnalysis(id);
+          analysis.answers = getAnswersByAnalysis(id);
+          analysis.compensators = getCompensatorsByAnalysis(id);
+          analysis.problems = getProblemsByAnalysis(id);
+          analysis.files = getFilesByAnalysis(id);
+          const editPayload: DialogInitPayload = {
+            selection: "",
+            mode: (analysis.selectionType === "Paragraph" ? "paragraph" : "selection") as SelectionMode,
+            source: getSource(),
+            personName,
+            personEmail,
+            applicationName: analysis.applicationName ?? "",
+            communicationFunction: analysis.communicationFunction ?? "",
+            communicationSignal: analysis.communicationSignal ?? "",
+            projectName: analysis.projectName ?? "",
+            peopleList: getPeopleNames(),
+            communicationPersonName: analysis.fromPerson ?? "",
+            editAnalysisData: analysis,
+          };
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "analyze", payload: editPayload } as HostMessage));
+        }
+        if (action.action === "SAVE_ANALYSIS") {
+          const payload = action.payload as SaveAnalysisPayload;
+          try {
+            if (payload.id !== undefined) {
+              updateAnalysis(payload.id, payload);
+              if (payload.analysis.fromPerson) upsertPersonName(payload.analysis.fromPerson);
+            } else {
+              saveFullAnalysis(payload);
+              if (payload.analysis.fromPerson) upsertPersonName(payload.analysis.fromPerson);
+            }
+          } catch (err) {
+            dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+            return;
+          }
+          dialog.messageChild(JSON.stringify({ type: "RETAIN_SAVED" } as HostMessage));
         }
         if (action.action === "NAVIGATE_TO_APPLY") {
           const { analysisId } = action as { action: string; analysisId: number };
@@ -1018,11 +1061,53 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=retained-history`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], analyses }),
-      (_dialog, action) => {
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], analyses, feedbacks: getAllFeedbacks() }),
+      (dialog, action) => {
         if (action.action === "DELETE_ANALYSIS") {
           try { deleteAnalysis((action as { action: string; id: number }).id); }
           catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
+        }
+        if (action.action === "EDIT_ANALYSIS") {
+          const id = (action as { action: string; id: number }).id;
+          const analysis = getAnalysisById(id);
+          if (!analysis) { setStatus({ msg: "Analysis not found.", ok: false }); return; }
+          analysis.errors = getErrorsByAnalysis(id);
+          analysis.questions = getQuestionsByAnalysis(id);
+          analysis.answers = getAnswersByAnalysis(id);
+          analysis.compensators = getCompensatorsByAnalysis(id);
+          analysis.problems = getProblemsByAnalysis(id);
+          analysis.files = getFilesByAnalysis(id);
+          const editPayload: DialogInitPayload = {
+            selection: "",
+            mode: (analysis.selectionType === "Paragraph" ? "paragraph" : "selection") as SelectionMode,
+            source: getSource(),
+            personName,
+            personEmail,
+            applicationName: analysis.applicationName ?? "",
+            communicationFunction: analysis.communicationFunction ?? "",
+            communicationSignal: analysis.communicationSignal ?? "",
+            projectName: analysis.projectName ?? "",
+            peopleList: getPeopleNames(),
+            communicationPersonName: analysis.fromPerson ?? "",
+            editAnalysisData: analysis,
+          };
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "analyze", payload: editPayload } as HostMessage));
+        }
+        if (action.action === "SAVE_ANALYSIS") {
+          const payload = action.payload as SaveAnalysisPayload;
+          try {
+            if (payload.id !== undefined) {
+              updateAnalysis(payload.id, payload);
+              if (payload.analysis.fromPerson) upsertPersonName(payload.analysis.fromPerson);
+            } else {
+              saveFullAnalysis(payload);
+              if (payload.analysis.fromPerson) upsertPersonName(payload.analysis.fromPerson);
+            }
+          } catch (err) {
+            dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+            return;
+          }
+          dialog.messageChild(JSON.stringify({ type: "RETAIN_SAVED" } as HostMessage));
         }
       }
     );

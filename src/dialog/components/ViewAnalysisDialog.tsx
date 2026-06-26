@@ -26,7 +26,7 @@ import {
   FeedbackModelIcon,
 } from "@/dialog/components/Icons";
 import { CommandDropdown, type CmdDropdownDef } from "@/dialog/components/CommandDropdown";
-import type { ProjectAnalysis, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, ProjectProblem, AttachFileToProject } from "@/types/db";
+import type { ProjectAnalysis, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, ProjectProblem, AttachFileToProject, ProjectFeedback } from "@/types/db";
 
 type PanelView = "both" | "analysisOnly" | "entityOnly";
 
@@ -35,6 +35,8 @@ interface Props {
   onClose: () => void;
   onApply?: () => void;
   onProvide?: () => void;
+  feedbacks?: ProjectFeedback[];
+  onEdit?: (id: number) => void;
 }
 
 const C = {
@@ -98,6 +100,10 @@ const INFO = {
   analyze: {
     title: "Analyze Analysis Message",
     text: "An analysis is not possible without the principle that enables it. We use the principle to analyze an entity. The result of an analysis is an entity with the inclusion of the principle. If an analysis does not include the principle, then it is not an analysis at all. In this case, we can simply flag that entity as communication. The principles that include in an analysis enable that analysis. It is not possible to analyze an analysis directly without flagging it first as communication.",
+  },
+  editBlocked: {
+    title: "Edit Analysis Message",
+    text: "Since the analysis has been provided or applied as feedback, it can no longer be edited",
   },
 } as const;
 
@@ -566,7 +572,7 @@ function TabContent({
   return null;
 }
 
-export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Props) {
+export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide, feedbacks, onEdit }: Props) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [activeTab, setActiveTab] = useState<Tab>("Analysis");
   const [panelView, setPanelView] = useState<PanelView>("both");
@@ -582,6 +588,7 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
   // Which flow button is highlighted
   const [flowKey, setFlowKey] = useState<"apply" | "provide" | "flag" | null>(null);
 
+  const [pendingEditConfirm, setPendingEditConfirm] = useState(false);
   const [showModel, setShowModel] = useState(false);
   const [openEntityDd, setOpenEntityDd] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<CtxMenu | null>(null);
@@ -892,7 +899,15 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
           {/* Edit */}
           <button
             className="sl-icon-btn"
-            onClick={() => toggle("edit")}
+            onClick={() => {
+              const isRetained = analysis.whatToDoWithAnalysis === "RetainAnalysisAsNeed";
+              const hasFeedback = (feedbacks ?? []).some((f) => f.analysisId === analysis.id);
+              if (isRetained && !hasFeedback) {
+                setPendingEditConfirm(true);
+              } else {
+                toggle("editBlocked");
+              }
+            }}
             title="Edit This Analysis"
             style={{
               width: 28,
@@ -900,7 +915,7 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: toggleInfo === "edit" ? C.iconBg : "transparent",
+              background: toggleInfo === "editBlocked" ? C.iconBg : "transparent",
               border: "none",
               borderRadius: 4,
               cursor: "pointer",
@@ -1104,6 +1119,39 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide }: Pr
             ctxMenu={ctxMenu}
           />
         </div>
+
+        {/* ── Edit confirm overlay ── */}
+        {pendingEditConfirm && (
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ background: C.white, border: `1px solid ${C.grey78}`, borderRadius: 6, padding: "20px 24px", maxWidth: 420, boxShadow: "0px 4px 16px rgba(0,0,0,0.12)", fontFamily: "inherit" }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: C.grey11, marginBottom: 10 }}>Edit Analysis Message</div>
+              <div style={{ fontSize: 12, color: C.grey38, lineHeight: "18px", marginBottom: 18 }}>
+                Since the analysis has not been applied or provided as feedback, it is ok to make changes to it. Do you want to edit the analysis?
+              </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => setPendingEditConfirm(false)}
+                  style={{ height: 28, padding: "0 16px", background: C.white, border: `1px solid ${C.grey78}`, borderRadius: 4, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  No
+                </button>
+                <button
+                  onClick={() => {
+                    setPendingEditConfirm(false);
+                    const id = analysis.id;
+                    if (id !== undefined) {
+                      onClose();
+                      onEdit?.(id as number);
+                    }
+                  }}
+                  style={{ height: 28, padding: "0 16px", background: C.blue, border: "none", borderRadius: 4, fontSize: 12, fontWeight: 700, color: C.white, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  Yes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Floating info card (inside dialog) ── */}
         {currentInfo && (

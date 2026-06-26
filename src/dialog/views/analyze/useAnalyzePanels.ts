@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import type {
   ProjectQuestion,
   ProjectError,
@@ -27,6 +27,14 @@ export interface AnalyzePanelsState {
   compensators: CompensatorDraft[];
   problems: ProblemDraft[];
   files: FileDraft[];
+
+  /** Bulk-replace setters — used by AnalyzeView to prefill state from editAnalysisData. */
+  setQuestions: React.Dispatch<React.SetStateAction<QuestionDraft[]>>;
+  setAnswers: React.Dispatch<React.SetStateAction<AnswerDraft[]>>;
+  setErrors: React.Dispatch<React.SetStateAction<ErrorDraft[]>>;
+  setCompensators: React.Dispatch<React.SetStateAction<CompensatorDraft[]>>;
+  setProblems: React.Dispatch<React.SetStateAction<ProblemDraft[]>>;
+  setFiles: React.Dispatch<React.SetStateAction<FileDraft[]>>;
 
   addQuestion: (q: QuestionDraft) => void;
   removeQuestion: (i: number) => void;
@@ -245,6 +253,7 @@ export function useAnalyzePanels(opts: {
 
   return {
     questions, answers, errors, compensators, problems, files,
+    setQuestions, setAnswers, setErrors, setCompensators, setProblems, setFiles,
     addQuestion, removeQuestion,
     handleRespond, removeAnswer,
     addError, removeError,
