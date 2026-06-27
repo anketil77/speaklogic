@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { InfoMessageCard } from "@/dialog/components/InfoMessageCard";
 import { CompensatorIcon, CloseIcon, EditQuestionIcon, QuestionCheckIcon, FlagCommunicationIcon, FeedbackModelIcon, ViewListAnalysisIcon } from "@/dialog/components/Icons";
 import { EntityModelDialog } from "@/dialog/components/EntityModelDialog";
+import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import type { ProjectCompensator } from "@/types/db";
 
 type CompensatorDraft = Omit<ProjectCompensator, "id" | "analysisId">;
@@ -17,6 +18,8 @@ export interface ViewCompensatorDialogProps {
   /** When provided, a "View Analysis" button appears in the command bar that opens
    *  the analysis this compensator belongs to (used by the Stats Overview list). */
   onViewAnalysis?: () => void;
+  /** Document location (applicationName) used as context for the Go To action. */
+  documentLocation?: string;
 }
 
 const C = {
@@ -79,9 +82,10 @@ const readonlyInput: React.CSSProperties = {
   cursor: "default",
 };
 
-export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200, onViewAnalysis }: ViewCompensatorDialogProps) {
+export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200, onViewAnalysis, documentLocation = "" }: ViewCompensatorDialogProps) {
   const [infoPanel, setInfoPanel] = useState<InfoKey | null>(null);
   const [showModel, setShowModel] = useState(false);
+  const { sendMessage } = useDialogComm();
 
   const { pos, onHeaderMouseDown } = useDraggable();
 
@@ -182,6 +186,19 @@ export function ViewCompensatorDialog({ compensator, onClose, zIndexBase = 200, 
             </button>
           </>
         )}
+        <CmdSep />
+        <button
+          className="sl-icon-btn"
+          onClick={() => sendMessage({ action: "GO_TO_SELECTION", text: compensator.actualCompensator, documentLocation })}
+          style={{ height: 28, padding: "0 10px", display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }}
+          title="Go to selection in document"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7 1L7 13M1 7L13 7" stroke="#616161" strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="7" cy="7" r="3" stroke="#616161" strokeWidth="1.3"/>
+          </svg>
+          <span style={{ fontSize: "11.6px", fontWeight: 700, color: C.grey11, whiteSpace: "nowrap" }}>Go To</span>
+        </button>
       </div>
 
       {/* ── Tab bar ── */}

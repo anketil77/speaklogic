@@ -64,6 +64,7 @@ export interface SelectionConfig {
   titleAsApplicationName: boolean;
   showFileNameInApplication: boolean;
   showPageNumberInFileName: boolean;
+  showParagraphNumberInFileName: boolean;
 }
 
 const DEFAULTS: SelectionConfig = {
@@ -72,6 +73,7 @@ const DEFAULTS: SelectionConfig = {
   titleAsApplicationName: true,
   showFileNameInApplication: true,
   showPageNumberInFileName: true,
+  showParagraphNumberInFileName: true,
 };
 
 export function loadSelectionConfig(): SelectionConfig {
@@ -91,11 +93,12 @@ function saveSelectionConfig(cfg: SelectionConfig): void {
 // ── Row definitions ───────────────────────────────────────────────────────────
 
 const ROWS: Array<{ key: keyof SelectionConfig; label: string; fs: number }> = [
-  { key: "selectedErrorAsActualError",   label: "Selected Error as Actual Error",  fs: 11.4 },
-  { key: "selectedCompensatorAsActual",  label: "Selected Compensator as Actual",  fs: 11.1 },
-  { key: "titleAsApplicationName",       label: "Title as Application Name",        fs: 11.1 },
-  { key: "showFileNameInApplication",    label: "Show File Name in Application",    fs: 11.3 },
-  { key: "showPageNumberInFileName",     label: "Show Page Number in File Name",    fs: 11.4 },
+  { key: "selectedErrorAsActualError",        label: "Selected Error as Actual Error",         fs: 11.4 },
+  { key: "selectedCompensatorAsActual",       label: "Selected Compensator as Actual",         fs: 11.1 },
+  { key: "titleAsApplicationName",            label: "Title as Application Name",               fs: 11.1 },
+  { key: "showFileNameInApplication",         label: "Show File Name in Application",           fs: 11.3 },
+  { key: "showPageNumberInFileName",          label: "Show Page Number in File Name",           fs: 11.4 },
+  { key: "showParagraphNumberInFileName",     label: "Show Paragraph Number in File Name",      fs: 11.4 },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────

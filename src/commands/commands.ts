@@ -239,8 +239,8 @@ async function fetchSelectionOrNotify(
   emptyTitle: string,
   emptyText: string,
   event: Office.AddinCommands.Event
-): Promise<{ text: string; selectionHtml?: string; documentTitle: string; documentName: string; pageNumber: string } | null> {
-  let meta: { text: string; selectionHtml?: string; documentTitle: string; documentName: string; pageNumber: string };
+): Promise<{ text: string; selectionHtml?: string; documentTitle: string; documentName: string; pageNumber: string; paragraphNumber: string } | null> {
+  let meta: { text: string; selectionHtml?: string; documentTitle: string; documentName: string; pageNumber: string; paragraphNumber: string };
   try {
     meta = await getHostTextAndMeta(mode);
   } catch (err) {
@@ -421,13 +421,13 @@ async function getOutlookTextAndMeta(mode: SelectionMode): Promise<{ text: strin
   return { text, documentTitle: subject, documentName: "" };
 }
 
-async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; selectionHtml?: string; documentTitle: string; documentName: string; pageNumber: string }> {
-  if (Office.context.host === Office.HostType.Outlook) return { ...await getOutlookTextAndMeta(mode), pageNumber: "" };
-  if (Office.context.host === Office.HostType.PowerPoint) return { ...await getPowerPointTextAndMeta(mode), pageNumber: "" };
+async function getHostTextAndMeta(mode: SelectionMode): Promise<{ text: string; selectionHtml?: string; documentTitle: string; documentName: string; pageNumber: string; paragraphNumber: string }> {
+  if (Office.context.host === Office.HostType.Outlook) return { ...await getOutlookTextAndMeta(mode), pageNumber: "", paragraphNumber: "" };
+  if (Office.context.host === Office.HostType.PowerPoint) return { ...await getPowerPointTextAndMeta(mode), pageNumber: "", paragraphNumber: "" };
   return getWordTextAndMeta(mode);
 }
 
-async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; selectionHtml: string; documentTitle: string; documentName: string; pageNumber: string }> {
+async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; selectionHtml: string; documentTitle: string; documentName: string; pageNumber: string; paragraphNumber: string }> {
   // Word for the web has no persistent runtime (no taskpane — every command is
   // ExecuteFunction), so the paragraph cannot be pre-captured; it is read at command time.
   if (Office.context.platform === Office.PlatformType.OfficeOnline) {
@@ -444,7 +444,7 @@ async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
         });
       const text = (await read(Office.CoercionType.Text)).replace(/\u00A0/g, " ").trim();
       const selectionHtml = text ? await read(Office.CoercionType.Html) : "";
-      return { text, selectionHtml, documentTitle: "", documentName, pageNumber: "" };
+      return { text, selectionHtml, documentTitle: "", documentName, pageNumber: "", paragraphNumber: "" };
     }
 
     // Paragraph mode needs Word.run to expand the collapsed cursor to its paragraph — there
@@ -458,11 +458,11 @@ async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
         para.load("text");
         await context.sync();
         const text = para.text.replace(/\u00A0/g, " ").trim();
-        return { text, selectionHtml: "", documentTitle: "", documentName, pageNumber: "" };
+        return { text, selectionHtml: "", documentTitle: "", documentName, pageNumber: "", paragraphNumber: "" };
       });
     } catch (err) {
       dbg("HOST", "web paragraph Word.run threw", String(err));
-      return { text: "", selectionHtml: "", documentTitle: "", documentName, pageNumber: "" };
+      return { text: "", selectionHtml: "", documentTitle: "", documentName, pageNumber: "", paragraphNumber: "" };
     }
   }
 
@@ -490,7 +490,7 @@ async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
       // Short-circuit: no selection → no HTML needed; caller will show the message dialog.
       // Avoids calling getHtml() on a collapsed range, which can throw in some Word versions.
       if (!text) {
-        return { text: "", selectionHtml: "", documentTitle: "", documentName: "", pageNumber: "" };
+        return { text: "", selectionHtml: "", documentTitle: "", documentName: "", pageNumber: "", paragraphNumber: "" };
       }
 
       const props = context.document.properties;
@@ -523,7 +523,19 @@ async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
         } catch { /* non-critical */ }
       }
 
-      return { text, selectionHtml, documentTitle, documentName, pageNumber };
+      let paragraphNumber = "";
+      if (Office.context.requirements.isSetSupported("WordApi", "1.3")) {
+        try {
+          const sel = context.document.getSelection();
+          const firstPara = sel.paragraphs.getFirst();
+          const startToSel = context.document.body.getRange("Start").expandTo(firstPara.getRange("Start"));
+          startToSel.paragraphs.load("items");
+          await context.sync();
+          paragraphNumber = String(startToSel.paragraphs.items.length);
+        } catch { /* non-critical */ }
+      }
+
+      return { text, selectionHtml, documentTitle, documentName, pageNumber, paragraphNumber };
     });
   } catch (err) {
     // Word.run failed entirely (e.g. GeneralException on Word Online for tracked-change content,
@@ -536,17 +548,18 @@ async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
         (result) => { resolve(result.status === Office.AsyncResultStatus.Failed ? "" : ((result.value as string)?.trim() ?? "")); }
       );
     });
-    return { text, selectionHtml: "", documentTitle: "", documentName: "", pageNumber: "" };
+    return { text, selectionHtml: "", documentTitle: "", documentName: "", pageNumber: "", paragraphNumber: "" };
   }
 }
 
-function buildEntityName(documentTitle: string, documentName: string, pageNumber = ""): string {
+function buildEntityName(documentTitle: string, documentName: string, pageNumber = "", paragraphNumber = ""): string {
   try {
     const raw = localStorage.getItem("sl-selection-config");
     const cfg = raw ? JSON.parse(raw) : {};
-    const useName = cfg.titleAsApplicationName    !== false;
-    const useFile = cfg.showFileNameInApplication !== false;
-    const usePage = cfg.showPageNumberInFileName  !== false;
+    const useName = cfg.titleAsApplicationName          !== false;
+    const useFile = cfg.showFileNameInApplication       !== false;
+    const usePage = cfg.showPageNumberInFileName        !== false;
+    const usePara = cfg.showParagraphNumberInFileName   !== false;
     // Strip the Office file extension (e.g. ".docx") so the entity name reads cleanly.
     // On the web the file name comes from the URL and carries its extension; desktop
     // usually shows the document title instead, so this keeps both consistent.
@@ -555,6 +568,7 @@ function buildEntityName(documentTitle: string, documentName: string, pageNumber
     if (useName && documentTitle) result = documentTitle;
     if (useFile && cleanName)     result = result ? result + "  File: " + cleanName : "File: " + cleanName;
     if (usePage && pageNumber)    result = result ? result + "  Page: " + pageNumber : "Page: " + pageNumber;
+    if (usePara && paragraphNumber) result = result ? result + "  Paragraph: " + paragraphNumber : "Paragraph: " + paragraphNumber;
     return result;
   } catch {
     return "";
@@ -776,7 +790,7 @@ async function openAnalyzeDialog(
     event
   );
   if (!meta) return;
-  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber } = meta;
+  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber, paragraphNumber } = meta;
 
   dbg("HOST", "selection obtained, building initPayload", { selectionLength: selection.length });
   const { personName, personEmail } = getUserIdentity();
@@ -788,7 +802,7 @@ async function openAnalyzeDialog(
     source: getSource(),
     personName,
     personEmail,
-    applicationName: buildEntityName(documentTitle, documentName, pageNumber),
+    applicationName: buildEntityName(documentTitle, documentName, pageNumber, paragraphNumber),
     communicationFunction: "",
     communicationSignal: "",
     projectName: "",
@@ -1054,6 +1068,41 @@ function colorWordSelection(kind: "error" | "compensator"): Promise<void> {
   }).catch((err) => { dbg("HOST", "colorWordSelection failed", String(err)); });
 }
 
+// ─── Go To Selection (Feature #3) ────────────────────────────────────────────
+// Searches the current Word document for the given text and selects (scrolls to)
+// the first match. If no match is found, shows a message dialog.
+// Word's body.search() has a ~255 char limit — we trim to a safe prefix.
+// Best-effort; never throws.
+const WORD_SEARCH_MAX = 200;
+// Reports "not found" back through the ALREADY-OPEN dialog (replyError → messageChild).
+// It must NOT call showNoSelectionMessage here: that opens a second Office dialog, but a
+// dialog (the View dialog's host) is already open, so Office rejects it (12007). Also must
+// NOT complete the ribbon event — the parent dialog flow owns that.
+async function goToSelection(text: string, dialog: Office.Dialog): Promise<void> {
+  if (Office.context.host !== Office.HostType.Word) {
+    replyError(dialog, "Go To is only available in Word.");
+    return;
+  }
+  const searchText = text.length > WORD_SEARCH_MAX ? text.slice(0, WORD_SEARCH_MAX) : text;
+  if (!searchText.trim()) { replyError(dialog, "There is no selection text to go to."); return; }
+  try {
+    await Word.run(async (context) => {
+      const results = context.document.body.search(searchText, { matchCase: true, ignoreSpace: true });
+      results.load("items");
+      await context.sync();
+      if (results.items.length > 0) {
+        results.items[0].select();
+        await context.sync();
+      } else {
+        replyError(dialog, "Selection does not exist. You may be in the wrong document.");
+      }
+    });
+  } catch (err) {
+    dbg("HOST", "goToSelection failed", String(err));
+    replyError(dialog, "Selection does not exist. You may be in the wrong document.");
+  }
+}
+
 async function openIdentifyErrorDialog(
   mode: SelectionMode,
   event: Office.AddinCommands.Event
@@ -1086,11 +1135,11 @@ async function openInlineIdentifyDialog(
     event
   );
   if (!meta) return;
-  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber } = meta;
+  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber, paragraphNumber } = meta;
 
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
-  const appName = buildEntityName(documentTitle, documentName, pageNumber);
+  const appName = buildEntityName(documentTitle, documentName, pageNumber, paragraphNumber);
   const source = getSource();
   const selectionType: "Selection" | "Paragraph" = mode === "selection" ? "Selection" : "Paragraph";
 
@@ -1258,10 +1307,10 @@ async function openPointToEntityDialog(
     event
   );
   if (!meta) return;
-  const { text: selection, documentTitle, documentName, pageNumber } = meta;
+  const { text: selection, documentTitle, documentName, pageNumber, paragraphNumber } = meta;
 
   const { personName, personEmail } = getUserIdentity();
-  const entityName = buildEntityName(documentTitle, documentName, pageNumber);
+  const entityName = buildEntityName(documentTitle, documentName, pageNumber, paragraphNumber);
   const source = getSource();
 
   const initPayload: DialogInitPayload = {
@@ -1417,7 +1466,7 @@ async function openRequestFeedbackFromRibbon(event: Office.AddinCommands.Event):
     event
   );
   if (!meta) return;
-  const { text: selection, documentTitle, documentName, pageNumber } = meta;
+  const { text: selection, documentTitle, documentName, pageNumber, paragraphNumber } = meta;
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
   openRequestFeedbackDialog({
@@ -1426,7 +1475,7 @@ async function openRequestFeedbackFromRibbon(event: Office.AddinCommands.Event):
     source: getSource(),
     personName,
     personEmail,
-    applicationName: buildEntityName(documentTitle, documentName, pageNumber),
+    applicationName: buildEntityName(documentTitle, documentName, pageNumber, paragraphNumber),
     communicationFunction: "",
     communicationSignal: "",
     projectName: documentTitle,
@@ -1645,6 +1694,10 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
           try { dialog.close(); } catch { }
           complete();
         }
+        if (m.action === "GO_TO_SELECTION") {
+          const goTo = m as { action: string; text: string; documentLocation: string };
+          void goToSelection(goTo.text, dialog);
+        }
         if (m.action === "EDIT_ANALYSIS") {
           const id = (m as { action: string; id: number }).id;
           const analysis = getAnalysisById(id);
@@ -1849,6 +1902,10 @@ function openStatsItemListDialog(event: Office.AddinCommands.Event, kind: "error
         if (m.action === "CLOSE") {
           try { dialog.close(); } catch { }
           complete();
+        }
+        if (m.action === "GO_TO_SELECTION") {
+          const goTo = m as { action: string; text: string; documentLocation: string };
+          void goToSelection(goTo.text, dialog);
         }
       });
     }
@@ -3619,7 +3676,7 @@ async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.
     event
   );
   if (!meta) return;
-  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber } = meta;
+  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber, paragraphNumber } = meta;
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
   openProvideFeedbackDialog({
@@ -3629,7 +3686,7 @@ async function openProvideFeedbackFromRibbon(mode: SelectionMode, event: Office.
     source: getSource(),
     personName,
     personEmail,
-    applicationName: buildEntityName(documentTitle, documentName, pageNumber),
+    applicationName: buildEntityName(documentTitle, documentName, pageNumber, paragraphNumber),
     communicationFunction: "",
     communicationSignal: "",
     projectName: documentTitle,
@@ -3721,7 +3778,7 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
     event
   );
   if (!meta) return;
-  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber } = meta;
+  const { text: selection, selectionHtml, documentTitle, documentName, pageNumber, paragraphNumber } = meta;
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
   const analyses = getAllAnalyses().map((a) => {
@@ -3739,7 +3796,7 @@ async function openApplyDialogFromRibbon(mode: SelectionMode, event: Office.Addi
     source: getSource(),
     personName,
     personEmail,
-    applicationName: buildEntityName(documentTitle, documentName, pageNumber),
+    applicationName: buildEntityName(documentTitle, documentName, pageNumber, paragraphNumber),
     communicationFunction: "",
     communicationSignal: "",
     projectName: documentTitle,
@@ -3897,8 +3954,8 @@ async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.Addin
     event
   );
   if (!meta) return;
-  const { text: selection, documentTitle, documentName, pageNumber } = meta;
-  const entityName = buildEntityName(documentTitle, documentName, pageNumber);
+  const { text: selection, documentTitle, documentName, pageNumber, paragraphNumber } = meta;
+  const entityName = buildEntityName(documentTitle, documentName, pageNumber, paragraphNumber);
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
   openFlagDialog({

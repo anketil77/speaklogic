@@ -1187,6 +1187,7 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide, feed
           error={subDialog.item}
           onClose={() => setSubDialog(null)}
           zIndexBase={300}
+          documentLocation={analysis.applicationName ?? ""}
         />
       )}
       {subDialog?.kind === "compensator" && (
@@ -1194,6 +1195,7 @@ export function ViewAnalysisDialog({ analysis, onClose, onApply, onProvide, feed
           compensator={subDialog.item}
           onClose={() => setSubDialog(null)}
           zIndexBase={300}
+          documentLocation={analysis.applicationName ?? ""}
         />
       )}
       {subDialog?.kind === "answer" && (

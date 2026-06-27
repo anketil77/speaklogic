@@ -208,10 +208,10 @@ export default function StatsItemListView({ kind }: { kind: StatsItemKind }) {
 
       {/* ── Item View dialog (with View Analysis) ── */}
       {viewRow && kind === "errors" && (
-        <ViewErrorDialog error={viewRow.item as ProjectError} onClose={() => setViewRow(null)} onViewAnalysis={goToAnalysis} />
+        <ViewErrorDialog error={viewRow.item as ProjectError} onClose={() => setViewRow(null)} onViewAnalysis={goToAnalysis} documentLocation={viewRow.analysis.applicationName ?? ""} />
       )}
       {viewRow && kind === "compensators" && (
-        <ViewCompensatorDialog compensator={viewRow.item as ProjectCompensator} onClose={() => setViewRow(null)} onViewAnalysis={goToAnalysis} />
+        <ViewCompensatorDialog compensator={viewRow.item as ProjectCompensator} onClose={() => setViewRow(null)} onViewAnalysis={goToAnalysis} documentLocation={viewRow.analysis.applicationName ?? ""} />
       )}
       {viewRow && kind === "questions" && (
         <ViewQuestionDialog question={viewRow.item as ProjectQuestion} onClose={() => setViewRow(null)} onViewAnalysis={goToAnalysis} />
