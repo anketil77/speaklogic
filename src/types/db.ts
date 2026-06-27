@@ -683,6 +683,59 @@ export interface KeywordHistory {
 export type SelectionMode = "selection" | "paragraph";
 export type HostSource = "Word Document" | "Outlook Mail" | "PowerPoint Document";
 
+// ---- Point Selection to Entity (More Selections menu) ----
+
+/** Which kind of selection "points to" the entity. */
+export type EntitySelectionType = "Word" | "Sentence" | "Paragraph";
+
+/** How a single entity's visual is sourced when it is NOT an explanation. */
+export type EntityImageSource = "computer" | "url" | "youtube";
+
+/** One entity that the selection points to. Either an image (computer upload /
+ *  image URL / YouTube link) or, when isExplanation is true, a rich-text
+ *  explanation that replaces the image. Serialized into PointToEntity.entityImages. */
+export interface PointToEntityItem {
+  name: string;
+  isExplanation: boolean;
+  /** rich-text HTML, used when isExplanation is true */
+  explanation: string;
+  /** image source kind, used when isExplanation is false */
+  imageSource: EntityImageSource;
+  /** data URL (computer), image URL, or YouTube URL — per imageSource */
+  imageValue: string;
+}
+
+/** One saved "selection points to entity" record. */
+export interface PointToEntity {
+  id?: number;
+  selectionType: EntitySelectionType;
+  actualSelection: string;
+  documentLocation: string;
+  entityName: string;
+  /** 1 when the primary entity is an explanation rather than an image. */
+  isExplanation: 0 | 1;
+  entityExplanation: string;
+  /** JSON-serialized PointToEntityItem[]. */
+  entityImages: string;
+  source: HostSource;
+  personName: string;
+  personEmail: string;
+  entityDate: string;
+  entityTime: string;
+}
+
+/** Payload sent by PointToEntityView when the user saves. */
+export interface SavePointToEntityPayload {
+  selectionType: EntitySelectionType;
+  actualSelection: string;
+  documentLocation: string;
+  entityName: string;
+  entities: PointToEntityItem[];
+  source: HostSource;
+  personName: string;
+  personEmail: string;
+}
+
 export interface AnalysisDataForApply {
   id: number;
   entityUnderAnalysis: string;
@@ -767,6 +820,17 @@ export interface DialogInitPayload {
   stats?: StatsOverview;
   /** Initial feedback-type filter when feedback-history is opened pre-filtered. */
   feedbackFilter?: string;
+  /** Point Selection to Entity — document location, title, file name and the
+   *  pre-built entity name shown read-only in PointToEntityView. */
+  documentLocation?: string;
+  documentTitle?: string;
+  documentName?: string;
+  entityName?: string;
+  /** Pre-selected selection type for PointToEntityView; when absent the view
+   *  shows its mode chooser (Word / Sentence / Paragraph). */
+  entitySelectionType?: EntitySelectionType;
+  /** Saved Point-to-Entity records for ListEntitiesView. */
+  pointToEntities?: PointToEntity[];
 }
 
 // User-defined "information" item shown in the wizard's "Select Information"
@@ -891,7 +955,9 @@ export type DialogAction =
   | { action: "ADD_CONTACT"; personName: string; emailAddress: string }
   | { action: "UPDATE_CONTACT"; id: number; personName: string; emailAddress: string }
   | { action: "DELETE_CONTACT"; id: number }
-  | { action: "OPEN_STATS_LIST"; target: StatsListTarget; feedbackFilter?: string };
+  | { action: "OPEN_STATS_LIST"; target: StatsListTarget; feedbackFilter?: string }
+  | { action: "SAVE_POINT_TO_ENTITY"; payload: SavePointToEntityPayload }
+  | { action: "DELETE_POINT_TO_ENTITY"; id: number };
 
 /** Aggregate entity counts shown in the Stats Overview dialog (Point 14). */
 export interface StatsOverview {

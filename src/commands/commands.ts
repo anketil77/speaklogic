@@ -17,6 +17,7 @@ import { getKeywordRules, getKeywordSetting, saveKeywordRules, findBannedWords, 
 import { saveArticle, updateArticle, publishArticle, saveArticleWizard, getAllArticles, deleteArticle, getArticleById } from "@/db/queries/article";
 import { getAllPublishers, savePublisher, deletePublisher } from "@/db/queries/publisher";
 import { saveProblemSolution } from "@/db/queries/problem";
+import { saveEntity, getAllEntities, deleteEntity } from "@/db/queries/entity";
 import { getUserInformationItems, addUserInformationItem, deleteUserInformationItem } from "@/db/queries/information";
 import { dbg, clearLog } from "@/debug/log";
 import { openInterpretedPrincipleReport, openIdentifiedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
@@ -54,6 +55,7 @@ import type {
   SaveInterpretationPayload,
   SaveRequestFeedbackPayload,
   SaveRequestSLFeedbackPayload,
+  SavePointToEntityPayload,
   SelectionMode,
 } from "@/types/db";
 
@@ -163,6 +165,12 @@ function registerHandlers(): void {
   );
   Office.actions.associate("listSelection", (event) =>
     void openListSelectionDialog(event)
+  );
+  Office.actions.associate("pointSelectionToEntity", (event) =>
+    void openPointToEntityDialog(event)
+  );
+  Office.actions.associate("listOfEntities", (event) =>
+    void openListEntitiesDialog(event)
   );
   Office.actions.associate("listIdentifiedPrinciple", (event) =>
     void openListIdentifiedPrincipleDialog(event)
@@ -1224,6 +1232,166 @@ async function openInlineIdentifyDialog(
         const code = (evt as { error?: number }).error;
         dbg("HOST", "DialogEventReceived (inline identify closed by user or error)", { code });
         complete();
+      });
+    }
+  );
+}
+
+// ─── Point Selection to Entity (More Selections menu) ───────────────────────
+// Reads the current selection, then opens PointToEntityView so the user can
+// point that Word / Sentence / Paragraph to one or more entities (image,
+// image URL, YouTube link, or rich-text explanation). Mirrors
+// openInlineIdentifyDialog: READY → INIT, then a SAVE_POINT_TO_ENTITY save.
+async function openPointToEntityDialog(
+  event: Office.AddinCommands.Event,
+  attempt = 0
+): Promise<void> {
+  dbg("HOST", "openPointToEntityDialog start", { attempt });
+  if (attempt === 0) {
+    try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
+  }
+  const meta = await fetchSelectionOrNotify(
+    "selection",
+    "Text Selection Message",
+    "In order to point a selection to an entity, that selection must exist. " +
+    "Please select the actual word, sentence or paragraph in the document that you want to point to an entity.",
+    event
+  );
+  if (!meta) return;
+  const { text: selection, documentTitle, documentName, pageNumber } = meta;
+
+  const { personName, personEmail } = getUserIdentity();
+  const entityName = buildEntityName(documentTitle, documentName, pageNumber);
+  const source = getSource();
+
+  const initPayload: DialogInitPayload = {
+    selection,
+    mode: "selection",
+    source,
+    personName,
+    personEmail,
+    applicationName: entityName,
+    communicationFunction: "",
+    communicationSignal: "",
+    projectName: "",
+    peopleList: [],
+    documentLocation: entityName,
+    documentTitle,
+    documentName,
+    entityName,
+  };
+
+  _trackDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=point-to-entity`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        if ((result.error as { code: number }).code === 12007 && attempt < 15) {
+          setTimeout(() => openPointToEntityDialog(event, attempt + 1), 300);
+          return;
+        }
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      const complete = makeEventCompleter(event);
+
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        dbg("HOST", "DialogMessageReceived (point to entity)", { action: m.action });
+        switch (m.action) {
+          case "READY":
+            dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+            break;
+          case "SAVE_POINT_TO_ENTITY": {
+            const payload = (m as { action: string; payload: SavePointToEntityPayload }).payload;
+            try {
+              saveEntity({
+                ...payload,
+                source,
+                personName: payload.personName || personName,
+                personEmail: payload.personEmail || personEmail,
+              });
+            } catch (err) {
+              dbg("HOST", "point to entity save THREW", String(err));
+              replyError(dialog, `Failed to save: ${String(err)}`);
+              break;
+            }
+            dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "" } as HostMessage));
+            break;
+          }
+          case "CLOSE":
+            try { dialog.close(); } catch { }
+            complete();
+            break;
+          default:
+            dbg("HOST", "point to entity: unhandled action", { action: m.action });
+            break;
+        }
+      });
+
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, (evt) => {
+        const code = (evt as { error?: number }).error;
+        dbg("HOST", "DialogEventReceived (point to entity closed by user or error)", { code });
+        complete();
+      });
+    }
+  );
+}
+
+// List of Entities (More Selections menu). Read-only list of saved
+// Point-to-Entity records; supports deletion. Mirrors openListSelectionDialog.
+async function openListEntitiesDialog(event: Office.AddinCommands.Event): Promise<void> {
+  try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
+  const { personName, personEmail } = getUserIdentity();
+
+  _trackDialogAsync(
+    `${DIALOG_BASE}/dialog.html?view=list-entities`,
+    { ...DIALOG_SIZE, displayInIframe: true },
+    (result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        handleDialogOpenError(result.error, event);
+        return;
+      }
+      const dialog = result.value;
+      const complete = makeEventCompleter(event);
+      dialog.addEventHandler(Office.EventType.DialogEventReceived, () => complete());
+
+      const sendInit = () => {
+        const initPayload: DialogInitPayload = {
+          selection: "",
+          mode: "selection",
+          source: getSource(),
+          personName,
+          personEmail,
+          applicationName: "",
+          communicationFunction: "",
+          communicationSignal: "",
+          projectName: "",
+          peopleList: [],
+          pointToEntities: getAllEntities(),
+        };
+        dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
+      };
+
+      dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
+        const m = JSON.parse((msg as { message: string }).message) as DialogAction;
+        switch (m.action) {
+          case "READY":
+            sendInit();
+            break;
+          case "DELETE_POINT_TO_ENTITY": {
+            try { deleteEntity((m as { action: string; id: number }).id); }
+            catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+            break;
+          }
+          case "CLOSE":
+            try { dialog.close(); } catch { }
+            complete();
+            break;
+          default:
+            break;
+        }
       });
     }
   );

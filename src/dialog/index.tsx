@@ -54,6 +54,8 @@ const ListIdentifiedPrincipleView = lazy(() => import("@/dialog/views/ListIdenti
 const ListInterpretedPrincipleView = lazy(() => import("@/dialog/views/ListInterpretedPrincipleView"));
 const ListSelectionRelatedPrincipleView = lazy(() => import("@/dialog/views/ListSelectionRelatedPrincipleView"));
 const PeopleView = lazy(() => import("@/dialog/views/PeopleView"));
+const PointToEntityView = lazy(() => import("@/dialog/views/PointToEntityView"));
+const ListEntitiesView = lazy(() => import("@/dialog/views/ListEntitiesView"));
 import type { DialogInitPayload, HostMessage } from "@/types/db";
 import { dbg } from "@/debug/log";
 
@@ -247,6 +249,10 @@ function DialogApp() {
         return <FeedbackHistoryView />;
       case "selection-history":
         return <SelectionHistoryView />;
+      case "point-to-entity":
+        return <PointToEntityView />;
+      case "list-entities":
+        return <ListEntitiesView />;
       case "flagged-articles":
         return <FlaggedArticlesView />;
       case "list-identified-principle":

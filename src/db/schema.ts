@@ -576,4 +576,23 @@ CREATE TABLE IF NOT EXISTS KeywordHistory (
   itemId TEXT NOT NULL DEFAULT '',
   conversationId TEXT NOT NULL DEFAULT ''
 );
+
+-- Point Selection to Entity: a selected Word / Sentence / Paragraph "points to"
+-- one or more entities (each an image, image URL, YouTube link, or rich-text
+-- explanation). entityImages holds the serialized list of entity items (JSON).
+CREATE TABLE IF NOT EXISTS PointToEntity (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  selectionType TEXT,
+  actualSelection TEXT,
+  documentLocation TEXT,
+  entityName TEXT,
+  isExplanation INTEGER DEFAULT 0,
+  entityExplanation TEXT,
+  entityImages TEXT,
+  source TEXT,
+  personName TEXT,
+  personEmail TEXT,
+  entityDate TEXT,
+  entityTime TEXT
+);
 `;
