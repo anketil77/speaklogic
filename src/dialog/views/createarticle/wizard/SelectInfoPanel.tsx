@@ -90,7 +90,8 @@ export function SelectInfoPanel({
         right:         12 - pos.x,
         top:           90 + pos.y,
         width:         300,
-        maxHeight:     460,
+        // Cap to viewport so the footer button can't overflow the dialog on a long list.
+        maxHeight:     `min(460px, calc(100vh - ${102 + pos.y}px))`,
         background:    "#FFFFFF",
         boxShadow:     "0px 8px 32px rgba(0,0,0,0.14), 0px 2px 8px rgba(0,0,0,0.06)",
         borderRadius:  8,
