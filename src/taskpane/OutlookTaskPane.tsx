@@ -173,6 +173,9 @@ function getUserIdentity(): { personName: string; personEmail: string } {
   } catch { return { personName: "", personEmail: "" }; }
 }
 
+// Selection buttons that fall back to a paste box when Outlook can't read the selection (read mode).
+type PasteAction = "analyze" | "flag" | "apply" | "provideFeedback";
+
 async function readOutlookText(mode: SelectionMode): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -401,6 +404,11 @@ export function OutlookTaskPane() {
   const [commCtx, setCommCtx] = useState(commCtxRef.current);
   const [commCtxOpen, setCommCtxOpen] = useState(true);
   const [msAccount, setMsAccount] = useState<string | null>(null);
+  // Point 12 — Outlook can't expose a highlighted selection in a received (read-mode) email
+  // (getSelectedDataAsync is compose-only). When a "Selection" button is pressed in read mode
+  // we ask the user to paste their copied text instead, then resume the pending action with it.
+  const [pasteRequest, setPasteRequest] = useState<{ action: PasteAction; mode: SelectionMode } | null>(null);
+  const [pasteText, setPasteText] = useState("");
 
   // Reflect any existing Microsoft sign-in (for the folders feature) on load.
   // NAA shares the Outlook session, so the broker re-supplies the account on every
@@ -593,11 +601,16 @@ export function OutlookTaskPane() {
     }
   }, []);
 
-  const handleAnalyze = useCallback(async (mode: SelectionMode) => {
+  const handleAnalyze = useCallback(async (mode: SelectionMode, overrideText?: string) => {
     if (!dbReady) return;
-    let text = "";
-    try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
-    if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
+    let text = overrideText ?? "";
+    if (overrideText == null) {
+      try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
+    }
+    if (!text) {
+      if (mode === "selection" && !isComposeMode()) { setPasteRequest({ action: "analyze", mode }); return; }
+      setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return;
+    }
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
@@ -667,11 +680,16 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
-  const handleFlag = useCallback(async (mode: SelectionMode) => {
+  const handleFlag = useCallback(async (mode: SelectionMode, overrideText?: string) => {
     if (!dbReady) return;
-    let text = "";
-    try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
-    if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
+    let text = overrideText ?? "";
+    if (overrideText == null) {
+      try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
+    }
+    if (!text) {
+      if (mode === "selection" && !isComposeMode()) { setPasteRequest({ action: "flag", mode }); return; }
+      setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return;
+    }
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
@@ -704,11 +722,16 @@ export function OutlookTaskPane() {
     );
   }, [openManagedDialog]);
 
-  const handleApply = useCallback(async (mode: SelectionMode) => {
+  const handleApply = useCallback(async (mode: SelectionMode, overrideText?: string) => {
     if (!dbReady) return;
-    let text = "";
-    try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
-    if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
+    let text = overrideText ?? "";
+    if (overrideText == null) {
+      try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
+    }
+    if (!text) {
+      if (mode === "selection" && !isComposeMode()) { setPasteRequest({ action: "apply", mode }); return; }
+      setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return;
+    }
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
@@ -797,11 +820,16 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
-  const handleProvideFeedback = useCallback(async (mode: SelectionMode) => {
+  const handleProvideFeedback = useCallback(async (mode: SelectionMode, overrideText?: string) => {
     if (!dbReady) return;
-    let text = "";
-    try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
-    if (!text) { setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return; }
+    let text = overrideText ?? "";
+    if (overrideText == null) {
+      try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
+    }
+    if (!text) {
+      if (mode === "selection" && !isComposeMode()) { setPasteRequest({ action: "provideFeedback", mode }); return; }
+      setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return;
+    }
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
@@ -1636,6 +1664,23 @@ export function OutlookTaskPane() {
     }
   }, [handleAnalyze, handleFlag, handleSelectionConfig, handleApply, handleProvideFeedback, handleRequestFeedback, handleFlaggedHistory, handleAnalysisHistory, handleFeedbackHistory, handleRetainedHistory, handleStatsOverview, handleListSelection, handleListIdentifiedPrinciple, handleListInterpretedPrinciple, handleListSelectionRelatedPrinciple, handleListArticles, handleCreateArticle, handleCommunicationConfig, handleKeywordSettings, handleKeywordHistory, handleSetupFolders, handleRequestSLFeedback, handleSimple]);
 
+  // Resume the pending selection action with the text the user pasted (Point 12 read-mode fallback).
+  const submitPaste = useCallback(() => {
+    const req = pasteRequest;
+    const text = pasteText.trim();
+    if (!req || !text) return;
+    setPasteRequest(null);
+    setPasteText("");
+    switch (req.action) {
+      case "analyze":         void handleAnalyze(req.mode, text); break;
+      case "flag":            void handleFlag(req.mode, text); break;
+      case "apply":           void handleApply(req.mode, text); break;
+      case "provideFeedback": void handleProvideFeedback(req.mode, text); break;
+    }
+  }, [pasteRequest, pasteText, handleAnalyze, handleFlag, handleApply, handleProvideFeedback]);
+
+  const cancelPaste = useCallback(() => { setPasteRequest(null); setPasteText(""); }, []);
+
   // ── render ────────────────────────────────────────────────────────────────
 
   // Comm Context fields are editable only while composing/replying; read-only when reading a received email.
@@ -1646,6 +1691,38 @@ export function OutlookTaskPane() {
       {!dbReady && (
         <div style={{ padding: "6px 16px", background: "#EBF3FC", color: "#0078D4", fontSize: 11, flexShrink: 0 }}>
           Loading…
+        </div>
+      )}
+
+      {/* Point 12 — read-mode selection paste box. Outlook can't hand us a highlighted
+          selection in a received email, so the user copies it and pastes it here. */}
+      {pasteRequest && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ width: "100%", maxWidth: 340, background: "#FFFFFF", borderRadius: 8, boxShadow: "0 8px 28px rgba(0,0,0,0.24)", overflow: "hidden" }}>
+            <div style={{ padding: "12px 14px", borderBottom: "1px solid #E8E8E8", fontSize: 12, fontWeight: 700, color: "#1B1B1B" }}>
+              Paste your selected text
+            </div>
+            <div style={{ padding: "12px 14px" }}>
+              <div style={{ fontSize: 11, color: "#616161", lineHeight: 1.45, marginBottom: 8 }}>
+                Outlook can&apos;t read highlighted text in a received email. Copy your selection (Ctrl+C / ⌘C), then paste it below.
+              </div>
+              <textarea
+                autoFocus
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                placeholder="Paste selected text here…"
+                style={{ width: "100%", height: 120, border: "1px solid #C7C7C7", borderRadius: 4, padding: 8, fontSize: 12, fontFamily: "inherit", boxSizing: "border-box", resize: "vertical" }}
+              />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "10px 14px", borderTop: "1px solid #E8E8E8" }}>
+              <button onClick={cancelPaste} style={{ height: 30, padding: "0 14px", background: "#FFFFFF", border: "1px solid #C7C7C7", borderRadius: 4, cursor: "pointer", fontSize: 12, fontFamily: "inherit", color: "#1B1B1B" }}>
+                Cancel
+              </button>
+              <button onClick={submitPaste} disabled={!pasteText.trim()} style={{ height: 30, padding: "0 14px", background: pasteText.trim() ? "#0078D4" : "#B9D6F2", border: "none", borderRadius: 4, cursor: pasteText.trim() ? "pointer" : "default", fontSize: 12, fontWeight: 600, fontFamily: "inherit", color: "#FFFFFF" }}>
+                Use This Text
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
