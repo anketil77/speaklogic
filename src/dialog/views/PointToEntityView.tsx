@@ -27,6 +27,14 @@ import type {
 
 const SELECTION_TYPES: EntitySelectionType[] = ["Word", "Sentence", "Paragraph"];
 
+// Client wording for the mode-chooser buttons (singular Entity for Word, plural
+// Entities for Sentence/Paragraph).
+const SELECTION_TYPE_LABELS: Record<EntitySelectionType, string> = {
+  Word: "Word Point to Entity",
+  Sentence: "Sentence Point to Entities",
+  Paragraph: "Paragraph Point to Entities",
+};
+
 function emptyEntity(): PointToEntityItem {
   return { name: "", isExplanation: false, explanation: "", imageSource: "computer", imageValue: "" };
 }
@@ -418,13 +426,13 @@ export default function PointToEntityView() {
               key={t}
               onClick={() => chooseType(t)}
               style={{
-                width: 220, height: 40, borderRadius: 6,
+                width: 240, height: 40, borderRadius: 6,
                 border: `1px solid ${colors.azure42}`, background: colors.white,
                 color: colors.azure42, fontSize: 13, fontWeight: 600, cursor: "pointer",
                 fontFamily: "inherit",
               }}
             >
-              {t}
+              {SELECTION_TYPE_LABELS[t]}
             </button>
           ))}
         </div>
