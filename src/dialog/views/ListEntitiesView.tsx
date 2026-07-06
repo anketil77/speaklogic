@@ -38,8 +38,44 @@ const COLUMNS: PanelTableCol<PointToEntity>[] = [
   { header: "Time",           width: "12%", render: (r) => r.entityTime || "—",                 truncate: true },
 ];
 
+// Popup shown when the user clicks an "entity as explanation" box (client point:
+// "click on the explanation box popup the text").
+function ExplanationPopup({ html, onClose }: { html: string; onClose: () => void }) {
+  return createPortal(
+    <>
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.18)", zIndex: 225 }} onClick={onClose} />
+      <div
+        style={{
+          position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)",
+          zIndex: 226, background: colors.white, borderRadius: 8,
+          boxShadow: "0px 8px 32px rgba(0,0,0,0.16)", width: 460, maxWidth: "94vw",
+          maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column",
+          fontFamily: "Inter, Segoe UI, sans-serif",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", alignItems: "center", padding: "14px 18px", borderBottom: `1px solid ${colors.grey88}` }}>
+          <div style={{ flex: 1, fontSize: 14, fontWeight: 700, color: colors.grey11 }}>Explanation</div>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: colors.grey38, lineHeight: 1 }}
+            title="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div style={{ flex: 1, overflow: "auto", padding: 18 }}>
+          <HtmlContent html={html} />
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
+
 // ─── Single entity preview inside the detail modal ──────────────────────────────
 function EntityCard({ entity, index }: { entity: PointToEntityItem; index: number }) {
+  const [showExplanation, setShowExplanation] = useState(false);
   return (
     <div style={{ border: `1px solid ${colors.grey88}`, borderRadius: 6, padding: 10, marginBottom: 10 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: colors.grey11, marginBottom: 6 }}>
@@ -47,7 +83,24 @@ function EntityCard({ entity, index }: { entity: PointToEntityItem; index: numbe
       </div>
       {entity.isExplanation ? (
         entity.explanation
-          ? <HtmlContent html={entity.explanation} />
+          ? (
+            <>
+              <button
+                onClick={() => setShowExplanation(true)}
+                style={{
+                  width: "100%", textAlign: "left", cursor: "pointer",
+                  border: `1px dashed ${colors.grey78}`, borderRadius: 6, background: colors.grey96,
+                  padding: "10px 12px", fontFamily: "inherit", fontSize: 12, color: colors.azure42, fontWeight: 600,
+                }}
+                title="Click to view the explanation"
+              >
+                View explanation
+              </button>
+              {showExplanation && (
+                <ExplanationPopup html={entity.explanation} onClose={() => setShowExplanation(false)} />
+              )}
+            </>
+          )
           : <span style={{ color: colors.grey74, fontSize: 12 }}>No explanation</span>
       ) : !entity.imageValue ? (
         <span style={{ color: colors.grey74, fontSize: 12 }}>No image</span>
