@@ -1055,9 +1055,18 @@ function openAnalyzeDialogWithPayload(
 // the selected text prefilled, build an analysis on the fly behind the scenes,
 // and highlight the selection (red = error, green = compensator) when they save.
 
-// Highlights the current Word selection. Runs only AFTER the dialog closes so it
-// never takes the document lock before a dialog is opened (Word-web freeze rule).
+// Highlights the current Word selection and attaches a hover tooltip identifying
+// it as an error/compensator. Runs only AFTER the dialog closes so it never takes
+// the document lock before a dialog is opened (Word-web freeze rule).
 // Word-only; other hosts no-op. Best-effort — failure is logged, never thrown.
+//
+// The tooltip is a Word comment (WordApi 1.4): on desktop Word, hovering the
+// highlighted text shows the comment as a native rollover popup. Office.js has no
+// hyperlink-ScreenTip API, so a comment is the only supported hover tooltip.
+// On Word on the web insertComment can fail (NotAllowed) even when the requirement
+// set reports supported — so the comment runs in its OWN Word.run, guarded and
+// caught, and a failure degrades to highlight-only ("text only") without ever
+// rolling back the highlight.
 function colorWordSelection(kind: "error" | "compensator"): Promise<void> {
   if (Office.context.host !== Office.HostType.Word) return Promise.resolve();
   const highlight = kind === "error" ? "#FF0000" : "#00FF00"; // red / bright green
@@ -1065,7 +1074,25 @@ function colorWordSelection(kind: "error" | "compensator"): Promise<void> {
     const range = ctx.document.getSelection();
     range.font.highlightColor = highlight;
     await ctx.sync();
-  }).catch((err) => { dbg("HOST", "colorWordSelection failed", String(err)); });
+  })
+    .then(() => addSelectionTooltip(kind))
+    .catch((err) => { dbg("HOST", "colorWordSelection failed", String(err)); });
+}
+
+// Attaches the hover tooltip comment. Separate Word.run so a comment failure on
+// Word-web can never roll back the already-applied highlight. Silently no-ops when
+// WordApi 1.4 (insertComment) is unavailable or the host rejects it.
+function addSelectionTooltip(kind: "error" | "compensator"): Promise<void> {
+  const label = kind === "error" ? "Identified Error" : "Identified Compensator";
+  const note = `Speak Logic — ${label}. See https://speaklogic.org`;
+  try {
+    if (!Office.context.requirements.isSetSupported("WordApi", "1.4")) return Promise.resolve();
+  } catch { return Promise.resolve(); }
+  return Word.run(async (ctx) => {
+    const range = ctx.document.getSelection();
+    range.insertComment(note);
+    await ctx.sync();
+  }).catch((err) => { dbg("HOST", "addSelectionTooltip skipped", String(err)); });
 }
 
 // ─── Go To Selection (Feature #3) ────────────────────────────────────────────
