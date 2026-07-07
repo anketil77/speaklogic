@@ -4,7 +4,7 @@
 // EMF: four nodes —
 //
 //   [Person Analyzed] → [Entity Under Analysis] → [Output]
-//                              │
+//                              ↑
 //                         [Analysis]
 //
 // Each box is clickable and opens its full content in a popup:
@@ -164,8 +164,8 @@ export function AnalysisModelDialog({ analysis, onClose, zIndexBase = 215 }: Pro
               <line x1={L_X + BOX_W} y1={TOP_CY} x2={C_X - 4} y2={TOP_CY} stroke={LINE_COLOR} strokeWidth="1.8" strokeLinecap="round" markerEnd="url(#amarr)" />
               {/* Entity Under Analysis → Output */}
               <line x1={C_X + BOX_W} y1={TOP_CY} x2={R_X - 4} y2={TOP_CY} stroke={LINE_COLOR} strokeWidth="1.8" strokeLinecap="round" markerEnd="url(#amarr)" />
-              {/* Entity Under Analysis ↓ Analysis */}
-              <line x1={C_CX} y1={TOP_Y + BOX_H} x2={C_CX} y2={ANALYSIS_Y - 4} stroke={LINE_COLOR} strokeWidth="1.8" strokeLinecap="round" markerEnd="url(#amarr)" />
+              {/* Analysis ↑ Entity Under Analysis (arrow points up, per client) */}
+              <line x1={C_CX} y1={ANALYSIS_Y} x2={C_CX} y2={TOP_Y + BOX_H + 4} stroke={LINE_COLOR} strokeWidth="1.8" strokeLinecap="round" markerEnd="url(#amarr)" />
             </svg>
 
             <ModelBox x={L_X} y={TOP_Y}        label="Person Analyzed"       content={personText}   onClick={() => open("Person Analyzed", personText)} />
