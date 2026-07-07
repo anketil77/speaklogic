@@ -1097,6 +1097,19 @@ function addSelectionTooltip(kind: "error" | "compensator"): Promise<void> {
   }).catch((err) => { dbg("HOST", "addSelectionTooltip skipped", String(err)); });
 }
 
+// Highlights the current Word selection gray to mark that it has been pointed to
+// an entity (client feedback: "keep the text selected, just highlight it as Gray").
+// Runs only AFTER the dialog closes so it never takes the document lock while a
+// dialog is open (Word-web freeze rule). Word-only; best-effort, never throws.
+function grayHighlightSelection(): Promise<void> {
+  if (Office.context.host !== Office.HostType.Word) return Promise.resolve();
+  return Word.run(async (ctx) => {
+    const range = ctx.document.getSelection();
+    range.font.highlightColor = "#BFBFBF"; // gray
+    await ctx.sync();
+  }).catch((err) => { dbg("HOST", "grayHighlightSelection failed", String(err)); });
+}
+
 // ─── Go To Selection (Feature #3) ────────────────────────────────────────────
 // Searches the current Word document for the given text and selects (scrolls to)
 // the first match. If no match is found, shows a message dialog.
@@ -1373,6 +1386,9 @@ async function openPointToEntityDialog(
       }
       const dialog = result.value;
       const complete = makeEventCompleter(event);
+      // Gray-highlight the pointed selection, but only after a successful save and
+      // only once the dialog closes (Word-web freeze rule).
+      let savedOnce = false;
 
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
@@ -1395,12 +1411,14 @@ async function openPointToEntityDialog(
               replyError(dialog, `Failed to save: ${String(err)}`);
               break;
             }
+            savedOnce = true;
             dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl: "" } as HostMessage));
             break;
           }
           case "CLOSE":
             try { dialog.close(); } catch { }
-            complete();
+            if (savedOnce) { grayHighlightSelection().finally(() => complete()); }
+            else { complete(); }
             break;
           default:
             dbg("HOST", "point to entity: unhandled action", { action: m.action });
@@ -1461,6 +1479,11 @@ async function openListEntitiesDialog(event: Office.AddinCommands.Event): Promis
           case "DELETE_POINT_TO_ENTITY": {
             try { deleteEntity((m as { action: string; id: number }).id); }
             catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+            break;
+          }
+          case "GO_TO_SELECTION": {
+            const goTo = m as { action: string; text: string; documentLocation: string };
+            void goToSelection(goTo.text, dialog);
             break;
           }
           case "CLOSE":

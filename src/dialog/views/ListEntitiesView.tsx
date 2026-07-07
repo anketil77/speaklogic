@@ -256,6 +256,22 @@ export default function ListEntitiesView() {
         </button>
         <button
           disabled={!hasSelection}
+          onClick={() => {
+            if (selectedIndex === null) return;
+            const row = displayRows[selectedIndex];
+            sendMessage({ action: "GO_TO_SELECTION", text: row.actualSelection, documentLocation: row.documentLocation });
+          }}
+          title="Go to this selection in the document"
+          style={{
+            height: 28, padding: "0 12px", border: `1px solid ${colors.grey78}`, borderRadius: 4,
+            background: colors.white, cursor: hasSelection ? "pointer" : "default",
+            opacity: hasSelection ? 1 : 0.4, fontSize: 12, fontFamily: "inherit", color: colors.grey11,
+          }}
+        >
+          Goto
+        </button>
+        <button
+          disabled={!hasSelection}
           onClick={() => { if (hasSelection) setPendingDelete(selectedIndex); }}
           style={{
             height: 28, padding: "0 12px", border: `1px solid ${colors.grey78}`, borderRadius: 4,
