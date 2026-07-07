@@ -42,3 +42,26 @@ export function buildVerificationTable(entries: InfoEntry[]): string {
     `<thead>${head}</thead><tbody>${body}</tbody></table>`
   );
 }
+
+/**
+ * Reverse of buildVerificationTable — splits a stored verification table back into
+ * its info ↔ verification pairs. Used by readers that prefer the stacked "second
+ * view" presentation over the raw two-column table. Returns [] when `html` has no
+ * verification table.
+ */
+export function decomposeVerificationTable(
+  html: string | null | undefined
+): { info: string; verification: string }[] {
+  if (!html || !html.includes(VTABLE_MARKER)) return [];
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const table = doc.querySelector('table[data-sl-vtable="1"]');
+    if (!table) return [];
+    return Array.from(table.querySelectorAll("tbody tr")).map((tr) => {
+      const tds = tr.querySelectorAll("td");
+      return { info: tds[0]?.innerHTML ?? "", verification: tds[1]?.innerHTML ?? "" };
+    });
+  } catch {
+    return [];
+  }
+}

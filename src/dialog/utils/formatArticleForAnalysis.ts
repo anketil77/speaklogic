@@ -1,5 +1,5 @@
 import type { Article } from "@/types/db";
-import { VTABLE_MARKER } from "@/dialog/utils/buildVerificationTable";
+import { VTABLE_MARKER, decomposeVerificationTable } from "@/dialog/utils/buildVerificationTable";
 
 const HR = `<hr style="margin:16px 0;border:none;border-top:1px solid #D0D0D0;">`;
 
@@ -24,12 +24,23 @@ export function formatArticleForAnalysis(article: Article): string {
   const wizard: string[] = [];
 
   // New wizard records pair info ↔ verification in a single table stored in
-  // motherNatureConsiderations. When present, render only the table (its left
-  // column already carries the info) and skip the standalone info section.
+  // motherNatureConsiderations. Client asked to use the "second view" text rather
+  // than the raw table (easier to read as the entity under analysis), so decompose
+  // the table into stacked Information Before Event + Mother Nature Consideration
+  // sections — matching the Second View tab. Falls back to the raw table if the
+  // decomposition yields nothing.
   const hasVTable = (article.motherNatureConsiderations ?? "").includes(VTABLE_MARKER);
 
   if (hasVTable) {
-    wizard.push(section("Information & Mother Nature Consideration", article.motherNatureConsiderations!.trim()));
+    const pairs = decomposeVerificationTable(article.motherNatureConsiderations);
+    if (pairs.length > 0) {
+      for (const p of pairs) {
+        if (p.info.trim()) wizard.push(section("Information Before Event", p.info.trim()));
+        if (p.verification.trim()) wizard.push(section("Mother Nature Consideration", p.verification.trim()));
+      }
+    } else {
+      wizard.push(section("Information & Mother Nature Consideration", article.motherNatureConsiderations!.trim()));
+    }
   } else {
     if (article.infoBeforeEvent?.trim())
       wizard.push(section("Information Before Event", plain(article.infoBeforeEvent)));
