@@ -528,7 +528,9 @@ async function getWordTextAndMeta(mode: SelectionMode): Promise<{ text: string; 
         try {
           const sel = context.document.getSelection();
           const firstPara = sel.paragraphs.getFirst();
-          const startToSel = context.document.body.getRange("Start").expandTo(firstPara.getRange("Start"));
+          // Expand to the END of the selected paragraph so it is INCLUDED in the count;
+          // expanding to its Start excludes it and reports paragraphNumber - 1 (off-by-one).
+          const startToSel = context.document.body.getRange("Start").expandTo(firstPara.getRange("End"));
           startToSel.paragraphs.load("items");
           await context.sync();
           paragraphNumber = String(startToSel.paragraphs.items.length);
