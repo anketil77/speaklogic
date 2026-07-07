@@ -283,6 +283,67 @@ function AccordionItem({ title, html, value, open }: { title: string; html?: str
   );
 }
 
+// Metadata header for the Second View — carries over the "first view" info block
+// the client asked for (Article Details + Provider / Given Set / Event, image7).
+// Mirrors WizardContent's field mappings; the content sections are NOT repeated
+// here because the Second View already renders them as accordions below.
+function ArticleInfoHeader({ article }: { article: Article }) {
+  const isProduct   = (article.wizardCategory ?? "").toLowerCase().includes("product");
+  const givenSet    = article.isProviderUseGivenSetOfInfo === 1 ? "Yes" : "No";
+  const hasEvent    = article.eventName || article.eventLocation || article.eventDate;
+  const hasGivenSet = article.peopleLocation || article.consideration || article.articleBasisReference;
+  const hasProvider = article.providerName || article.reviewerName;
+  const hasProduct  = article.productName || article.modelNumber || article.productType || article.productFunction;
+
+  return (
+    <div style={{ marginBottom: 18, paddingBottom: 4, borderBottom: "1px solid #F3F4F6" }}>
+      <WizardSection title="Article Details">
+        {article.articleNumber ? <WizardField label="Article Number" value={String(article.articleNumber)} /> : null}
+        <WizardField label="Provider Uses Given Set?" value={givenSet} />
+        <WizardField label="Article Basis Reference"  value={article.articleBasisReference} />
+      </WizardSection>
+
+      {!isProduct && hasProvider && (
+        <WizardSection title="Provider Information">
+          <WizardField label="Provider Name"  value={article.providerName} />
+          <WizardField label="Reviewer Name"  value={article.reviewerName} />
+          <WizardField label="Uses Given Set" value={article.isGivenSet === 1 ? "Yes" : article.isGivenSet === 0 ? "No" : null} />
+        </WizardSection>
+      )}
+      {!isProduct && hasGivenSet && (
+        <WizardSection title="Given Set">
+          <WizardField label="Basis Reference" value={article.articleBasisReference} />
+          <WizardField label="People Location" value={article.peopleLocation} />
+          <WizardField label="Consideration"   value={article.consideration} />
+        </WizardSection>
+      )}
+      {!isProduct && hasEvent && (
+        <WizardSection title="Event">
+          <WizardField label="Event Name"     value={article.eventName} />
+          <WizardField label="Event Location" value={article.eventLocation} />
+          <WizardField label="Event Date"     value={[formatDisplayDate(article.eventDate), article.eventTime].filter(Boolean).join("  ·  ")} />
+        </WizardSection>
+      )}
+      {isProduct && (hasProvider || article.isProviderUseGivenSetOfInfo1 !== undefined) && (
+        <WizardSection title="Provider Information">
+          <WizardField label="Provider Name"  value={article.providerName} />
+          <WizardField label="Reviewer Name"  value={article.reviewerName} />
+          <WizardField label="Uses Given Set" value={article.isProviderUseGivenSetOfInfo1 === 1 ? "Yes" : "No"} />
+        </WizardSection>
+      )}
+      {isProduct && hasProduct && (
+        <WizardSection title="Product Details">
+          <WizardField label="Product Name"     value={article.productName} />
+          <WizardField label="Model Number"     value={article.modelNumber} />
+          <WizardField label="Product Type"     value={article.productType} />
+          <WizardField label="Product Function" value={article.productFunction} />
+          <WizardField label="Problem Solved"   value={article.problemSolved} />
+        </WizardSection>
+      )}
+    </div>
+  );
+}
+
 function SecondView({ article }: { article: Article }) {
   const pairs = decomposeVTable(article.motherNatureConsiderations);
   const hasPairs = pairs.length > 0;
@@ -291,6 +352,8 @@ function SecondView({ article }: { article: Article }) {
       <div style={{ fontSize: 22, fontWeight: 800, color: "#0F1419", lineHeight: 1.25, marginBottom: 14, wordBreak: "break-word" }}>
         {article.articleTitle || "Untitled Article"}
       </div>
+
+      <ArticleInfoHeader article={article} />
 
       {hasPairs ? (
         pairs.map((p, i) => (
