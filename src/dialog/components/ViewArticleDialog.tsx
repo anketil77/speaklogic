@@ -9,7 +9,7 @@ import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { ResizeHandles } from "@/dialog/components/ResizeHandles";
 import { ArticleHeaderIcon, CloseIcon } from "@/dialog/components/Icons";
 import { HtmlContent } from "@/dialog/components/HtmlContent";
-import { VTABLE_MARKER } from "@/dialog/utils/buildVerificationTable";
+import { VTABLE_MARKER, decomposeVerificationTable } from "@/dialog/utils/buildVerificationTable";
 import { CategoryIcon } from "@/dialog/views/createarticle/CategoryPickerPanel";
 import type { Article } from "@/types/db";
 
@@ -383,41 +383,87 @@ function SecondView({ article }: { article: Article }) {
   );
 }
 
-// Opens the article as a standalone, full-width page in the system browser — more
-// room to read than the dialog. Best-effort: builds a self-contained HTML doc and
-// window.open()s it via a blob URL.
-function openArticleInBrowser(article: Article): void {
+// Builds the self-contained HTML for the browser page, matching the tab the user
+// is on: the first view (About Article — metadata + content) or the second view
+// (decomposed Information Before Event / Mother Nature sections). Pure/testable.
+export function buildArticleBrowserHtml(article: Article, view: "first" | "second"): string {
   const parts: string[] = [];
   const push = (label: string, html?: string | null) => {
     if (html && html.trim()) parts.push(`<h2>${escapeHtml(label)}</h2>${html}`);
   };
-  if (article.articleContent && article.articleContent.trim()) parts.push(article.articleContent);
-  push("Information Before Event", article.infoBeforeEvent);
-  push("Mother Nature Consideration", article.motherNatureConsiderations);
-  push("Negative Function Executed", article.negativeFunction);
-  push("Problem Developed", article.problemDetails);
-  push("Function Executed from Event", article.funcExecuteFromEvent);
-  push("Relationship", article.relationshipDetails);
-  push("Pre-event Observation", article.preEventObservation);
-  push("Post-event Observation", article.postEventObservation);
+  const field = (label: string, value?: string | null) => {
+    if (value && String(value).trim()) parts.push(`<p class="fld"><b>${escapeHtml(label)}:</b> ${escapeHtml(String(value))}</p>`);
+  };
+
+  if (view === "first") {
+    // First view (About Article): metadata block, then the article content.
+    parts.push(`<h2>Article Details</h2>`);
+    field("Article Number", article.articleNumber ? String(article.articleNumber) : "");
+    field("Provider Uses Given Set?", article.isProviderUseGivenSetOfInfo === 1 ? "Yes" : "No");
+    field("Article Basis Reference", article.articleBasisReference);
+    if (article.providerName || article.reviewerName) {
+      parts.push(`<h2>Provider Information</h2>`);
+      field("Provider Name", article.providerName);
+      field("Reviewer Name", article.reviewerName);
+    }
+    if (article.peopleLocation || article.consideration || article.articleBasisReference) {
+      parts.push(`<h2>Given Set</h2>`);
+      field("Basis Reference", article.articleBasisReference);
+      field("People Location", article.peopleLocation);
+      field("Consideration", article.consideration);
+    }
+    if (article.eventName || article.eventLocation || article.eventDate) {
+      parts.push(`<h2>Event</h2>`);
+      field("Event Name", article.eventName);
+      field("Event Location", article.eventLocation);
+      field("Event Date", [article.eventDate ? formatDisplayDate(article.eventDate) : "", article.eventTime].filter(Boolean).join("  ·  "));
+    }
+    if (article.articleContent && article.articleContent.trim()) parts.push(`<h2>Article</h2>${article.articleContent}`);
+  } else {
+    // Second view: article content, then the decomposed info/verification sections.
+    if (article.articleContent && article.articleContent.trim()) parts.push(article.articleContent);
+    const pairs = decomposeVerificationTable(article.motherNatureConsiderations);
+    if (pairs.length > 0) {
+      pairs.forEach((p) => {
+        push("Information Before Event", p.info);
+        push("Mother Nature Consideration", p.verification);
+      });
+    } else {
+      push("Information Before Event", article.infoBeforeEvent);
+      push("Mother Nature Consideration", article.motherNatureConsiderations);
+    }
+    push("Negative Function Executed", article.negativeFunction);
+    push("Problem Developed", article.problemDetails);
+    push("Function Executed from Event", article.funcExecuteFromEvent);
+    push("Relationship", article.relationshipDetails);
+    push("Pre-event Observation", article.preEventObservation);
+    push("Post-event Observation", article.postEventObservation);
+  }
 
   const meta = [article.personName, article.articleDate ? formatDisplayDate(article.articleDate) : ""]
     .filter(Boolean).join("  ·  ");
-  const docHtml =
+  return (
     `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<title>${escapeHtml(article.articleTitle || "Article")}</title>` +
     `<style>body{font-family:Inter,'Segoe UI',sans-serif;max-width:780px;margin:40px auto;padding:0 22px;` +
     `color:#1a1a1a;line-height:1.7}h1{font-size:30px;line-height:1.2;margin:0 0 6px}` +
     `h2{font-size:18px;color:#0057A0;margin:30px 0 8px}.byline{color:#777;margin:0 0 24px}` +
-    `img{max-width:100%;height:auto}table{border-collapse:collapse;width:100%}` +
+    `.fld{margin:4px 0}img{max-width:100%;height:auto}table{border-collapse:collapse;width:100%}` +
     `td,th{border:1px solid #C7C7C7;padding:8px 10px;vertical-align:top}` +
     `blockquote{border-left:3px solid #C7C7C7;margin:0;padding-left:14px;color:#555}</style></head>` +
     `<body><h1>${escapeHtml(article.articleTitle || "Untitled Article")}</h1>` +
     (meta ? `<p class="byline">${escapeHtml(meta)}</p>` : "") +
     parts.join("") +
-    `</body></html>`;
+    `</body></html>`
+  );
+}
 
+// Opens the article as a standalone, full-width page in the system browser — more
+// room to read than the dialog. Renders the SAME view (first/second) the user is on.
+// Best-effort: builds a self-contained HTML doc and window.open()s it via a blob URL.
+function openArticleInBrowser(article: Article, view: "first" | "second"): void {
+  const docHtml = buildArticleBrowserHtml(article, view);
   try {
     const url = URL.createObjectURL(new Blob([docHtml], { type: "text/html" }));
     window.open(url, "_blank", "noopener");
@@ -585,7 +631,7 @@ export function ViewArticleDialog({ article, onClose, onFlagForAnalysis, onAnaly
             </div>
           </div>
           <button
-            onClick={() => openArticleInBrowser(article)}
+            onClick={() => openArticleInBrowser(article, activeTab === 1 ? "second" : "first")}
             title="Open in browser"
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#EBF3FC"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
