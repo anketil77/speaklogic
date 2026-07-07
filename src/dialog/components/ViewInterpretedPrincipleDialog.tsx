@@ -2,11 +2,12 @@ import React, { useState, useRef, useCallback, useMemo } from "react";
 import { formatDisplayDate } from "@/db/db";
 import { FooterBar, DismissBtn } from "@/dialog/components/FooterButtons";
 import ReactDOM from "react-dom";
-import { RichTextToolbar } from "@/dialog/components/RichTextToolbar";
+import { HtmlContent } from "@/dialog/components/HtmlContent";
+import { InterpretationModelDialog } from "@/dialog/components/InterpretationModelDialog";
 import { PanelTable, type PanelTableCol } from "@/dialog/components/PanelTable";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
 import { colors } from "@/styles/tokens";
-import { PrincipleDropdownTriggerIcon } from "@/dialog/components/Icons";
+import { PrincipleDropdownTriggerIcon, FeedbackModelIcon } from "@/dialog/components/Icons";
 import type { AttachFileToProject, PrincipleInterpretation } from "@/types/db";
 
 interface Props {
@@ -35,10 +36,7 @@ const FILE_COLUMNS: PanelTableCol<AttachFileToProject>[] = [
 export function ViewInterpretedPrincipleDialog({ interpretation, initialFiles = [], sendMessage, onClose }: Props) {
   const { pos, onHeaderMouseDown } = useDraggable();
   const [activeTab, setActiveTab] = useState<TabId>("about");
-
-  const interpretationRef = useRef<HTMLDivElement>(null);
-  const commPrincipleRef = useRef<HTMLDivElement>(null);
-  const [activeEditor, setActiveEditor] = useState<React.RefObject<HTMLDivElement>>(interpretationRef);
+  const [showModel, setShowModel] = useState(false);
 
   const [files, setFiles] = useState<AttachFileToProject[]>(initialFiles);
   const [fileMenuIndex, setFileMenuIndex] = useState<number | null>(null);
@@ -128,12 +126,8 @@ export function ViewInterpretedPrincipleDialog({ interpretation, initialFiles = 
               <div style={{ fontWeight: 600, fontSize: 12.4, color: colors.grey11, marginBottom: 6 }}>
                 Interpretation Result:
               </div>
-              <div
-                ref={interpretationRef}
-                tabIndex={0}
-                onFocus={() => setActiveEditor(interpretationRef)}
-                contentEditable
-                suppressContentEditableWarning
+              <HtmlContent
+                html={interpretation.interpretationResult || ""}
                 style={{
                   border: `1px solid ${colors.grey78}`,
                   borderRadius: 4,
@@ -142,11 +136,8 @@ export function ViewInterpretedPrincipleDialog({ interpretation, initialFiles = 
                   fontSize: 12.4,
                   lineHeight: "20px",
                   color: "#444",
-                  outline: "none",
-                  cursor: "text",
                   overflow: "auto",
                 }}
-                dangerouslySetInnerHTML={{ __html: interpretation.interpretationResult || "" }}
               />
             </div>
           </div>
@@ -159,12 +150,8 @@ export function ViewInterpretedPrincipleDialog({ interpretation, initialFiles = 
               <div style={{ fontWeight: 600, fontSize: 12.4, color: colors.grey11, marginBottom: 6 }}>
                 Comm Principle Description:
               </div>
-              <div
-                ref={commPrincipleRef}
-                tabIndex={0}
-                onFocus={() => setActiveEditor(commPrincipleRef)}
-                contentEditable
-                suppressContentEditableWarning
+              <HtmlContent
+                html={interpretation.commPrincipleDescription || ""}
                 style={{
                   border: `1px solid ${colors.grey78}`,
                   borderRadius: 4,
@@ -173,11 +160,8 @@ export function ViewInterpretedPrincipleDialog({ interpretation, initialFiles = 
                   fontSize: 12.4,
                   lineHeight: "20px",
                   color: "#444",
-                  outline: "none",
-                  cursor: "text",
                   overflow: "auto",
                 }}
-                dangerouslySetInnerHTML={{ __html: interpretation.commPrincipleDescription || "" }}
               />
             </div>
           </div>
@@ -325,6 +309,17 @@ export function ViewInterpretedPrincipleDialog({ interpretation, initialFiles = 
             </div>
           </div>
           <button
+            className="sl-icon-btn"
+            onClick={() => setShowModel(true)}
+            title="View Interpretation Model"
+            style={{
+              width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "transparent", border: "none", borderRadius: 4, cursor: "pointer", flexShrink: 0, padding: 0,
+            }}
+          >
+            <FeedbackModelIcon color={colors.grey38} />
+          </button>
+          <button
             onClick={onClose}
             style={{
               width: 28,
@@ -346,25 +341,6 @@ export function ViewInterpretedPrincipleDialog({ interpretation, initialFiles = 
             </svg>
           </button>
         </div>
-
-        {/* Command bar — RichTextToolbar for select/copy */}
-        {(activeTab === "about" || activeTab === "comm-principle") && (
-          <div
-            style={{
-              height: 44,
-              minHeight: 44,
-              background: "#F5F5F5",
-              display: "flex",
-              alignItems: "center",
-              padding: "0 12px",
-              gap: 6,
-              borderBottom: `1px solid ${colors.grey88}`,
-              position: "relative",
-            }}
-          >
-            <RichTextToolbar editorRef={activeEditor} />
-          </div>
-        )}
 
         {/* Tab bar */}
         <div style={{ display: "flex", borderBottom: `1px solid ${colors.grey88}`, flexShrink: 0 }}>
@@ -405,6 +381,14 @@ export function ViewInterpretedPrincipleDialog({ interpretation, initialFiles = 
         {/* Footer */}
         <FooterBar><DismissBtn label="Close" onClick={onClose} /></FooterBar>
       </div>
+
+      {showModel && (
+        <InterpretationModelDialog
+          interpretation={interpretation}
+          onClose={() => setShowModel(false)}
+          zIndexBase={230}
+        />
+      )}
     </>,
     document.body,
   );
