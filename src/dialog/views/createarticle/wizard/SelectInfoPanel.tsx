@@ -16,12 +16,24 @@ import React, { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon, WizardSearchIcon } from "@/dialog/components/Icons";
 import { useDraggable } from "@/dialog/hooks/useDraggable";
+import { HtmlContent } from "@/dialog/components/HtmlContent";
 
 export interface InfoItem {
   id:   string;   // "sl-…" for Speak Logic, "user-<dbId>" for user items
   name: string;
   html: string;
 }
+
+type MathFilter = "all" | "nonmath" | "math";
+
+// The built-in items are tagged "(Math)" / "(Non-math)". Detect via the visible
+// tag so the math filter and tag-stripping stay in sync with what the user sees.
+const isMathItem    = (i: InfoItem) => i.name.includes("(Math)");
+const isNonMathItem = (i: InfoItem) => i.name.includes("(Non-math)");
+
+// Drop the trailing "(Math)" / "(Non-math)" tag — redundant once a math filter is
+// active (the filter already tells the user which set they're looking at).
+const stripMathTag = (name: string) => name.replace(/\s*\((?:Non-)?[Mm]ath\)\s*$/, "").trim();
 
 interface Props {
   userItems:        InfoItem[];
@@ -54,23 +66,29 @@ export function SelectInfoPanel({
   const [search,     setSearch]     = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adding,     setAdding]     = useState(false);
+  const [mathFilter, setMathFilter] = useState<MathFilter>("all");
+  const [preview,    setPreview]    = useState<InfoItem | null>(null);
   const { pos, onHeaderMouseDown } = useDraggable();
+
+  // The math/non-math filter only applies to the tagged built-in Speak Logic list.
+  const showMathFilter = activeTab === "sl";
 
   const items = activeTab === "user" ? userItems : speakLogicItems;
 
-  const filtered = search
-    ? items.filter(
-        (i) =>
-          i.name.toLowerCase().includes(search.toLowerCase()) ||
-          htmlToText(i.html, 9999).toLowerCase().includes(search.toLowerCase())
-      )
-    : items;
+  const filtered = items.filter((i) => {
+    if (showMathFilter && mathFilter === "math"    && !isMathItem(i))    return false;
+    if (showMathFilter && mathFilter === "nonmath" && !isNonMathItem(i)) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return i.name.toLowerCase().includes(q) || htmlToText(i.html, 9999).toLowerCase().includes(q);
+  });
 
   const handleTabChange = useCallback((tab: Tab) => {
     setActiveTab(tab);
     setSelectedId(null);
     setSearch("");
     setAdding(false);
+    setMathFilter("all");
   }, []);
 
   const handleConfirm = useCallback(() => {
@@ -109,6 +127,7 @@ export function SelectInfoPanel({
       ) : (
         <>
           <SearchBar value={search} onChange={setSearch} />
+          {showMathFilter && <MathFilterBar value={mathFilter} onChange={setMathFilter} />}
           {activeTab === "user" && onAddUserItem && (
             <AddItemButton onClick={() => setAdding(true)} />
           )}
@@ -118,10 +137,13 @@ export function SelectInfoPanel({
             onSelect={setSelectedId}
             removable={activeTab === "user" && !!onRemoveUserItem}
             onRemove={onRemoveUserItem}
+            stripTag={showMathFilter && mathFilter !== "all"}
+            onPreview={setPreview}
           />
           <ConfirmBtn disabled={selectedId === null} onClick={handleConfirm} />
         </>
       )}
+      {preview && <PreviewPopup item={preview} onClose={() => setPreview(null)} />}
     </div>
   );
 
@@ -220,6 +242,69 @@ function SearchBar({ value, onChange }: { value: string; onChange: (v: string) =
   );
 }
 
+function MathFilterBar({ value, onChange }: { value: MathFilter; onChange: (v: MathFilter) => void }) {
+  const opts: { key: MathFilter; label: string }[] = [
+    { key: "all",     label: "All" },
+    { key: "nonmath", label: "Non-math" },
+    { key: "math",    label: "Math" },
+  ];
+  return (
+    <div style={{
+      display: "flex", gap: 2, margin: "8px 12px 0", padding: 2, height: 24,
+      background: "#F5F5F5", borderRadius: 5, flexShrink: 0,
+    }}>
+      {opts.map((o) => {
+        const active = value === o.key;
+        return (
+          <button
+            key={o.key}
+            onClick={() => onChange(o.key)}
+            style={{
+              flex: 1, height: 20, border: "none", borderRadius: 4, cursor: "pointer",
+              background: active ? "#FFFFFF" : "transparent",
+              boxShadow: active ? "0px 1px 3px rgba(0,0,0,0.1)" : "none",
+              fontFamily: "'Inter','Segoe UI',sans-serif", fontWeight: 700, fontSize: 9.3,
+              color: active ? "#1B1B1B" : "#616161",
+            }}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Read-only preview of an item's full content (typeset math / drawn diagram),
+// so the user can look before selecting. Portals over the panel with a backdrop.
+function PreviewPopup({ item, onClose }: { item: InfoItem; onClose: () => void }) {
+  return createPortal(
+    <>
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.18)", zIndex: 320 }} onClick={onClose} />
+      <div style={{
+        position: "fixed", left: "50%", top: "50%", transform: "translate(-50%,-50%)", zIndex: 321,
+        width: "min(560px, 92vw)", maxHeight: "86vh", background: "#FFFFFF", borderRadius: 8,
+        boxShadow: "0px 12px 40px rgba(0,0,0,0.22)", display: "flex", flexDirection: "column",
+        overflow: "hidden", fontFamily: "'Inter','Segoe UI',sans-serif",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "13px 16px", borderBottom: "1px solid #EEE", flexShrink: 0 }}>
+          <span style={{ fontWeight: 700, fontSize: 13, color: "#1B1B1B" }}>{item.name}</span>
+          <button onClick={onClose} aria-label="Close" style={{
+            display: "flex", alignItems: "center", justifyContent: "center", width: 22, height: 22,
+            border: "none", background: "transparent", borderRadius: 4, cursor: "pointer", flexShrink: 0,
+          }}>
+            <CloseIcon />
+          </button>
+        </div>
+        <div style={{ padding: "12px 18px 18px", overflowY: "auto" }}>
+          <HtmlContent html={item.html} style={{ fontSize: 14, lineHeight: 1.6, color: "#1B1B1B" }} />
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
+
 function AddItemButton({ onClick }: { onClick: () => void }) {
   const [hov, setHov] = useState(false);
   return (
@@ -295,13 +380,15 @@ function AddItemForm({ onSave, onCancel }: { onSave: (name: string, html: string
 }
 
 function ItemList({
-  items, selectedId, onSelect, removable, onRemove,
+  items, selectedId, onSelect, removable, onRemove, stripTag, onPreview,
 }: {
   items: InfoItem[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   removable: boolean;
   onRemove?: (id: string) => void;
+  stripTag: boolean;
+  onPreview: (item: InfoItem) => void;
 }) {
   return (
     <div
@@ -315,12 +402,15 @@ function ItemList({
           No items found
         </div>
       )}
-      {items.map((item) => (
+      {items.map((item, i) => (
         <InfoItemRow
           key={item.id}
           item={item}
+          index={i + 1}
+          displayName={stripTag ? stripMathTag(item.name) : item.name}
           selected={item.id === selectedId}
           onClick={() => onSelect(item.id)}
+          onPreview={() => onPreview(item)}
           removable={removable}
           onRemove={onRemove}
         />
@@ -330,18 +420,21 @@ function ItemList({
 }
 
 function InfoItemRow({
-  item, selected, onClick, removable, onRemove,
+  item, index, displayName, selected, onClick, onPreview, removable, onRemove,
 }: {
   item: InfoItem;
+  index: number;
+  displayName: string;
   selected: boolean;
   onClick: () => void;
+  onPreview: () => void;
   removable: boolean;
   onRemove?: (id: string) => void;
 }) {
   const [hov, setHov] = useState(false);
   // One clean text line for EVERY item (math, diagram, text alike). LaTeX
   // delimiters are stripped so math reads as "a^2" not "\[a^2\]". The full
-  // content (typeset math / drawn diagram) renders once the item is selected.
+  // content (typeset math / drawn diagram) renders in the preview popup.
   const preview = htmlToText(item.html).replace(/\\\(|\\\)|\\\[|\\\]/g, "").trim();
   return (
     <div
@@ -364,7 +457,7 @@ function InfoItemRow({
           fontWeight: 700, fontSize: 10.8, lineHeight: "13px", color: "#1B1B1B",
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>
-          {item.name}
+          <span style={{ color: "#0078D4" }}>{index}.</span> {displayName}
         </span>
         <span style={{
           fontWeight: 400, fontSize: 9.2, lineHeight: "12px", color: preview ? "#616161" : "#ADADAD",
@@ -374,6 +467,23 @@ function InfoItemRow({
           {preview || "(no content)"}
         </span>
       </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onPreview(); }}
+        title="Preview"
+        aria-label="Preview"
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          width: 20, height: 20, flexShrink: 0, border: "1px solid transparent",
+          background: "transparent", borderRadius: 4, cursor: "pointer", padding: 0,
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#E0E0E0"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "transparent"; }}
+      >
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+          <path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8Z" stroke="#0078D4" strokeWidth="1.1"/>
+          <circle cx="8" cy="8" r="1.9" stroke="#0078D4" strokeWidth="1.1"/>
+        </svg>
+      </button>
       {removable && onRemove && (
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
