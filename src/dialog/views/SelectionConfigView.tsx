@@ -10,23 +10,26 @@ const COD_GRAY    = "#1B1B1B";
 const SILVER      = "#C7C7C7";
 const NARVIK      = "#F5F5F5";
 
-// ── Layout constants (480×428px dialog) ───────────────────────────────────────
+// ── Layout constants ──────────────────────────────────────────────────────────
 const HEADER_H = 70;
 const BANNER_H = 61;
-const BODY_H   = 240;
-
-// Dropdown column — left:228, right:20 (matches Figma exactly)
-const SELECT_LEFT  = 228;
-const SELECT_RIGHT = 20;
 
 const chevronSvg = `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23616161' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`;
 
+// Each row is a normal-flow flex line: label (flex) + Yes/No select (fixed proportion).
+// The body scrolls, so Cancel/Apply stay pinned regardless of dialog frame height.
+const rowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 16,
+  minHeight: 32,
+};
+
 const selectBase: React.CSSProperties = {
   boxSizing: "border-box",
-  position: "absolute",
+  flex: "0 0 46%",
   height: 32,
-  left: SELECT_LEFT,
-  right: SELECT_RIGHT,
   background: "#FFFFFF",
   border: `1px solid ${SILVER}`,
   borderRadius: 4,
@@ -44,14 +47,11 @@ const selectBase: React.CSSProperties = {
 };
 
 const labelBase: React.CSSProperties = {
-  position: "absolute",
-  left: 20,
+  flex: 1,
   fontFamily: "Inter, 'Segoe UI', sans-serif",
   fontWeight: 400,
   lineHeight: "14px",
   color: COD_GRAY,
-  display: "flex",
-  alignItems: "center",
 };
 
 // ── Config type ───────────────────────────────────────────────────────────────
@@ -161,28 +161,31 @@ export default function SelectionConfigView() {
         </span>
       </div>
 
-      {/* ── BODY — h: 240px ── */}
-      {/* First dropdown is at body-top: 16px (= modal top 147 - 131); rows are 44px apart */}
-      <div style={{ position: "relative", height: BODY_H, flexShrink: 0 }}>
-        {ROWS.map((row, i) => {
-          const dropTop  = 16 + i * 44;
-          const labelTop = dropTop + 10;
-          return (
-            <React.Fragment key={row.key}>
-              <span style={{ ...labelBase, top: labelTop, fontSize: row.fs }}>
-                {row.label}
-              </span>
-              <select
-                style={{ ...selectBase, top: dropTop }}
-                value={cfg[row.key] ? "Yes" : "No"}
-                onChange={(e) => set(row.key, e.target.value === "Yes")}
-              >
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </React.Fragment>
-          );
-        })}
+      {/* ── BODY — scrolls when the dialog frame is short; footer stays pinned ── */}
+      <div style={{
+        flex: 1,
+        minHeight: 0,
+        overflowY: "auto",
+        padding: "16px 20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}>
+        {ROWS.map((row) => (
+          <div key={row.key} style={rowStyle}>
+            <span style={{ ...labelBase, fontSize: row.fs }}>
+              {row.label}
+            </span>
+            <select
+              style={selectBase}
+              value={cfg[row.key] ? "Yes" : "No"}
+              onChange={(e) => set(row.key, e.target.value === "Yes")}
+            >
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+        ))}
       </div>
 
       {/* ── FOOTER — h: 57px ── */}
