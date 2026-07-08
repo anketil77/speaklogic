@@ -263,12 +263,20 @@ export function getAllErrors(): ProjectError[] {
 // append: the page suffix is (a) opt-in config and (b) populated inconsistently
 // across host code paths, so two identifications in the SAME document can differ
 // only by page. Stripping it keeps the filter document-scoped (not page-scoped).
-function stripPageSuffix(s: string): string {
-  return (s || "").replace(/\s*Page:\s*\S+\s*$/i, "").trim();
+// Reduces an entity name to its DOCUMENT identity by removing the trailing
+// location. Entity names read "Title  File: X  Page: N  Paragraph: M", so the
+// current-document error match must ignore BOTH Page and Paragraph — otherwise an
+// error on paragraph 1 won't match a compensator made on paragraph 3 of the same
+// document (they'd get different keys and "No error in this document" shows).
+function stripLocationSuffix(s: string): string {
+  return (s || "")
+    .replace(/\s*Paragraph:\s*\S+\s*$/i, "")
+    .replace(/\s*Page:\s*\S+\s*$/i, "")
+    .trim();
 }
 
 export function getErrorsByApplicationName(applicationName: string): ProjectError[] {
-  const key = stripPageSuffix(applicationName);
+  const key = stripLocationSuffix(applicationName);
   const all = getAllErrors();
   if (!all.length) return [];
 
@@ -277,7 +285,7 @@ export function getErrorsByApplicationName(applicationName: string): ProjectErro
   const res = db.exec("SELECT id, applicationName FROM ProjectAnalysis");
   const appById = new Map<number, string>();
   if (res.length) {
-    res[0].values.forEach((r) => appById.set(r[0] as number, stripPageSuffix(r[1] as string)));
+    res[0].values.forEach((r) => appById.set(r[0] as number, stripLocationSuffix(r[1] as string)));
   }
 
   return all.filter((e) => e.analysisId != null && appById.get(e.analysisId) === key);
