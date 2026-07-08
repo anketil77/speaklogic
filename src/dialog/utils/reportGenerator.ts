@@ -221,7 +221,9 @@ export function openAnalysisReport(a: ProjectAnalysis): void {
     fieldRow("Communication Date", esc(formatDisplayDate(a.analysisDate))),
     fieldRow("Communication Time", esc(a.analysisTime)),
     fieldRow("Analysis Subject", esc(a.analysisSubject)),
-    blockField("Actual Paragraph", esc(stripHtml(a.actualAnalysis))),
+    // The paragraph under analysis IS the entity under analysis — not the analysis
+    // text (which is shown separately in "My Analysis" below).
+    blockField("Actual Paragraph", esc(stripHtml(a.entityUnderAnalysis))),
   ].join("");
 
   const analysisRows = [
