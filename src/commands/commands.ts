@@ -185,13 +185,6 @@ function registerHandlers(): void {
     void openRequestSLFeedbackDialog(event)
   );
   Office.actions.associate("help", (event) => openViewDialogSimple("help", event));
-  Office.actions.associate("helpArticle", (event) => {
-    showNoSelectionMessage(
-      "Open Help Message",
-      "Currently, there is no help document available yet. Support request can be forwarded to by using the request feedback from the help menu.  In term of documentation, to enable the learning of the principle of communication, all documentations are downloadable from The Speak Logic website.",
-      event
-    );
-  });
   Office.actions.associate("about", (event) => openAboutDialog(event));
   Office.actions.associate("communicationConfig", (event) => openCommunicationConfigDialog(event));
   Office.actions.associate("keywordSettings", (event) => openKeywordSettingsDialog(event));

@@ -233,7 +233,6 @@
                   <Items>
                     <Item id="si_requestSLFeedback_item"><Label resid="requestSLFeedback.Label"/><Supertip><Title resid="requestSLFeedback.Label"/><Description resid="requestSLFeedback.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="requestSLFeedback.Icon16"/><bt:Image size="32" resid="requestSLFeedback.Icon32"/><bt:Image size="80" resid="requestSLFeedback.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action></Item>
                     <Item id="si_help_item"><Label resid="help.Label"/><Supertip><Title resid="help.Label"/><Description resid="help.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="help.Icon16"/><bt:Image size="32" resid="help.Icon32"/><bt:Image size="80" resid="help.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action></Item>
-                    <Item id="si_helpArticle_item"><Label resid="helpArticle.Label"/><Supertip><Title resid="helpArticle.Label"/><Description resid="helpArticle.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="helpArticle.Icon16"/><bt:Image size="32" resid="helpArticle.Icon32"/><bt:Image size="80" resid="helpArticle.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>helpArticle</FunctionName></Action></Item>
                     <Item id="si_about_item"><Label resid="about.Label"/><Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action></Item>
                     <Item id="si_communicationConfig_item"><Label resid="communicationConfig.Label"/><Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action></Item>
                   </Items>
@@ -482,7 +481,6 @@
                   <Items>
                     <Item id="si_requestSLFeedback_PPT_item"><Label resid="requestSLFeedback.Label"/><Supertip><Title resid="requestSLFeedback.Label"/><Description resid="requestSLFeedback.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="requestSLFeedback.Icon16"/><bt:Image size="32" resid="requestSLFeedback.Icon32"/><bt:Image size="80" resid="requestSLFeedback.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action></Item>
                     <Item id="si_help_PPT_item"><Label resid="help.Label"/><Supertip><Title resid="help.Label"/><Description resid="help.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="help.Icon16"/><bt:Image size="32" resid="help.Icon32"/><bt:Image size="80" resid="help.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action></Item>
-                    <Item id="si_helpArticle_PPT_item"><Label resid="helpArticle.Label"/><Supertip><Title resid="helpArticle.Label"/><Description resid="helpArticle.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="helpArticle.Icon16"/><bt:Image size="32" resid="helpArticle.Icon32"/><bt:Image size="80" resid="helpArticle.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>helpArticle</FunctionName></Action></Item>
                     <Item id="si_about_PPT_item"><Label resid="about.Label"/><Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action></Item>
                     <Item id="si_communicationConfig_PPT_item"><Label resid="communicationConfig.Label"/><Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action></Item>
                   </Items>
@@ -649,15 +647,12 @@
         <bt:Image id="help.Icon32" DefaultValue="https://localhost:3000/assets/btn-help-32.png"/>
         <bt:Image id="help.Icon80" DefaultValue="https://localhost:3000/assets/btn-help-80.png"/>
 
-        <bt:Image id="about.Icon16" DefaultValue="https://localhost:3000/assets/btn-about-16.png"/>
-        <bt:Image id="about.Icon32" DefaultValue="https://localhost:3000/assets/btn-about-32.png"/>
-        <bt:Image id="about.Icon80" DefaultValue="https://localhost:3000/assets/btn-about-80.png"/>
+        <bt:Image id="about.Icon16" DefaultValue="https://localhost:3000/assets/btn-info-16.png"/>
+        <bt:Image id="about.Icon32" DefaultValue="https://localhost:3000/assets/btn-info-32.png"/>
+        <bt:Image id="about.Icon80" DefaultValue="https://localhost:3000/assets/btn-info-80.png"/>
         <bt:Image id="speakLogicInfoMenu.Icon16" DefaultValue="https://localhost:3000/assets/btn-about-16.png"/>
         <bt:Image id="speakLogicInfoMenu.Icon32" DefaultValue="https://localhost:3000/assets/btn-about-32.png"/>
         <bt:Image id="speakLogicInfoMenu.Icon80" DefaultValue="https://localhost:3000/assets/btn-about-80.png"/>
-        <bt:Image id="helpArticle.Icon16" DefaultValue="https://localhost:3000/assets/btn-help-16.png"/>
-        <bt:Image id="helpArticle.Icon32" DefaultValue="https://localhost:3000/assets/btn-help-32.png"/>
-        <bt:Image id="helpArticle.Icon80" DefaultValue="https://localhost:3000/assets/btn-help-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/commands.html"/>
@@ -715,7 +710,6 @@
         <bt:String id="help.Label" DefaultValue="Help"/>
         <bt:String id="about.Label" DefaultValue="About"/>
         <bt:String id="speakLogicInfoMenu.Label" DefaultValue="Speak Logic Information Analysis"/>
-        <bt:String id="helpArticle.Label" DefaultValue="Open Help Article Document"/>
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="SpeakLogicMenu.Tooltip" DefaultValue="Speak Logic analysis and feedback tools"/>
@@ -753,7 +747,6 @@
         <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
         <bt:String id="about.Tooltip" DefaultValue="About Speak Logic"/>
         <bt:String id="speakLogicInfoMenu.Tooltip" DefaultValue="Access help, about, and configuration options"/>
-        <bt:String id="helpArticle.Tooltip" DefaultValue="Open the help article document"/>
       </bt:LongStrings>
     </Resources>
 
@@ -943,7 +936,6 @@
                     <Items>
                       <Item id="si_requestSLFeedback_OL_item"><Label resid="requestSLFeedback.Label"/><Supertip><Title resid="requestSLFeedback.Label"/><Description resid="requestSLFeedback.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="requestSLFeedback.Icon16"/><bt:Image size="32" resid="requestSLFeedback.Icon32"/><bt:Image size="80" resid="requestSLFeedback.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action></Item>
                       <Item id="si_help_OL_item"><Label resid="help.Label"/><Supertip><Title resid="help.Label"/><Description resid="help.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="help.Icon16"/><bt:Image size="32" resid="help.Icon32"/><bt:Image size="80" resid="help.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action></Item>
-                      <Item id="si_helpArticle_OL_item"><Label resid="helpArticle.Label"/><Supertip><Title resid="helpArticle.Label"/><Description resid="helpArticle.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="helpArticle.Icon16"/><bt:Image size="32" resid="helpArticle.Icon32"/><bt:Image size="80" resid="helpArticle.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>helpArticle</FunctionName></Action></Item>
                       <Item id="si_about_OL_item"><Label resid="about.Label"/><Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action></Item>
                       <Item id="si_communicationConfig_OL_item"><Label resid="communicationConfig.Label"/><Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action></Item>
                     </Items>
@@ -1126,7 +1118,6 @@
                     <Items>
                       <Item id="si_requestSLFeedback_OLC_item"><Label resid="requestSLFeedback.Label"/><Supertip><Title resid="requestSLFeedback.Label"/><Description resid="requestSLFeedback.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="requestSLFeedback.Icon16"/><bt:Image size="32" resid="requestSLFeedback.Icon32"/><bt:Image size="80" resid="requestSLFeedback.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>requestSLFeedback</FunctionName></Action></Item>
                       <Item id="si_help_OLC_item"><Label resid="help.Label"/><Supertip><Title resid="help.Label"/><Description resid="help.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="help.Icon16"/><bt:Image size="32" resid="help.Icon32"/><bt:Image size="80" resid="help.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>help</FunctionName></Action></Item>
-                      <Item id="si_helpArticle_OLC_item"><Label resid="helpArticle.Label"/><Supertip><Title resid="helpArticle.Label"/><Description resid="helpArticle.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="helpArticle.Icon16"/><bt:Image size="32" resid="helpArticle.Icon32"/><bt:Image size="80" resid="helpArticle.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>helpArticle</FunctionName></Action></Item>
                       <Item id="si_about_OLC_item"><Label resid="about.Label"/><Supertip><Title resid="about.Label"/><Description resid="about.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>about</FunctionName></Action></Item>
                       <Item id="si_communicationConfig_OLC_item"><Label resid="communicationConfig.Label"/><Supertip><Title resid="communicationConfig.Label"/><Description resid="communicationConfig.Tooltip"/></Supertip><Icon><bt:Image size="16" resid="communicationConfig.Icon16"/><bt:Image size="32" resid="communicationConfig.Icon32"/><bt:Image size="80" resid="communicationConfig.Icon80"/></Icon><Action xsi:type="ExecuteFunction"><FunctionName>communicationConfig</FunctionName></Action></Item>
                     </Items>
@@ -1205,15 +1196,12 @@
           <bt:Image id="help.Icon16" DefaultValue="https://localhost:3000/assets/btn-help-16.png"/>
           <bt:Image id="help.Icon32" DefaultValue="https://localhost:3000/assets/btn-help-32.png"/>
           <bt:Image id="help.Icon80" DefaultValue="https://localhost:3000/assets/btn-help-80.png"/>
-          <bt:Image id="about.Icon16" DefaultValue="https://localhost:3000/assets/btn-about-16.png"/>
-          <bt:Image id="about.Icon32" DefaultValue="https://localhost:3000/assets/btn-about-32.png"/>
-          <bt:Image id="about.Icon80" DefaultValue="https://localhost:3000/assets/btn-about-80.png"/>
+          <bt:Image id="about.Icon16" DefaultValue="https://localhost:3000/assets/btn-info-16.png"/>
+          <bt:Image id="about.Icon32" DefaultValue="https://localhost:3000/assets/btn-info-32.png"/>
+          <bt:Image id="about.Icon80" DefaultValue="https://localhost:3000/assets/btn-info-80.png"/>
           <bt:Image id="speakLogicInfoMenu.Icon16" DefaultValue="https://localhost:3000/assets/btn-about-16.png"/>
           <bt:Image id="speakLogicInfoMenu.Icon32" DefaultValue="https://localhost:3000/assets/btn-about-32.png"/>
           <bt:Image id="speakLogicInfoMenu.Icon80" DefaultValue="https://localhost:3000/assets/btn-about-80.png"/>
-          <bt:Image id="helpArticle.Icon16" DefaultValue="https://localhost:3000/assets/btn-help-16.png"/>
-          <bt:Image id="helpArticle.Icon32" DefaultValue="https://localhost:3000/assets/btn-help-32.png"/>
-          <bt:Image id="helpArticle.Icon80" DefaultValue="https://localhost:3000/assets/btn-help-80.png"/>
           <bt:Image id="listSelection.Icon16" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-16.png"/>
           <bt:Image id="listSelection.Icon32" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-32.png"/>
           <bt:Image id="listSelection.Icon80" DefaultValue="https://localhost:3000/assets/btn-flagged-sel-80.png"/>
@@ -1262,7 +1250,6 @@
           <bt:String id="help.Label" DefaultValue="Help"/>
           <bt:String id="about.Label" DefaultValue="About"/>
           <bt:String id="speakLogicInfoMenu.Label" DefaultValue="Speak Logic Information Analysis"/>
-          <bt:String id="helpArticle.Label" DefaultValue="Open Help Article Document"/>
           <bt:String id="listSelection.Label" DefaultValue="List of Selection"/>
           <bt:String id="listIdentifiedPrinciple.Label" DefaultValue="List Identified Principle"/>
           <bt:String id="listInterpretedPrinciple.Label" DefaultValue="List Interpreted Principle"/>
@@ -1293,7 +1280,6 @@
           <bt:String id="help.Tooltip" DefaultValue="View help documentation"/>
           <bt:String id="about.Tooltip" DefaultValue="About Speak Logic"/>
           <bt:String id="speakLogicInfoMenu.Tooltip" DefaultValue="Access help, about, and configuration options"/>
-          <bt:String id="helpArticle.Tooltip" DefaultValue="Open the help article document"/>
           <bt:String id="listSelection.Tooltip" DefaultValue="View selection history audit trail"/>
           <bt:String id="listIdentifiedPrinciple.Tooltip" DefaultValue="View all identified principles"/>
           <bt:String id="listInterpretedPrinciple.Tooltip" DefaultValue="View all interpreted principles"/>

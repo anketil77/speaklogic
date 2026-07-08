@@ -388,7 +388,7 @@ const GROUPS: GroupDef[] = [
       { id: "setupFolders",        label: "Set up Folders",     icon: "btn-comm-config-32.png" },
       { id: "requestSLFeedback",   label: "Request SL Feedback",icon: "btn-req-sl-fb-32.png" },
       { id: "help",                label: "Help",               icon: "btn-help-32.png" },
-      { id: "about",               label: "About",              icon: "btn-about-32.png" },
+      { id: "about",               label: "About",              icon: "btn-info-32.png" },
     ],
   },
 ];
