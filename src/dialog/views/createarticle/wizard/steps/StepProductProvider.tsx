@@ -5,6 +5,7 @@ import React from "react";
 import { SectionBox }   from "../SectionBox";
 import { WizardFooter } from "../WizardFooter";
 import type { StepProps } from "../wizardTypes";
+import { GIVEN_SET_HELP_TEXT } from "@/dialog/views/createarticle/wizard/helpTexts";
 
 if (typeof document !== "undefined" && !document.getElementById("__sl-wizard-input__")) {
   const s = document.createElement("style");
@@ -23,7 +24,7 @@ export function StepProductProvider({ data, onChange, onNext, onBack, onCancel }
         <SectionBox
           title="About The Given Set"
           showHelp
-          helpText="Specify whether the information provider uses The Given Set to provide the information. The Given Set includes principles that are used to provide information. Also identify the basis of that information. The basis of the information is related to the principles used by the information provider to provide the information."
+          helpText={GIVEN_SET_HELP_TEXT}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "2px 0", width: "100%" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

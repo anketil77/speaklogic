@@ -11,6 +11,7 @@ import { SectionBox }   from "../SectionBox";
 import { FormInput }    from "../FormInput";
 import { WizardFooter } from "../WizardFooter";
 import type { StepProps } from "../wizardTypes";
+import { GIVEN_SET_HELP_TEXT } from "@/dialog/views/createarticle/wizard/helpTexts";
 
 export function Step4GivenSet({ data, onChange, onNext, onBack, onCancel }: StepProps) {
   const handleToggle = useCallback(
@@ -44,7 +45,7 @@ export function Step4GivenSet({ data, onChange, onNext, onBack, onCancel }: Step
         <SectionBox
           title="About The Given Set"
           showHelp
-          helpText="Specify whether the information provider uses The Given Set to provide the information. The Given Set includes principles that are used to provide information. Also identify the basis of that information. The basis of the information is related to the principles used by the information provider to provide the information."
+          helpText={GIVEN_SET_HELP_TEXT}
         >
           {/* Toggle row */}
           <div

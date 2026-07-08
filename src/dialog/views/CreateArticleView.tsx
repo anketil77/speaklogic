@@ -10,6 +10,8 @@ import {
 } from "@/dialog/views/createarticle/CategoryPickerPanel";
 import { ArticleEditorPanel } from "@/dialog/views/createarticle/ArticleEditorPanel";
 import "@/dialog/components/HtmlContent"; // injects .sl-html-content CSS
+import { SectionBox } from "@/dialog/views/createarticle/wizard/SectionBox";
+import { GIVEN_SET_HELP_TEXT } from "@/dialog/views/createarticle/wizard/helpTexts";
 
 export default function CreateArticleView() {
   const { initData, sendMessage, submitSave, saving } = useDialogComm();
@@ -277,63 +279,15 @@ export default function CreateArticleView() {
         </div>
 
         {/* ── About The Given Set card ── */}
-        <div
-          style={{
-            boxSizing: "border-box",
-            border: "1px solid #E0E0E0",
-            borderRadius: 6,
-            flexShrink: 0,
-          }}
+        {/* SectionBox gives the "?" badge a working help popup, same copy as the wizard. */}
+        <SectionBox
+          title="About The Given Set"
+          showHelp
+          helpText={GIVEN_SET_HELP_TEXT}
+          bodyPadding="11px"
+          style={{ flexShrink: 0 }}
         >
-          {/* Section header bar */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "7px 11px",
-              background: "#F5F5F5",
-            }}
-          >
-            <span
-              style={{
-                fontWeight: 700,
-                fontSize: 10.7,
-                lineHeight: "13px",
-                color: "#1B1B1B",
-              }}
-            >
-              About The Given Set
-            </span>
-            <span
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 13,
-                height: 13,
-                background: "#0078D4",
-                borderRadius: 6.5,
-                fontWeight: 700,
-                fontSize: 8,
-                lineHeight: "10px",
-                color: "#FFFFFF",
-              }}
-            >
-              ?
-            </span>
-          </div>
-
-          {/* Section body */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              padding: 11,
-              gap: 9,
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: 9, width: "100%" }}>
             {/* Toggle row */}
             <div
               style={{
@@ -444,7 +398,7 @@ export default function CreateArticleView() {
               />
             </div>
           </div>
-        </div>
+        </SectionBox>
 
         {/* ── Article Content ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
