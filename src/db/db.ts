@@ -1,6 +1,6 @@
 // src/db/db.ts
 
-/* global localStorage console */
+/* global localStorage console OfficeRuntime */
 
 import initSqlJs, { Database } from "sql.js";
 import { CREATE_TABLES_SQL } from "@/db/schema";
@@ -8,6 +8,46 @@ import { CREATE_TABLES_SQL } from "@/db/schema";
 const DB_STORAGE_KEY = "speaklogic_db_v1";
 let db: Database | null = null;
 let SQL: Awaited<ReturnType<typeof initSqlJs>> | null = null;
+
+// ── Durable persistence ───────────────────────────────────────────────────────
+// The whole DB is serialized to storage. On Office DESKTOP (WebView2),
+// window.localStorage is NOT durable — Office clears it on add-in reinstall/update
+// and "Clear Office cache", wiping the user's data (Communication Config,
+// analyses, articles). On the web it persists fine, which is why the same data
+// survives there but not on Windows.
+//
+// OfficeRuntime.storage is Microsoft's durable, cross-session, cross-runtime add-in
+// store — keyed by the add-in ID (not the web origin), so it survives cache clears
+// AND deployment/URL changes. We use it as the primary store and keep localStorage
+// as a synchronous mirror (fast same-session reads, web fallback, and auto-migration
+// of any data already saved under localStorage).
+function officeStorage(): { getItem(k: string): Promise<string | null>; setItem(k: string, v: string): Promise<void> } | null {
+  try {
+    const os = (globalThis as unknown as { OfficeRuntime?: { storage?: unknown } }).OfficeRuntime?.storage;
+    return (os as ReturnType<typeof officeStorage>) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function durableGet(key: string): Promise<string | null> {
+  const os = officeStorage();
+  if (os) {
+    try {
+      const v = await os.getItem(key);
+      if (v != null) return v;
+    } catch { /* OfficeRuntime read failed — fall back to localStorage */ }
+  }
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function durableSet(key: string, value: string): void {
+  // Synchronous mirror: instant same-session reads + web durability.
+  try { localStorage.setItem(key, value); } catch { /* quota/unavailable */ }
+  // Durable cross-session copy for Office desktop (best-effort, async).
+  const os = officeStorage();
+  if (os) { try { void os.setItem(key, value); } catch { /* ignore */ } }
+}
 
 export async function initDb(): Promise<Database> {
   if (db) return db;
@@ -20,7 +60,7 @@ export async function initDb(): Promise<Database> {
 
   SQL = await initSqlJs({ wasmBinary });
 
-  const saved = localStorage.getItem(DB_STORAGE_KEY);
+  const saved = await durableGet(DB_STORAGE_KEY);
   if (saved) {
     const bytes = Uint8Array.from(atob(saved), (c) => c.charCodeAt(0));
     db = new SQL.Database(bytes);
@@ -30,6 +70,8 @@ export async function initDb(): Promise<Database> {
 
   db.run(CREATE_TABLES_SQL);
   runMigrations(db);
+  // Writes to BOTH stores — this also migrates any localStorage-only data (from a
+  // previous build) into OfficeRuntime.storage on first load.
   persistDb();
   return db;
 }
@@ -47,7 +89,7 @@ export async function initDb(): Promise<Database> {
  */
 export async function reloadDbFromStorage(): Promise<void> {
   if (!db || !SQL) { await initDb(); return; }
-  const saved = localStorage.getItem(DB_STORAGE_KEY);
+  const saved = await durableGet(DB_STORAGE_KEY);
   if (!saved) return;
   const bytes = Uint8Array.from(atob(saved), (c) => c.charCodeAt(0));
   const fresh = new SQL.Database(bytes);
@@ -102,7 +144,7 @@ export function persistDb(): void {
   if (!db) return;
   const data = db.export() as Uint8Array;
   const b64 = btoa(Array.from(data, (b) => String.fromCharCode(b)).join(""));
-  localStorage.setItem(DB_STORAGE_KEY, b64);
+  durableSet(DB_STORAGE_KEY, b64);
 }
 
 export function nowDate(): string {
