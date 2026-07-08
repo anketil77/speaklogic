@@ -39,7 +39,7 @@ export default function ListIdentifiedPrincipleView() {
       {interpretPrinciple && (
         <InterpretePrincipleDialog
           principle={interpretPrinciple}
-          defaultPerson={initData.personName}
+          defaultPerson={initData.communicationPersonName || initData.personName}
           sendMessage={submitSave}
           onClose={() => setInterpretPrinciple(null)}
           onListIdentified={() => setInterpretPrinciple(null)}

@@ -2307,6 +2307,7 @@ function openFlaggedHistoryDialog(event: Office.AddinCommands.Event, attempt = 0
             communicationSignal: "",
             projectName: "",
             peopleList: [],
+            communicationPersonName: getCommunicationConfig()?.personName ?? "",
             flaggedEntities,
             principleInterpretations,
             filesByInterpretationId,
@@ -3469,6 +3470,7 @@ async function openListSelectionDialog(event: Office.AddinCommands.Event): Promi
 async function openListIdentifiedPrincipleDialog(event: Office.AddinCommands.Event): Promise<void> {
   try { await ensureDb(); } catch (err) { showNoSelectionMessage("Database Error", String(err), event); return; }
   const { personName, personEmail } = getUserIdentity();
+  const commConfig = getCommunicationConfig();
 
   function buildPayload(): DialogInitPayload {
     const principlesInSelection = getPrinciplesInSelection();
@@ -3479,6 +3481,7 @@ async function openListIdentifiedPrincipleDialog(event: Office.AddinCommands.Eve
     return {
       selection: "", mode: "selection", source: getSource(), personName, personEmail,
       applicationName: "", communicationFunction: "", communicationSignal: "", projectName: "", peopleList: [],
+      communicationPersonName: commConfig?.personName ?? "",
       principlesInSelection, filesByPrincipleInSelectionId,
     };
   }

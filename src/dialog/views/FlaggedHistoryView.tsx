@@ -778,7 +778,7 @@ export default function FlaggedHistoryView() {
       {interpretPrinciple && (
         <InterpretePrincipleDialog
           principle={interpretPrinciple}
-          defaultPerson={initData?.personName}
+          defaultPerson={initData?.communicationPersonName || initData?.personName}
           sendMessage={submitSave}
           onClose={() => setInterpretPrinciple(null)}
           onListIdentified={() => { setInterpretPrinciple(null); setShowIdentifiedList(true); }}
