@@ -1978,6 +1978,12 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
       dialog.addEventHandler(Office.EventType.DialogMessageReceived, (msg) => {
         const m = JSON.parse((msg as { message: string }).message) as DialogAction;
         if (m.action === "READY") {
+          void (async () => {
+          // Reload from durable storage first: a feedback saved in another runtime
+          // (the Provide / Apply flow) persists to storage but does NOT update this
+          // runtime's cached DB. Without this reload the list can read stale data and
+          // show "No feedback records" even though the record was saved (Point 23).
+          await reloadDbFromStorage();
           const { personName, personEmail } = getUserIdentity();
           // Opened directly on the "List of Feedback Requested" sub-view from the
           // Stats Overview "Feedback Requested" card — navigate straight there so
@@ -2022,6 +2028,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             },
           };
           dialog.messageChild(JSON.stringify(hostMsg));
+          })();
         }
         if (m.action === "DELETE_FEEDBACK") {
           try { deleteFeedback((m as { action: string; id: number }).id); }
