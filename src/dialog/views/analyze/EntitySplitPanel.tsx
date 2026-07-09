@@ -74,7 +74,6 @@ export function EntitySplitPanel({
       {showEntityBox && (
         <div
           style={{
-            position: "relative",
             height: entityOnlyMode ? undefined : entityPanelHeight,
             flex: entityOnlyMode ? 1 : undefined,
             flexShrink: 0,
@@ -83,7 +82,6 @@ export function EntitySplitPanel({
             overflow: "hidden",
           }}
         >
-          <CountBadge count={errorCount} color="#D13438" title={`${errorCount} identified error${errorCount === 1 ? "" : "s"}`} />
           <span style={{
             display: "block",
             fontSize: "11px",
@@ -96,26 +94,30 @@ export function EntitySplitPanel({
           }}>
             Entity Under Analysis
           </span>
-          <HtmlContent
-            html={euaHtml}
-            style={{
-              flex: 1,
-              margin: "0 20px",
-              marginBottom: entityOnlyMode ? 12 : 0,
-              border: "1px solid #E0E0E0",
-              borderRadius: 4,
-              padding: "10px 14px",
-              overflowY: "auto",
-              fontSize: "14px",
-              lineHeight: 1.7,
-              color: colors.grey11,
-              wordBreak: "break-word",
-              userSelect: "text",
-              fontFamily: "inherit",
-              background: colors.white,
-            }}
-            onContextMenu={handleEntityContextMenu}
-          />
+          {/* Relative wrapper carries the field margins so the count badge hugs the
+              entity field's bottom-right corner (matching the analysis badge). */}
+          <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", margin: "0 20px", marginBottom: entityOnlyMode ? 12 : 0 }}>
+            <HtmlContent
+              html={euaHtml}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                border: "1px solid #E0E0E0",
+                borderRadius: 4,
+                padding: "10px 14px",
+                overflowY: "auto",
+                fontSize: "14px",
+                lineHeight: 1.7,
+                color: colors.grey11,
+                wordBreak: "break-word",
+                userSelect: "text",
+                fontFamily: "inherit",
+                background: colors.white,
+              }}
+              onContextMenu={handleEntityContextMenu}
+            />
+            <CountBadge count={errorCount} color="#D13438" title={`${errorCount} identified error${errorCount === 1 ? "" : "s"}`} />
+          </div>
         </div>
       )}
 
