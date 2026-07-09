@@ -2,6 +2,7 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { makeStyles } from "@fluentui/react-components";
 import { RichEditor } from "@/dialog/components/RichEditor";
+import { CountBadge } from "@/dialog/views/analyze/CountBadge";
 import { colors } from "@/styles/tokens";
 
 const useStyles = makeStyles({
@@ -65,6 +66,8 @@ export interface AnalysisTabFormProps {
   onContextMenuCompensator?: (selectedText: string, range: Range | null) => void;
   onContextMenuGuideline?: (range: Range | null) => void;
   onContextMenuInsertToDocument?: (selectedText: string, html: string) => void;
+  /** Live count of identified compensators — shown as a badge on the analysis box. */
+  compensatorCount?: number;
 }
 
 function getSelectionHtml(sel: Selection | null): string {
@@ -103,6 +106,7 @@ export function AnalysisTabForm({
   onContextMenuCompensator,
   onContextMenuGuideline,
   onContextMenuInsertToDocument,
+  compensatorCount = 0,
 }: AnalysisTabFormProps) {
   const styles = useStyles();
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; text: string; html: string } | null>(null);
@@ -181,7 +185,7 @@ export function AnalysisTabForm({
 
       <div className={styles.formRowTop}>
         <span className={styles.formLabelTop}>Actual Analysis</span>
-        <div className={styles.formField} onContextMenu={handleEditorContextMenu}>
+        <div className={styles.formField} onContextMenu={handleEditorContextMenu} style={{ position: "relative" }}>
           <RichEditor
             ref={editorRef}
             value={actualAnalysis}
@@ -190,6 +194,7 @@ export function AnalysisTabForm({
             htmlContentStyling
             sanitizeOnPaste
           />
+          <CountBadge count={compensatorCount} color="#107C10" title={`${compensatorCount} identified compensator${compensatorCount === 1 ? "" : "s"}`} />
         </div>
       </div>
 

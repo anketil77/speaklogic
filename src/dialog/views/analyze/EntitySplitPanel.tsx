@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { colors } from "@/styles/tokens";
 import { HtmlContent } from "@/dialog/components/HtmlContent";
+import { CountBadge } from "@/dialog/views/analyze/CountBadge";
 
 type EntityViewMode = "both" | "analysis-only" | "entity-only";
 
@@ -11,6 +12,8 @@ interface EntitySplitPanelProps {
   entityOnlyMode: boolean;
   showEntityBox: boolean;
   onContextMenuError: (text: string) => void;
+  /** Live count of identified errors — shown as a badge on the entity box. */
+  errorCount?: number;
   children: React.ReactNode;
 }
 
@@ -21,6 +24,7 @@ export function EntitySplitPanel({
   entityOnlyMode,
   showEntityBox,
   onContextMenuError,
+  errorCount = 0,
   children,
 }: EntitySplitPanelProps) {
   const [entityPanelHeight, setEntityPanelHeight] = useState(130);
@@ -70,6 +74,7 @@ export function EntitySplitPanel({
       {showEntityBox && (
         <div
           style={{
+            position: "relative",
             height: entityOnlyMode ? undefined : entityPanelHeight,
             flex: entityOnlyMode ? 1 : undefined,
             flexShrink: 0,
@@ -78,6 +83,7 @@ export function EntitySplitPanel({
             overflow: "hidden",
           }}
         >
+          <CountBadge count={errorCount} color="#D13438" title={`${errorCount} identified error${errorCount === 1 ? "" : "s"}`} />
           <span style={{
             display: "block",
             fontSize: "11px",

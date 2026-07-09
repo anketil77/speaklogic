@@ -781,8 +781,10 @@ export default function AnalyzeView({ mode: _mode }: AnalyzeViewProps) {
             entityOnlyMode={entityOnlyMode}
             showEntityBox={showEntityBox}
             onContextMenuError={panels.handleContextMenuError}
+            errorCount={panels.errors.length}
           >
             <AnalysisTabForm
+              compensatorCount={panels.compensators.length}
               peopleList={initData.peopleList ?? []}
               fromPerson={form.fromPerson}
               onFromPersonChange={(v) => updateForm("fromPerson", v)}
