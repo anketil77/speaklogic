@@ -1823,6 +1823,19 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(),
             communicationPersonName: commConfig?.personName ?? "",
             communicationPersonEmail: commConfig?.personEmail ?? "",
+            analysisData: {
+              id: navM.analysisId,
+              entityUnderAnalysis: analysis.entityUnderAnalysis ?? "",
+              analysisSubject: analysis.analysisSubject ?? "",
+              actualAnalysis: analysis.actualAnalysis ?? "",
+              fromPerson: analysis.fromPerson ?? "",
+              errors: getErrorsByAnalysis(navM.analysisId),
+              compensators: getCompensatorsByAnalysis(navM.analysisId),
+              questions: getQuestionsByAnalysis(navM.analysisId),
+              answers: getAnswersByAnalysis(navM.analysisId),
+              files: getFilesByAnalysis(navM.analysisId),
+              correctedItems: [],
+            },
           };
           const navMsg: HostMessage = { type: "NAVIGATE", view: "provide-feedback", payload: providePayload };
           dialog.messageChild(JSON.stringify(navMsg));
@@ -1869,7 +1882,7 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
               html,
               fbPayload.toPersonEmail ?? "",
               fbPayload.feedback.feedbackSubject,
-              fbPayload.feedback.feedbackApplication,
+              html,
               (mailtoUrl) => {
                 dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
               },
