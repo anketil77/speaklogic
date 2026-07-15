@@ -278,6 +278,8 @@ function plainTextMailtoUrl(toEmail: string, subject: string, htmlBody: string):
   if (!toEmail) return "";
   const tmp = document.createElement("div");
   tmp.innerHTML = htmlBody;
+  // htmlBody may be a full wrapPage() document; textContent would otherwise leak raw <style>/<title> text into the body.
+  tmp.querySelectorAll("style, script, title, head").forEach((el) => el.remove());
   const bodyText = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim().slice(0, 1800);
   return `mailto:${encodeURIComponent(toEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
 }
@@ -297,8 +299,10 @@ function openHtmlEmailDraft(
           subject,
           htmlBody: html,
         });
+        dbg("HOST", "openHtmlEmailDraft: displayNewMessageForm called");
         onDone("");
-      } catch {
+      } catch (err) {
+        dbg("HOST", "openHtmlEmailDraft: displayNewMessageForm threw -> mailto fallback", String(err));
         onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
       }
     } else {
@@ -310,17 +314,21 @@ function openHtmlEmailDraft(
           { coercionType: Office.CoercionType.Html },
           (result: Office.AsyncResult<void>) => {
             if (result.status === Office.AsyncResultStatus.Succeeded) {
+              dbg("HOST", "openHtmlEmailDraft: body.setAsync succeeded (compose mode)");
               onDone("");
             } else {
+              dbg("HOST", "openHtmlEmailDraft: body.setAsync failed -> mailto fallback", String(result.error?.message));
               onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
             }
           }
         );
       } else {
+        dbg("HOST", "openHtmlEmailDraft: no displayNewMessageForm & no item.body.setAsync -> mailto fallback");
         onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
       }
     }
   } else {
+    dbg("HOST", "openHtmlEmailDraft: non-Outlook host -> mailto fallback");
     onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
   }
 }

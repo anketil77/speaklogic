@@ -691,6 +691,8 @@ function plainTextMailtoUrl(toEmail: string, subject: string, htmlBody: string):
   if (!toEmail) return "";
   const tmp = document.createElement("div");
   tmp.innerHTML = htmlBody;
+  // htmlBody may be a full wrapPage() document; textContent would otherwise leak raw <style>/<title> text into the body.
+  tmp.querySelectorAll("style, script, title, head").forEach((el) => el.remove());
   const bodyText = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim().slice(0, 1800);
   return `mailto:${encodeURIComponent(toEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
 }
