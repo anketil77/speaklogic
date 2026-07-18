@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { initDb, nowDate, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
 import { dbg } from "@/debug/log";
+import { openHtmlEmailDraft } from "@/shared/emailDraft";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { getKeywordRules, getKeywordSetting, saveKeywordRules, getKeywordHistory, deleteKeywordHistoryById, clearKeywordHistory } from "@/db/queries/keywords";
 import { acquireToken, getSignedInAccount, signOut } from "@/graph/auth";
@@ -272,65 +273,6 @@ function loadAnalysisForFeedback(analysisId: number | undefined): ProjectAnalysi
       answers: getAnswersByAnalysis(a.id),
     };
   } catch { return null; }
-}
-
-function plainTextMailtoUrl(toEmail: string, subject: string, htmlBody: string): string {
-  if (!toEmail) return "";
-  const tmp = document.createElement("div");
-  tmp.innerHTML = htmlBody;
-  // htmlBody may be a full wrapPage() document; textContent would otherwise leak raw <style>/<title> text into the body.
-  tmp.querySelectorAll("style, script, title, head").forEach((el) => el.remove());
-  const bodyText = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim().slice(0, 1800);
-  return `mailto:${encodeURIComponent(toEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
-}
-
-function openHtmlEmailDraft(
-  html: string,
-  toEmail: string,
-  subject: string,
-  htmlBodyForFallback: string,
-  onDone: (mailtoUrl: string) => void,
-): void {
-  if (Office.context.host === Office.HostType.Outlook) {
-    if (typeof Office.context.mailbox.displayNewMessageForm === "function") {
-      try {
-        Office.context.mailbox.displayNewMessageForm({
-          toRecipients: toEmail ? [toEmail] : [],
-          subject,
-          htmlBody: html,
-        });
-        dbg("HOST", "openHtmlEmailDraft: displayNewMessageForm called");
-        onDone("");
-      } catch (err) {
-        dbg("HOST", "openHtmlEmailDraft: displayNewMessageForm threw -> mailto fallback", String(err));
-        onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
-      }
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const item = Office.context.mailbox.item as any;
-      if (item?.body?.setAsync) {
-        item.body.setAsync(
-          html,
-          { coercionType: Office.CoercionType.Html },
-          (result: Office.AsyncResult<void>) => {
-            if (result.status === Office.AsyncResultStatus.Succeeded) {
-              dbg("HOST", "openHtmlEmailDraft: body.setAsync succeeded (compose mode)");
-              onDone("");
-            } else {
-              dbg("HOST", "openHtmlEmailDraft: body.setAsync failed -> mailto fallback", String(result.error?.message));
-              onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
-            }
-          }
-        );
-      } else {
-        dbg("HOST", "openHtmlEmailDraft: no displayNewMessageForm & no item.body.setAsync -> mailto fallback");
-        onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
-      }
-    }
-  } else {
-    dbg("HOST", "openHtmlEmailDraft: non-Outlook host -> mailto fallback");
-    onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
-  }
 }
 
 function buildPeopleList(commPersonName?: string): string[] {

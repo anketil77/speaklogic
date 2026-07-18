@@ -20,6 +20,7 @@ import { saveProblemSolution } from "@/db/queries/problem";
 import { saveEntity, getAllEntities, deleteEntity } from "@/db/queries/entity";
 import { getUserInformationItems, addUserInformationItem, deleteUserInformationItem } from "@/db/queries/information";
 import { dbg, clearLog } from "@/debug/log";
+import { openHtmlEmailDraft } from "@/shared/emailDraft";
 import { openInterpretedPrincipleReport, openIdentifiedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
 import { formatArticleForAnalysis } from "@/dialog/utils/formatArticleForAnalysis";
 import {
@@ -687,16 +688,6 @@ function buildMailtoUrl(payload: SaveFeedbackPayload): string {
   return `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
 }
 
-function plainTextMailtoUrl(toEmail: string, subject: string, htmlBody: string): string {
-  if (!toEmail) return "";
-  const tmp = document.createElement("div");
-  tmp.innerHTML = htmlBody;
-  // htmlBody may be a full wrapPage() document; textContent would otherwise leak raw <style>/<title> text into the body.
-  tmp.querySelectorAll("style, script, title, head").forEach((el) => el.remove());
-  const bodyText = (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim().slice(0, 1800);
-  return `mailto:${encodeURIComponent(toEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
-}
-
 function loadAnalysisForFeedback(analysisId: number | undefined): ProjectAnalysis | null {
   if (!analysisId) return null;
   try {
@@ -710,61 +701,6 @@ function loadAnalysisForFeedback(analysisId: number | undefined): ProjectAnalysi
       answers: getAnswersByAnalysis(a.id),
     };
   } catch { return null; }
-}
-
-// Opens an HTML-formatted email draft:
-//   Outlook read mode  → displayNewMessageForm with htmlBody
-//   Outlook compose    → setAsync into current item body
-//   Word / PowerPoint  → plain-text mailto: fallback
-// onDone receives "" when the draft was opened/injected, or a mailto URL for the fallback link.
-function openHtmlEmailDraft(
-  html: string,
-  toEmail: string,
-  subject: string,
-  htmlBodyForFallback: string,
-  onDone: (mailtoUrl: string) => void,
-): void {
-  if (Office.context.host === Office.HostType.Outlook) {
-    if (typeof Office.context.mailbox.displayNewMessageForm === "function") {
-      // Read mode: open a new compose window with the fully-formatted HTML body.
-      try {
-        Office.context.mailbox.displayNewMessageForm({
-          toRecipients: toEmail ? [toEmail] : [],
-          subject,
-          htmlBody: html,
-        });
-        dbg("HOST", "openHtmlEmailDraft: displayNewMessageForm called");
-        onDone("");
-      } catch (err) {
-        dbg("HOST", "openHtmlEmailDraft: displayNewMessageForm failed", String(err));
-        onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
-      }
-    } else {
-      // Compose mode: inject the HTML template into the body of the current compose window.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const item = Office.context.mailbox.item as any;
-      if (item?.body?.setAsync) {
-        item.body.setAsync(
-          html,
-          { coercionType: Office.CoercionType.Html },
-          (result: Office.AsyncResult<void>) => {
-            if (result.status === Office.AsyncResultStatus.Succeeded) {
-              dbg("HOST", "openHtmlEmailDraft: body.setAsync succeeded (compose mode)");
-              onDone("");
-            } else {
-              dbg("HOST", "openHtmlEmailDraft: body.setAsync failed", String(result.error?.message));
-              onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
-            }
-          }
-        );
-      } else {
-        onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
-      }
-    }
-  } else {
-    // Word / PowerPoint: mailto: link, plain text only.
-    onDone(plainTextMailtoUrl(toEmail, subject, htmlBodyForFallback));
-  }
 }
 
 async function openAnalyzeDialog(
@@ -993,7 +929,7 @@ function openAnalyzeDialogWithPayload(
                 html,
                 fbPayload.toPersonEmail ?? "",
                 fbPayload.feedback.feedbackSubject,
-                fbPayload.feedback.feedbackApplication,
+                html,
                 (mailtoUrl) => {
                   dbg("HOST", "openHtmlEmailDraft done", { mailtoUrl: mailtoUrl?.slice(0, 60) });
                   dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
@@ -3699,7 +3635,7 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
                 html,
                 fbPayload.toPersonEmail ?? "",
                 fbPayload.feedback.feedbackSubject,
-                fbPayload.feedback.feedbackApplication,
+                html,
                 (mailtoUrl) => {
                   dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
                 },

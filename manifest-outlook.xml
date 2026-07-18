@@ -31,7 +31,7 @@
 
   <Requirements>
     <Sets>
-      <Set Name="Mailbox" MinVersion="1.1"/>
+      <Set Name="Mailbox" MinVersion="1.6"/>
     </Sets>
   </Requirements>
 
@@ -69,7 +69,7 @@
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Requirements>
       <bt:Sets>
-        <bt:Set Name="Mailbox" MinVersion="1.1"/>
+        <bt:Set Name="Mailbox" MinVersion="1.6"/>
       </bt:Sets>
     </Requirements>
 
@@ -439,7 +439,7 @@
     <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides/1.1" xsi:type="VersionOverridesV1_1">
       <Requirements>
         <bt:Sets>
-          <bt:Set Name="Mailbox" MinVersion="1.3"/>
+          <bt:Set Name="Mailbox" MinVersion="1.6"/>
         </bt:Sets>
       </Requirements>
 
