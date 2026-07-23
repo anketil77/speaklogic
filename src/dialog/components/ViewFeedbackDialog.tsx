@@ -468,8 +468,12 @@ export function ViewFeedbackDialog({ feedback, onClose, onSolveProblem }: Props)
               <VfFormRow label="Application Name"><input style={vfReadonlyInput} value={feedback.applicationName || ""} readOnly /></VfFormRow>
               <VfFormRow label="Communication Function"><input style={vfReadonlyInput} value={feedback.communicationFunction || ""} readOnly /></VfFormRow>
               <VfFormRow label="Feedback Subject"><input style={vfReadonlyInput} value={feedback.feedbackSubject || ""} readOnly /></VfFormRow>
-              <VfFormRow label="Actual Error Substituted"><input style={vfReadonlyInput} value={feedback.actualErrorSubstituted || ""} readOnly /></VfFormRow>
-              <VfFormRow label="Actual Compensator Replaced"><input style={vfReadonlyInput} value={feedback.actualCompensatorReplaced || ""} readOnly /></VfFormRow>
+              {feedback.feedbackType !== "Provided" && (
+                <>
+                  <VfFormRow label="Actual Error Substituted"><input style={vfReadonlyInput} value={feedback.actualErrorSubstituted || ""} readOnly /></VfFormRow>
+                  <VfFormRow label="Actual Compensator Replaced"><input style={vfReadonlyInput} value={feedback.actualCompensatorReplaced || ""} readOnly /></VfFormRow>
+                </>
+              )}
               <VfFormRow label="From Person"><input style={vfReadonlyInput} value={feedback.fromPerson || ""} readOnly /></VfFormRow>
               <VfFormRow label="To Person"><input style={vfReadonlyInput} value={feedback.toPerson || ""} readOnly /></VfFormRow>
               <VfFormRow label="Feedback Type"><input style={vfReadonlyInput} value={feedback.feedbackType || ""} readOnly /></VfFormRow>

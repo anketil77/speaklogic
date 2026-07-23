@@ -728,6 +728,7 @@ async function openAnalyzeDialog(
   dbg("HOST", "selection obtained, building initPayload", { selectionLength: selection.length });
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
+  const resolvedPersonName = commConfig?.personName || personName || personEmail || "";
   const initPayload: DialogInitPayload = {
     selection,
     selectionHtml,
@@ -739,8 +740,8 @@ async function openAnalyzeDialog(
     communicationFunction: "",
     communicationSignal: "",
     projectName: "",
-    peopleList: buildPeopleList(commConfig?.personName),
-    communicationPersonName: commConfig?.personName ?? "",
+    peopleList: buildPeopleList(resolvedPersonName),
+    communicationPersonName: resolvedPersonName,
     communicationPersonEmail: commConfig?.personEmail ?? "",
   };
 
@@ -3964,6 +3965,7 @@ async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.Addin
   const entityName = buildEntityName(documentTitle, documentName, pageNumber, paragraphNumber);
   const { personName, personEmail } = getUserIdentity();
   const commConfig = getCommunicationConfig();
+  const resolvedPersonName = commConfig?.personName || personName || personEmail || "";
   openFlagDialog({
     selection,
     mode,
@@ -3974,8 +3976,8 @@ async function openFlagDialogFromRibbon(mode: SelectionMode, event: Office.Addin
     communicationFunction: "",
     communicationSignal: "",
     projectName: documentTitle,
-    peopleList: buildPeopleList(commConfig?.personName),
-    communicationPersonName: commConfig?.personName ?? "",
+    peopleList: buildPeopleList(resolvedPersonName),
+    communicationPersonName: resolvedPersonName,
     communicationPersonEmail: commConfig?.personEmail ?? "",
   }, event);
 }

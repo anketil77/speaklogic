@@ -78,8 +78,25 @@ import type {
 } from "@/types/db";
 
 const DIALOG_BASE = window.location.origin;
-const DIALOG_SIZE = { height: 69, width: 43 };
-const FLAG_DIALOG_SIZE = { height: 58, width: 25 };
+
+// Scales a base width % (tuned for 1920px screens) to the current screen size (mirrors commands.ts).
+function adaptiveWidth(base: number): number {
+  const sw = typeof window !== "undefined" && window.screen ? window.screen.width : 1920;
+  if (sw < 1280) return Math.round(base * 78 / 43);  // small / tablet
+  if (sw < 1440) return Math.round(base * 70 / 43);  // 13" laptop
+  if (sw <= 1512) return Math.round(base * 52 / 43); // 14" MacBook (1512px logical)
+  if (sw < 1920) return Math.round(base * 57 / 43);  // 15" MacBook / laptop
+  return base;                                        // full HD and larger (original default)
+}
+const DIALOG_SIZE = { height: 69, width: adaptiveWidth(43) };
+// Flag dialog: computed at call time via the same pixel formula as commands.ts openFlagDialog.
+function computeFlagDialogSize(): { height: number; width: number } {
+  const screenH = window.screen?.availHeight || 1080;
+  const screenW = window.screen?.availWidth || 1440;
+  const height = Math.min(75, Math.max(28, Math.round((433 / (screenH * 0.93)) * 100) + 4));
+  const width = Math.min(80, Math.max(22, Math.round((380 / (screenW * 0.95)) * 100)));
+  return { height, width };
+}
 const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: 25 };
 const ABOUT_DIALOG_SIZE = { height: 27, width: 32 };
 const COMM_CONFIG_SIZE = { height: 36, width: 28 };
@@ -515,7 +532,7 @@ export function OutlookTaskPane() {
     saveCommCtxToProps(newCtx);
   }, [saveCommCtxToProps]);
 
-  // Inject a visible "Speak Logic Context" block at the end of the email body.
+  // Inject a visible "Speak Logic Context" block at the top of the email body.
   // Recipients see it in any client; their sidebar parses it to auto-fill the panel.
   const handleAttachCtx = useCallback(() => {
     const ctx = commCtxRef.current;
@@ -529,7 +546,11 @@ export function OutlookTaskPane() {
         return;
       }
       const html = result.value.replace(CTX_MARKER_STRIP_RE, "");
-      item.body.setAsync(html + buildCtxMarker(ctx), { coercionType: Office.CoercionType.Html },
+      // getAsync often returns a full HTML document; insert after <body> so the card stays inside it.
+      const bodyOpen = /<body[^>]*>/i.exec(html);
+      const insertAt = bodyOpen ? bodyOpen.index + bodyOpen[0].length : 0;
+      const withCtx = html.slice(0, insertAt) + buildCtxMarker(ctx) + html.slice(insertAt);
+      item.body.setAsync(withCtx, { coercionType: Office.CoercionType.Html },
         (setResult: Office.AsyncResult<void>) => {
           if (setResult.status === Office.AsyncResultStatus.Succeeded) {
             setStatus({ msg: "Context attached to email.", ok: true });
@@ -564,11 +585,12 @@ export function OutlookTaskPane() {
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
+    const resolvedPersonName = commConfig?.personName || personName || personEmail || "";
     const initPayload: DialogInitPayload = {
       selection: text, mode, source: getSource(), personName, personEmail,
       applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName,
-      peopleList: buildPeopleList(commConfig?.personName),
-      communicationPersonName: commConfig?.personName ?? "",
+      peopleList: buildPeopleList(resolvedPersonName),
+      communicationPersonName: resolvedPersonName,
       communicationPersonEmail: commConfig?.personEmail ?? "",
     };
     openManagedDialog(
@@ -643,15 +665,16 @@ export function OutlookTaskPane() {
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
+    const resolvedPersonName = commConfig?.personName || personName || personEmail || "";
     const initPayload: DialogInitPayload = {
       selection: text, mode, source: getSource(), personName, personEmail,
-      applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [],
-      communicationPersonName: commConfig?.personName ?? "",
+      applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: buildPeopleList(resolvedPersonName),
+      communicationPersonName: resolvedPersonName,
       communicationPersonEmail: commConfig?.personEmail ?? "",
     };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=flag&mode=${mode}`,
-      FLAG_DIALOG_SIZE,
+      computeFlagDialogSize(),
       () => initPayload,
       (dialog, action) => {
         if (action.action === "SAVE_FLAG") {
@@ -1762,7 +1785,7 @@ export function OutlookTaskPane() {
         {isComposeMode() && (
           <button
             onClick={handleAttachCtx}
-            title="Insert a visible context card at the end of this email so the recipient's sidebar can auto-fill these fields"
+            title="Insert a visible context card at the top of this email so the recipient's sidebar can auto-fill these fields"
             onMouseEnter={(e) => { e.currentTarget.style.background = "#EBF3FC"; e.currentTarget.style.borderColor = "#0078D4"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.borderColor = "#C7C7C7"; }}
             style={{ marginTop: 10, width: "100%", height: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: "#FFFFFF", border: "1px solid #C7C7C7", borderRadius: 3, cursor: "pointer", fontSize: 11, fontWeight: 600, color: "#0078D4", fontFamily: "inherit", transition: "background 0.12s, border-color 0.12s" }}

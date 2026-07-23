@@ -14,6 +14,7 @@ import { ViewAnswerDialog } from "@/dialog/components/ViewAnswerDialog";
 import { ViewFileInformationDialog } from "@/dialog/components/ViewFileInformationDialog";
 import { ViewProblemDialog } from "@/dialog/components/ViewProblemDialog";
 import { AnalysisModelDialog } from "@/dialog/components/AnalysisModelDialog";
+import { CountBadge } from "@/dialog/views/analyze/CountBadge";
 import {
   CloseIcon,
   AnalysisHistoryHeaderIcon,
@@ -334,22 +335,25 @@ function TabContent({
         {showEntity && (
           <>
             <SectionLabel>Entity Under Analysis</SectionLabel>
-            <div
-              style={{
-                minHeight: 64,
-                maxHeight: 120,
-                overflowY: "auto",
-                border: `1px solid ${C.grey78}`,
-                borderRadius: 4,
-                padding: "8px 11px",
-                fontSize: "12.2px",
-                fontFamily: "inherit",
-                color: C.grey11,
-                background: C.grey96,
-                lineHeight: "20px",
-              }}
-              dangerouslySetInnerHTML={{ __html: analysis.entityUnderAnalysis || "" }}
-            />
+            <div style={{ position: "relative" }}>
+              <div
+                style={{
+                  minHeight: 64,
+                  maxHeight: 120,
+                  overflowY: "auto",
+                  border: `1px solid ${C.grey78}`,
+                  borderRadius: 4,
+                  padding: "8px 11px",
+                  fontSize: "12.2px",
+                  fontFamily: "inherit",
+                  color: C.grey11,
+                  background: C.grey96,
+                  lineHeight: "20px",
+                }}
+                dangerouslySetInnerHTML={{ __html: analysis.entityUnderAnalysis || "" }}
+              />
+              <CountBadge count={analysis.errors?.length ?? 0} color="#D13438" title={`${analysis.errors?.length ?? 0} identified error${(analysis.errors?.length ?? 0) === 1 ? "" : "s"}`} />
+            </div>
           </>
         )}
 
@@ -409,21 +413,24 @@ function TabContent({
             <Divider />
 
             <FormRow label="Actual Analysis" alignTop>
-              <div
-                style={{
-                  minHeight: 100,
-                  border: `1px solid ${C.grey78}`,
-                  borderRadius: 4,
-                  padding: "8px 11px",
-                  fontSize: "12.2px",
-                  fontFamily: "inherit",
-                  color: C.grey11,
-                  background: C.grey96,
-                  lineHeight: "20px",
-                  overflowY: "auto",
-                }}
-                dangerouslySetInnerHTML={{ __html: analysis.actualAnalysis || "" }}
-              />
+              <div style={{ position: "relative" }}>
+                <div
+                  style={{
+                    minHeight: 100,
+                    border: `1px solid ${C.grey78}`,
+                    borderRadius: 4,
+                    padding: "8px 11px",
+                    fontSize: "12.2px",
+                    fontFamily: "inherit",
+                    color: C.grey11,
+                    background: C.grey96,
+                    lineHeight: "20px",
+                    overflowY: "auto",
+                  }}
+                  dangerouslySetInnerHTML={{ __html: analysis.actualAnalysis || "" }}
+                />
+                <CountBadge count={analysis.compensators?.length ?? 0} color="#107C10" title={`${analysis.compensators?.length ?? 0} identified compensator${(analysis.compensators?.length ?? 0) === 1 ? "" : "s"}`} />
+              </div>
             </FormRow>
           </>
         )}

@@ -509,8 +509,10 @@ export default function RequestFeedbackView() {
 
             {/* Communication Signal */}
             <div style={rowStyle}>
-              <span style={labelStyle}>Communication Signal</span>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", flexShrink: 0, marginRight: 6, background: SIGNAL_DOT_COLOR[form.communicationSignalType] ?? "transparent", border: "1px solid #C7C7C7", display: "inline-block" }} />
+              <span style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 6 }}>
+                Communication Signal
+                <span style={{ width: 10, height: 10, borderRadius: "50%", flexShrink: 0, background: SIGNAL_DOT_COLOR[form.communicationSignalType] ?? "transparent", border: "1px solid #C7C7C7", display: "inline-block" }} />
+              </span>
               <select
                 style={selectStyle}
                 value={form.communicationSignalType}

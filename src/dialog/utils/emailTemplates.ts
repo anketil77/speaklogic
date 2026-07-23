@@ -255,8 +255,6 @@ function buildProvideFeedbackWithAnalysis(
 ): string {
   const provideFbSection = section("icon-provide.png", "Provide Feedback", [
     fieldRow("Feedback Subject", esc(fb.feedbackSubject)),
-    fieldRow("Actual Error Substituted", esc(fb.actualErrorSubstituted) || "—"),
-    fieldRow("Actual Compensator Replaced", esc(fb.actualCompensatorReplaced) || "—"),
     blockField("Actual Feedback Provided", esc(stripHtml(fb.feedbackApplication))),
   ].join(""));
 
@@ -306,8 +304,6 @@ function buildProvideFeedbackWithSelection(fb: SaveFeedbackPayload["feedback"]):
     fieldRow("Application Name", esc(fb.applicationName)),
     fieldRow("Communication Function", esc(fb.communicationFunction)),
     fieldRow("Feedback Subject", esc(fb.feedbackSubject)),
-    fieldRow("Actual Error Substituted", esc(fb.actualErrorSubstituted) || "—"),
-    fieldRow("Actual Compensator Replaced", esc(fb.actualCompensatorReplaced) || "—"),
     fieldRow("From Person", esc(fb.fromPerson)),
     fieldRow("To Person", esc(fb.toPerson)),
     fieldRow("Feedback Type", esc(fb.feedbackType)),
