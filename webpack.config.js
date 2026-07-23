@@ -30,6 +30,10 @@ module.exports = async (env, options) => {
         import: ["./src/taskpane/index.tsx", "./src/taskpane/index.html"],
         dependOn: "react",
       },
+      identity: {
+        import: ["./src/identity/identity.tsx", "./src/identity/identity.html"],
+        dependOn: "react",
+      },
     },
     output: {
       clean: true,
@@ -93,6 +97,11 @@ module.exports = async (env, options) => {
         // loads command handlers when the document opens. Outlook still uses
         // commands.html via Commands.Url since it can't use a shared runtime.
         chunks: ["polyfill", "taskpane", "react", "commands"],
+      }),
+      new HtmlWebpackPlugin({
+        filename: "identity.html",
+        template: "./src/identity/identity.html",
+        chunks: ["polyfill", "identity", "react"],
       }),
       new CopyWebpackPlugin({
         patterns: [

@@ -248,6 +248,12 @@
                   <Icon><bt:Image size="16" resid="Icon.16x16"/><bt:Image size="32" resid="Icon.32x32"/><bt:Image size="80" resid="Icon.80x80"/></Icon>
                   <Action xsi:type="ShowTaskpane"><SourceLocation resid="taskpane.Url"/></Action>
                 </Control>
+                <Control xsi:type="Button" id="identityCheck_OL_v10">
+                  <Label resid="identityCheck.Label"/>
+                  <Supertip><Title resid="identityCheck.Label"/><Description resid="identityCheck.Tooltip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="about.Icon16"/><bt:Image size="32" resid="about.Icon32"/><bt:Image size="80" resid="about.Icon80"/></Icon>
+                  <Action xsi:type="ShowTaskpane"><SourceLocation resid="Identity.Url"/></Action>
+                </Control>
               </Group>
 
               <Label resid="tabSpeakLogic.Label"/>
@@ -351,6 +357,7 @@
       <bt:Urls>
         <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/commands.html"/>
         <bt:Url id="taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
+        <bt:Url id="Identity.Url" DefaultValue="https://localhost:3000/identity.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="tabSpeakLogic.Label" DefaultValue="Speak Logic"/>
@@ -393,6 +400,7 @@
         <bt:String id="speakLogicInfoMenu.Label" DefaultValue="Speak Logic Information Analysis"/>
         <bt:String id="helpArticle.Label" DefaultValue="Open Help Article Document"/>
         <bt:String id="openSidebar.Label" DefaultValue="Open Sidebar"/>
+        <bt:String id="identityCheck.Label" DefaultValue="Identity Check"/>
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="analyzeSelection.Tooltip" DefaultValue="Analyze the selected text"/>
@@ -428,6 +436,7 @@
         <bt:String id="speakLogicInfoMenu.Tooltip" DefaultValue="Access help, about, and configuration options"/>
         <bt:String id="helpArticle.Tooltip" DefaultValue="Open the help article document"/>
         <bt:String id="openSidebar.Tooltip" DefaultValue="Open the Speak Logic sidebar panel"/>
+        <bt:String id="identityCheck.Tooltip" DefaultValue="Show the signed-in Microsoft identity (diagnostic)"/>
       </bt:LongStrings>
     </Resources>
 
@@ -627,6 +636,12 @@
                     <Supertip><Title resid="openSidebar.Label.v11"/><Description resid="openSidebar.Tooltip.v11"/></Supertip>
                     <Icon><bt:Image size="16" resid="Icon.16x16.v11"/><bt:Image size="32" resid="Icon.32x32.v11"/><bt:Image size="80" resid="Icon.80x80.v11"/></Icon>
                     <Action xsi:type="ShowTaskpane"><SourceLocation resid="taskpane.Url.v11"/></Action>
+                  </Control>
+                  <Control xsi:type="Button" id="identityCheck_OL_v11">
+                    <Label resid="identityCheck.Label.v11"/>
+                    <Supertip><Title resid="identityCheck.Label.v11"/><Description resid="identityCheck.Tooltip.v11"/></Supertip>
+                    <Icon><bt:Image size="16" resid="about.Icon16.v11"/><bt:Image size="32" resid="about.Icon32.v11"/><bt:Image size="80" resid="about.Icon80.v11"/></Icon>
+                    <Action xsi:type="ShowTaskpane"><SourceLocation resid="Identity.Url.v11"/></Action>
                   </Control>
                 </Group>
 
@@ -893,6 +908,7 @@
         <bt:Urls>
           <bt:Url id="Commands.Url.v11" DefaultValue="https://localhost:3000/commands.html"/>
           <bt:Url id="taskpane.Url.v11" DefaultValue="https://localhost:3000/taskpane.html"/>
+          <bt:Url id="Identity.Url.v11" DefaultValue="https://localhost:3000/identity.html"/>
           <bt:Url id="WebViewRuntime.Url" DefaultValue="https://localhost:3000/commands.html"/>
           <bt:Url id="JSRuntime.Url" DefaultValue="https://localhost:3000/commands.js"/>
         </bt:Urls>
@@ -936,6 +952,7 @@
           <bt:String id="speakLogicInfoMenu.Label.v11" DefaultValue="Speak Logic Information Analysis"/>
           <bt:String id="helpArticle.Label.v11" DefaultValue="Open Help Article Document"/>
           <bt:String id="openSidebar.Label.v11" DefaultValue="Open Sidebar"/>
+          <bt:String id="identityCheck.Label.v11" DefaultValue="Identity Check"/>
         </bt:ShortStrings>
         <bt:LongStrings>
           <bt:String id="analyzeSelection.Tooltip.v11" DefaultValue="Analyze the selected text"/>
@@ -970,6 +987,7 @@
           <bt:String id="speakLogicInfoMenu.Tooltip.v11" DefaultValue="Access help, about, and configuration options"/>
           <bt:String id="helpArticle.Tooltip.v11" DefaultValue="Open the help article document"/>
           <bt:String id="openSidebar.Tooltip.v11" DefaultValue="Open the Speak Logic sidebar panel"/>
+          <bt:String id="identityCheck.Tooltip.v11" DefaultValue="Show the signed-in Microsoft identity (diagnostic)"/>
         </bt:LongStrings>
       </Resources>
 

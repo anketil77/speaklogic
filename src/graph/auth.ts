@@ -78,6 +78,22 @@ export async function acquireTokenSilentOnly(): Promise<string | null> {
   }
 }
 
+/**
+ * NAA broker SSO — resolves the CURRENT signed-in Office user with no popup and
+ * no pre-cached account. acquireTokenSilent needs an existing cached account
+ * (so it fails on a first run, e.g. Word on the web); ssoSilent asks the Office
+ * identity broker for the active user directly. Returns null if unavailable.
+ */
+export async function ssoSilentAccount(): Promise<AccountInfo | null> {
+  try {
+    const pca = await getMsalInstance();
+    const result = await pca.ssoSilent({ scopes: GRAPH_SCOPES });
+    return result.account ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getSignedInAccount(): Promise<AccountInfo | null> {
   try {
     const pca = await getMsalInstance();
