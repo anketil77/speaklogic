@@ -155,13 +155,10 @@ function buildCtxMarker(ctx: CommCtxValues): string {
   );
 }
 
-const CTX_MARKER_STRIP_RE = /<div[^>]*id=["']?sl-comm-ctx["']?[^>]*>[\s\S]*?<\/div>/gi;
+// Outlook on the web prefixes ids on round-trip (sl-comm-ctx → x_sl-comm-ctx), so allow a prefix.
+const CTX_MARKER_STRIP_RE = /<div[^>]*id=["']?[\w-]*sl-comm-ctx["']?[^>]*>[\s\S]*?<\/div>/gi;
 const CTX_ON_TOP_KEY = "sl_ctx_on_top";
-
-function hasCommCtxValues(c: CommCtxValues): boolean {
-  return Boolean(c.appName || c.commFunction || c.commSignal || c.projectName);
-}
-const CTX_MARKER_DATA_RE = /<span[^>]*id=["']?sl-comm-ctx-data["']?[^>]*>([\s\S]*?)<\/span>/i;
+const CTX_MARKER_DATA_RE = /<span[^>]*id=["']?[\w-]*sl-comm-ctx-data["']?[^>]*>([\s\S]*?)<\/span>/i;
 
 // Subject stamp — readable fallback so recipients WITHOUT the add-in still see the
 // context (the body marker only auto-fills the panel if both sides have the add-in).
@@ -170,7 +167,8 @@ function buildSubjectStamp(ctx: CommCtxValues): string {
   return `Application[${ctx.appName}] Communication Function [${ctx.commFunction}] Communication Signal [${ctx.commSignal}]`;
 }
 // Strip a previously appended stamp (and its "; " separator) so re-attaching never duplicates it.
-const SUBJECT_STAMP_RE = /\s*;\s*Application\[[^\]]*\]\s*Communication Function\s*\[[^\]]*\]\s*Communication Signal\s*\[[^\]]*\]\s*$/i;
+// The ";" is optional: on a blank subject the stamp is written alone, and must still strip.
+const SUBJECT_STAMP_RE = /(?:(?:\s*;)?\s*Application\[[^\]]*\]\s*Communication Function\s*\[[^\]]*\]\s*Communication Signal\s*\[[^\]]*\])+\s*$/i;
 // Parse a stamped subject back into context values (final fallback on receive — appName + commFunction + commSignal only; projectName isn't carried in the subject).
 const SUBJECT_STAMP_PARSE_RE = /Application\[([^\]]*)\]\s*Communication Function\s*\[([^\]]*)\]\s*Communication Signal\s*\[([^\]]*)\]/i;
 function parseSubjectStamp(subject: string): CommCtxValues | null {
@@ -378,7 +376,7 @@ export function OutlookTaskPane() {
   const [ctxOnTop, setCtxOnTop] = useState(() => {
     try { return localStorage.getItem(CTX_ON_TOP_KEY) === "1"; } catch { return false; }
   });
-  const autoCtxDoneRef = useRef(false);
+  const ctxOnTopRef = useRef(ctxOnTop);
   const [msAccount, setMsAccount] = useState<string | null>(null);
   // Point 12 — Outlook can't expose a highlighted selection in a received (read-mode) email
   // (getSelectedDataAsync is compose-only). When a "Selection" button is pressed in read mode
@@ -558,11 +556,13 @@ export function OutlookTaskPane() {
       // getAsync often returns a full HTML document; insert after <body> so the card stays inside it.
       const bodyOpen = /<body[^>]*>/i.exec(html);
       const insertAt = bodyOpen ? bodyOpen.index + bodyOpen[0].length : 0;
-      const withCtx = html.slice(0, insertAt) + buildCtxMarker(ctx) + html.slice(insertAt);
+      const withCtx = ctxOnTopRef.current
+        ? html.slice(0, insertAt) + buildCtxMarker(ctx) + html.slice(insertAt)
+        : html;
       item.body.setAsync(withCtx, { coercionType: Office.CoercionType.Html },
         (setResult: Office.AsyncResult<void>) => {
           if (setResult.status === Office.AsyncResultStatus.Succeeded) {
-            setStatus({ msg: "Context attached to email.", ok: true });
+            setStatus({ msg: ctxOnTopRef.current ? "Context attached to email." : "Context removed from email body.", ok: true });
             setTimeout(() => setStatus(null), 2500);
           } else {
             setStatus({ msg: "Failed to attach context.", ok: false });
@@ -581,39 +581,12 @@ export function OutlookTaskPane() {
     }
   }, []);
 
-  const handleRemoveCtx = useCallback(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const item = Office.context.mailbox.item as any;
-    if (!item?.body) return;
-    item.body.getAsync(Office.CoercionType.Html, (result: Office.AsyncResult<string>) => {
-      if (result.status !== Office.AsyncResultStatus.Succeeded) return;
-      const stripped = result.value.replace(CTX_MARKER_STRIP_RE, "");
-      if (stripped !== result.value) item.body.setAsync(stripped, { coercionType: Office.CoercionType.Html }, () => {});
-    });
-    if (item.subject?.getAsync) {
-      item.subject.getAsync((subRes: Office.AsyncResult<string>) => {
-        if (subRes.status !== Office.AsyncResultStatus.Succeeded) return;
-        const base = (subRes.value || "").replace(SUBJECT_STAMP_RE, "").trim();
-        if (base !== (subRes.value || "").trim()) item.subject.setAsync(base);
-      });
-    }
-  }, []);
-
+  // Preference only — nothing is written to the email until "Attach Context to Email" is clicked.
   const toggleCtxOnTop = useCallback((on: boolean) => {
     try { localStorage.setItem(CTX_ON_TOP_KEY, on ? "1" : "0"); } catch { /* storage blocked */ }
+    ctxOnTopRef.current = on;
     setCtxOnTop(on);
-    if (!on) { autoCtxDoneRef.current = false; handleRemoveCtx(); return; }
-    // Blank context would insert a card of "-" placeholders; let the effect attach once fields are filled.
-    if (hasCommCtxValues(commCtxRef.current)) { autoCtxDoneRef.current = true; handleAttachCtx(); }
-  }, [handleAttachCtx, handleRemoveCtx]);
-
-  // Opted-in users get the card without clicking; runs once per item, after the context loads.
-  useEffect(() => {
-    if (autoCtxDoneRef.current || !ctxOnTop || !isComposeMode()) return;
-    if (!hasCommCtxValues(commCtxRef.current)) return;
-    autoCtxDoneRef.current = true;
-    handleAttachCtx();
-  }, [commCtx, ctxOnTop, handleAttachCtx]);
+  }, []);
 
   const handleAnalyze = useCallback(async (mode: SelectionMode, overrideText?: string) => {
     if (!dbReady) return;
@@ -1826,12 +1799,15 @@ export function OutlookTaskPane() {
           </div>
         </div>
         {isComposeMode() && (
-          <label style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#1B1B1B", cursor: "pointer" }}>
+          <label
+            title="When checked, Attach Context to Email places the context card at the top of the message"
+            style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 500, color: "#616161", cursor: "pointer", userSelect: "none" }}
+          >
             <input
               type="checkbox"
               checked={ctxOnTop}
               onChange={(e) => toggleCtxOnTop(e.target.checked)}
-              style={{ margin: 0, cursor: "pointer" }}
+              style={{ width: 12, height: 12, margin: 0, accentColor: "#0078D4", cursor: "pointer" }}
             />
             Include context on top
           </label>
