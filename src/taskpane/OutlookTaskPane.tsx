@@ -97,13 +97,13 @@ function computeFlagDialogSize(): { height: number; width: number } {
   const width = Math.min(80, Math.max(22, Math.round((380 / (screenW * 0.95)) * 100)));
   return { height, width };
 }
-const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: 25 };
-const ABOUT_DIALOG_SIZE = { height: 27, width: 32 };
-const COMM_CONFIG_SIZE = { height: 36, width: 28 };
-const CREATE_ARTICLE_PICKER_SIZE = { height: 20, width: 14 };
-const CREATE_ARTICLE_TEMPLATE_SIZE = { height: 56, width: 27 };
-const CREATE_ARTICLE_DIALOG_SIZE = { height: 61, width: 27 };
-const ARTICLE_WIZARD_SIZE = { height: 53, width: 27 };
+const SELECTION_CONFIG_DIALOG_SIZE = { height: 52, width: adaptiveWidth(25) };
+const ABOUT_DIALOG_SIZE = { height: 27, width: adaptiveWidth(32) };
+const COMM_CONFIG_SIZE = { height: 36, width: adaptiveWidth(28) };
+const CREATE_ARTICLE_PICKER_SIZE = { height: 30, width: adaptiveWidth(16) };
+const CREATE_ARTICLE_TEMPLATE_SIZE = { height: 56, width: adaptiveWidth(27) };
+const CREATE_ARTICLE_DIALOG_SIZE = { height: 61, width: adaptiveWidth(27) };
+const ARTICLE_WIZARD_SIZE = { height: 53, width: adaptiveWidth(27) };
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -156,6 +156,11 @@ function buildCtxMarker(ctx: CommCtxValues): string {
 }
 
 const CTX_MARKER_STRIP_RE = /<div[^>]*id=["']?sl-comm-ctx["']?[^>]*>[\s\S]*?<\/div>/gi;
+const CTX_ON_TOP_KEY = "sl_ctx_on_top";
+
+function hasCommCtxValues(c: CommCtxValues): boolean {
+  return Boolean(c.appName || c.commFunction || c.commSignal || c.projectName);
+}
 const CTX_MARKER_DATA_RE = /<span[^>]*id=["']?sl-comm-ctx-data["']?[^>]*>([\s\S]*?)<\/span>/i;
 
 // Subject stamp — readable fallback so recipients WITHOUT the add-in still see the
@@ -370,6 +375,10 @@ export function OutlookTaskPane() {
   const commCtxRef = useRef({ appName: "", commFunction: "", commSignal: "", projectName: "" });
   const [commCtx, setCommCtx] = useState(commCtxRef.current);
   const [commCtxOpen, setCommCtxOpen] = useState(true);
+  const [ctxOnTop, setCtxOnTop] = useState(() => {
+    try { return localStorage.getItem(CTX_ON_TOP_KEY) === "1"; } catch { return false; }
+  });
+  const autoCtxDoneRef = useRef(false);
   const [msAccount, setMsAccount] = useState<string | null>(null);
   // Point 12 — Outlook can't expose a highlighted selection in a received (read-mode) email
   // (getSelectedDataAsync is compose-only). When a "Selection" button is pressed in read mode
@@ -571,6 +580,40 @@ export function OutlookTaskPane() {
       });
     }
   }, []);
+
+  const handleRemoveCtx = useCallback(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const item = Office.context.mailbox.item as any;
+    if (!item?.body) return;
+    item.body.getAsync(Office.CoercionType.Html, (result: Office.AsyncResult<string>) => {
+      if (result.status !== Office.AsyncResultStatus.Succeeded) return;
+      const stripped = result.value.replace(CTX_MARKER_STRIP_RE, "");
+      if (stripped !== result.value) item.body.setAsync(stripped, { coercionType: Office.CoercionType.Html }, () => {});
+    });
+    if (item.subject?.getAsync) {
+      item.subject.getAsync((subRes: Office.AsyncResult<string>) => {
+        if (subRes.status !== Office.AsyncResultStatus.Succeeded) return;
+        const base = (subRes.value || "").replace(SUBJECT_STAMP_RE, "").trim();
+        if (base !== (subRes.value || "").trim()) item.subject.setAsync(base);
+      });
+    }
+  }, []);
+
+  const toggleCtxOnTop = useCallback((on: boolean) => {
+    try { localStorage.setItem(CTX_ON_TOP_KEY, on ? "1" : "0"); } catch { /* storage blocked */ }
+    setCtxOnTop(on);
+    if (!on) { autoCtxDoneRef.current = false; handleRemoveCtx(); return; }
+    // Blank context would insert a card of "-" placeholders; let the effect attach once fields are filled.
+    if (hasCommCtxValues(commCtxRef.current)) { autoCtxDoneRef.current = true; handleAttachCtx(); }
+  }, [handleAttachCtx, handleRemoveCtx]);
+
+  // Opted-in users get the card without clicking; runs once per item, after the context loads.
+  useEffect(() => {
+    if (autoCtxDoneRef.current || !ctxOnTop || !isComposeMode()) return;
+    if (!hasCommCtxValues(commCtxRef.current)) return;
+    autoCtxDoneRef.current = true;
+    handleAttachCtx();
+  }, [commCtx, ctxOnTop, handleAttachCtx]);
 
   const handleAnalyze = useCallback(async (mode: SelectionMode, overrideText?: string) => {
     if (!dbReady) return;
@@ -1782,6 +1825,17 @@ export function OutlookTaskPane() {
             </div>
           </div>
         </div>
+        {isComposeMode() && (
+          <label style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#1B1B1B", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={ctxOnTop}
+              onChange={(e) => toggleCtxOnTop(e.target.checked)}
+              style={{ margin: 0, cursor: "pointer" }}
+            />
+            Include context on top
+          </label>
+        )}
         {isComposeMode() && (
           <button
             onClick={handleAttachCtx}
