@@ -15,6 +15,10 @@ export interface FlagEntityForAnalysis {
   personEmail: string;
   wasEntityAnalyzed?: string;
   articleId?: number;
+  // Set when flagged from an Outlook email: lets "View Message" reopen the source email.
+  messageItemId?: string;
+  emailDate?: string;
+  emailTime?: string;
 }
 
 export interface FlaggedArticle {
@@ -892,6 +896,7 @@ export type DialogAction =
   | { action: "DELETE_KEYWORD_HISTORY"; id: number }
   | { action: "CLEAR_KEYWORD_HISTORY" }
   | { action: "VIEW_KEYWORD_MESSAGE"; itemId: string }
+  | { action: "VIEW_FLAGGED_MESSAGE"; itemId: string }
   | { action: "SAVE_FLAG"; payload: FlagEntityForAnalysis }
   | { action: "SAVE_USER_INFO_ITEM"; name: string; html: string }
   | { action: "DELETE_USER_INFO_ITEM"; id: number }

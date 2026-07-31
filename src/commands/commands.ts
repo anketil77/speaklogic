@@ -3927,6 +3927,15 @@ function openFlagDialog(initPayload: DialogInitPayload, addInEvent: Office.Addin
             break;
           case "SAVE_FLAG": {
             const flag = m.payload as Omit<FlagEntityForAnalysis, "id">;
+            // Outlook only: capture the source email so "View Message" can reopen it later.
+            if (Office.context.host === Office.HostType.Outlook) {
+              try {
+                const mailItem = Office.context.mailbox?.item as { itemId?: string; dateTimeCreated?: Date } | undefined;
+                flag.messageItemId = mailItem?.itemId ?? "";
+                const dt = mailItem?.dateTimeCreated;
+                if (dt) { flag.emailDate = dt.toISOString().slice(0, 10); flag.emailTime = dt.toTimeString().slice(0, 8); }
+              } catch { /* read mode unavailable — leave empty, button just won't show */ }
+            }
             try {
               saveFlag(flag);
             } catch (err) {

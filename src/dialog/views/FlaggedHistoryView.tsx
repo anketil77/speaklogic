@@ -710,6 +710,7 @@ export default function FlaggedHistoryView() {
         <ViewSelectionDialog
           flag={viewSelection}
           onClose={() => setViewSelection(null)}
+          onViewMessage={() => { if (viewSelection.messageItemId) sendMessage({ action: "VIEW_FLAGGED_MESSAGE", itemId: viewSelection.messageItemId }); }}
           onAnalyze={() => { sendMessage({ action: "ANALYZE_FROM_HISTORY", flag: viewSelection }); setViewSelection(null); }}
           onProvideFeedback={() => { sendMessage({ action: "PROVIDE_FROM_HISTORY", flag: viewSelection }); setViewSelection(null); }}
           onApplyFeedback={() => { sendMessage({ action: "APPLY_FROM_HISTORY", flag: viewSelection }); setViewSelection(null); }}

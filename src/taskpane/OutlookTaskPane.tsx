@@ -62,6 +62,7 @@ import type {
   AttachFileToProject,
   DialogAction,
   DialogInitPayload,
+  FlagEntityForAnalysis,
   HostMessage,
   PrincipleInterpretation,
   SaveAnalysisPayload,
@@ -113,6 +114,12 @@ function getSource(): "Outlook Mail" { return "Outlook Mail"; }
 function plainText(html: string | undefined | null): string {
   if (!html) return "";
   return html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
+}
+
+// A stored flag selection is only HTML if it already carries tags; plain text stays plain (mirrors commands.ts).
+function flagSelectionToHtml(text: string | undefined | null): string {
+  if (!text) return "";
+  return /<\w+[^>]*>/.test(text) ? text : "";
 }
 
 // Compose mode: subject exposes setAsync (compose-only API); read mode: subject is a plain string.
@@ -370,6 +377,8 @@ export function OutlookTaskPane() {
   const [status, setStatus] = useState<{ msg: string; ok: boolean } | null>(null);
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
   const dialogRef = useRef<Office.Dialog | null>(null);
+  // Once a flagged-history row navigates to analyze/apply/provide, later dialog messages route here.
+  const historyDelegateRef = useRef<((dialog: Office.Dialog, action: DialogAction) => void) | null>(null);
   const commCtxRef = useRef({ appName: "", commFunction: "", commSignal: "", projectName: "" });
   const [commCtx, setCommCtx] = useState(commCtxRef.current);
   const [commCtxOpen, setCommCtxOpen] = useState(true);
@@ -588,32 +597,7 @@ export function OutlookTaskPane() {
     setCtxOnTop(on);
   }, []);
 
-  const handleAnalyze = useCallback(async (mode: SelectionMode, overrideText?: string) => {
-    if (!dbReady) return;
-    let text = overrideText ?? "";
-    if (overrideText == null) {
-      try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
-    }
-    if (!text) {
-      if (mode === "selection" && !isComposeMode()) { setPasteRequest({ action: "analyze", mode }); return; }
-      setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return;
-    }
-    const { personName, personEmail } = getUserIdentity();
-    const commConfig = getCommunicationConfig();
-    const subject = await readSubject();
-    const resolvedPersonName = commConfig?.personName || personName || personEmail || "";
-    const initPayload: DialogInitPayload = {
-      selection: text, mode, source: getSource(), personName, personEmail,
-      applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName,
-      peopleList: buildPeopleList(resolvedPersonName),
-      communicationPersonName: resolvedPersonName,
-      communicationPersonEmail: commConfig?.personEmail ?? "",
-    };
-    openManagedDialog(
-      `${DIALOG_BASE}/dialog.html?view=analyze&mode=${mode}`,
-      DIALOG_SIZE,
-      () => initPayload,
-      (dialog, action) => {
+  const analyzeDialogMessage = useCallback((dialog: Office.Dialog, action: DialogAction) => {
         if (action.action === "SAVE_ANALYSIS") {
           const payload = action.payload as SaveAnalysisPayload;
           let savedId: number;
@@ -664,9 +648,84 @@ export function OutlookTaskPane() {
           try { saveProblemSolution({ actualProblem: p.actualProblem, feedbackApplied: p.feedbackApplied, errorCorrected: p.errorCorrected, compensatorReplaced: p.compensatorReplaced, additionalExplanation: p.additionalExplanation, files: p.files }); }
           catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: `Failed to save problem solution: ${String(err)}` } as HostMessage)); }
         }
-      }
+      }, []);
+
+  const applyDialogMessage = useCallback((dialog: Office.Dialog, action: DialogAction) => {
+        if (action.action === "SAVE_FEEDBACK") {
+          const p = action.payload as SaveFeedbackPayload;
+          try { saveFeedback(p); }
+          catch (err) { setStatus({ msg: `Failed to save feedback: ${String(err)}`, ok: false }); dialog.close(); dialogRef.current = null; return; }
+          if (p.feedback.feedbackType === "Provided" || p.feedback.feedbackType === "Applied") {
+            const analysis = loadAnalysisForFeedback(p.feedback.analysisId);
+            const html = p.feedback.feedbackType === "Applied"
+              ? buildApplyFeedbackEmail(p.feedback, analysis)
+              : buildProvideFeedbackEmail(p.feedback, analysis);
+            openHtmlEmailDraft(html, p.toPersonEmail ?? "", p.feedback.feedbackSubject, html, (mailtoUrl) => {
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+            });
+          } else {
+            dialog.close(); dialogRef.current = null;
+          }
+        } else if (action.action === "SAVE_PROBLEM_SOLUTION") {
+          // Solve Problem from the apply-feedback Problems tab — save, keep dialog open.
+          const sp = action.payload as import("@/types/db").SaveProblemSolutionPayload;
+          try {
+            saveProblemSolution({
+              actualProblem:         sp.actualProblem,
+              feedbackApplied:       sp.feedbackApplied,
+              errorCorrected:        sp.errorCorrected,
+              compensatorReplaced:   sp.compensatorReplaced,
+              additionalExplanation: sp.additionalExplanation,
+              files:                 sp.files,
+            });
+          } catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); }
+        }
+      }, []);
+
+  const provideDialogMessage = useCallback((dialog: Office.Dialog, action: DialogAction) => {
+        if (action.action === "SAVE_FEEDBACK") {
+          const p = action.payload as SaveFeedbackPayload;
+          try { saveFeedback(p); }
+          catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); return; }
+          try { saveFeedbackHistory({ selectionAction: "Provided as Feedback", entityName: plainText(p.feedback.actualSelection) || plainText(p.feedback.feedbackApplication), actualSelection: p.feedback.feedbackApplication, selectionType: p.feedback.selectionType, source: p.feedback.source, applicationName: p.feedback.applicationName, communicationFunction: p.feedback.communicationFunction, communicationSignal: p.feedback.communicationSignal, projectName: p.feedback.projectName, personName: p.feedback.personName, personEmail: p.feedback.personEmail }); } catch { /* non-critical */ }
+          {
+            const analysis = loadAnalysisForFeedback(p.feedback.analysisId);
+            const html = buildProvideFeedbackEmail(p.feedback, analysis);
+            openHtmlEmailDraft(html, p.toPersonEmail ?? "", p.feedback.feedbackSubject, html, (mailtoUrl) => {
+              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
+            });
+          }
+        }
+      }, []);
+
+  const handleAnalyze = useCallback(async (mode: SelectionMode, overrideText?: string) => {
+    if (!dbReady) return;
+    let text = overrideText ?? "";
+    if (overrideText == null) {
+      try { text = await readOutlookText(mode); } catch { setStatus({ msg: "Failed to read email body.", ok: false }); return; }
+    }
+    if (!text) {
+      if (mode === "selection" && !isComposeMode()) { setPasteRequest({ action: "analyze", mode }); return; }
+      setStatus({ msg: mode === "selection" ? "Please select text in your email first." : "No text found in the email body.", ok: false }); return;
+    }
+    const { personName, personEmail } = getUserIdentity();
+    const commConfig = getCommunicationConfig();
+    const subject = await readSubject();
+    const resolvedPersonName = commConfig?.personName || personName || personEmail || "";
+    const initPayload: DialogInitPayload = {
+      selection: text, mode, source: getSource(), personName, personEmail,
+      applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName,
+      peopleList: buildPeopleList(resolvedPersonName),
+      communicationPersonName: resolvedPersonName,
+      communicationPersonEmail: commConfig?.personEmail ?? "",
+    };
+    openManagedDialog(
+      `${DIALOG_BASE}/dialog.html?view=analyze&mode=${mode}`,
+      DIALOG_SIZE,
+      () => initPayload,
+      analyzeDialogMessage
     );
-  }, [dbReady, openManagedDialog]);
+  }, [dbReady, openManagedDialog, analyzeDialogMessage]);
 
   const handleFlag = useCallback(async (mode: SelectionMode, overrideText?: string) => {
     if (!dbReady) return;
@@ -694,7 +753,15 @@ export function OutlookTaskPane() {
       () => initPayload,
       (dialog, action) => {
         if (action.action === "SAVE_FLAG") {
-          try { saveFlag({ ...(action.payload as object), wasEntityAnalyzed: "No" } as Parameters<typeof saveFlag>[0]); }
+          // Capture the source email so "View Message" can reopen it later (read mode only).
+          let messageItemId = "", emailDate = "", emailTime = "";
+          try {
+            const mailItem = Office.context.mailbox?.item as { itemId?: string; dateTimeCreated?: Date } | undefined;
+            messageItemId = mailItem?.itemId ?? "";
+            const dt = mailItem?.dateTimeCreated;
+            if (dt) { emailDate = dt.toISOString().slice(0, 10); emailTime = dt.toTimeString().slice(0, 8); }
+          } catch { /* compose mode / no item — leave empty, button just won't show */ }
+          try { saveFlag({ ...(action.payload as object), wasEntityAnalyzed: "No", messageItemId, emailDate, emailTime } as Parameters<typeof saveFlag>[0]); }
           catch (err) { setStatus({ msg: `Failed to save flag: ${String(err)}`, ok: false }); dialog.close(); dialogRef.current = null; return; }
           dialog.close(); dialogRef.current = null;
         }
@@ -731,39 +798,9 @@ export function OutlookTaskPane() {
       `${DIALOG_BASE}/dialog.html?view=apply`,
       DIALOG_SIZE,
       () => initPayload,
-      (dialog, action) => {
-        if (action.action === "SAVE_FEEDBACK") {
-          const p = action.payload as SaveFeedbackPayload;
-          try { saveFeedback(p); }
-          catch (err) { setStatus({ msg: `Failed to save feedback: ${String(err)}`, ok: false }); dialog.close(); dialogRef.current = null; return; }
-          if (p.feedback.feedbackType === "Provided" || p.feedback.feedbackType === "Applied") {
-            const analysis = loadAnalysisForFeedback(p.feedback.analysisId);
-            const html = p.feedback.feedbackType === "Applied"
-              ? buildApplyFeedbackEmail(p.feedback, analysis)
-              : buildProvideFeedbackEmail(p.feedback, analysis);
-            openHtmlEmailDraft(html, p.toPersonEmail ?? "", p.feedback.feedbackSubject, html, (mailtoUrl) => {
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
-            });
-          } else {
-            dialog.close(); dialogRef.current = null;
-          }
-        } else if (action.action === "SAVE_PROBLEM_SOLUTION") {
-          // Solve Problem from the apply-feedback Problems tab — save, keep dialog open.
-          const sp = action.payload as import("@/types/db").SaveProblemSolutionPayload;
-          try {
-            saveProblemSolution({
-              actualProblem:         sp.actualProblem,
-              feedbackApplied:       sp.feedbackApplied,
-              errorCorrected:        sp.errorCorrected,
-              compensatorReplaced:   sp.compensatorReplaced,
-              additionalExplanation: sp.additionalExplanation,
-              files:                 sp.files,
-            });
-          } catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); }
-        }
-      }
+      applyDialogMessage
     );
-  }, [dbReady, openManagedDialog]);
+  }, [dbReady, openManagedDialog, applyDialogMessage]);
 
   // Point 11 — Apply Email: parse the received email's Speak Logic template into
   // the Apply dialog and store the result as feedbackType "Received".
@@ -827,23 +864,9 @@ export function OutlookTaskPane() {
       `${DIALOG_BASE}/dialog.html?view=provide-feedback`,
       DIALOG_SIZE,
       () => initPayload,
-      (dialog, action) => {
-        if (action.action === "SAVE_FEEDBACK") {
-          const p = action.payload as SaveFeedbackPayload;
-          try { saveFeedback(p); }
-          catch (err) { dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage)); return; }
-          try { saveFeedbackHistory({ selectionAction: "Provided as Feedback", entityName: plainText(p.feedback.actualSelection) || plainText(p.feedback.feedbackApplication), actualSelection: p.feedback.feedbackApplication, selectionType: p.feedback.selectionType, source: p.feedback.source, applicationName: p.feedback.applicationName, communicationFunction: p.feedback.communicationFunction, communicationSignal: p.feedback.communicationSignal, projectName: p.feedback.projectName, personName: p.feedback.personName, personEmail: p.feedback.personEmail }); } catch { /* non-critical */ }
-          {
-            const analysis = loadAnalysisForFeedback(p.feedback.analysisId);
-            const html = buildProvideFeedbackEmail(p.feedback, analysis);
-            openHtmlEmailDraft(html, p.toPersonEmail ?? "", p.feedback.feedbackSubject, html, (mailtoUrl) => {
-              dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
-            });
-          }
-        }
-      }
+      provideDialogMessage
     );
-  }, [dbReady, openManagedDialog]);
+  }, [dbReady, openManagedDialog, provideDialogMessage]);
 
   const handleRequestFeedback = useCallback(async () => {
     if (!dbReady) return;
@@ -886,6 +909,8 @@ export function OutlookTaskPane() {
 
   const handleFlaggedHistory = useCallback(() => {
     if (!dbReady) return;
+    historyDelegateRef.current = null;   // fresh dialog session — no view navigated to yet
+    const commConfig = getCommunicationConfig();
     const flaggedEntities = getAllFlaggedSelections();
     const principleInterpretations = getAllInterpretations();
     const filesByInterpretationId: Record<number, AttachFileToProject[]> = {};
@@ -898,6 +923,57 @@ export function OutlookTaskPane() {
       DIALOG_SIZE,
       () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], flaggedEntities, principleInterpretations, filesByInterpretationId }),
       (dialog, action) => {
+        // After ANALYZE/APPLY/PROVIDE_FROM_HISTORY navigated the dialog, hand every later message
+        // to that view's own handler so the full save/apply/provide chain works, same as Word.
+        if (historyDelegateRef.current) { historyDelegateRef.current(dialog, action); return; }
+        if (action.action === "VIEW_FLAGGED_MESSAGE") {
+          // Reopen the source email the selection was flagged from (best-effort).
+          const failMsg = "The original message can no longer be opened (it may have been moved or deleted).";
+          try {
+            if (action.itemId) {
+              Office.context.mailbox.displayMessageFormAsync(action.itemId, (r) => {
+                if (r.status !== Office.AsyncResultStatus.Succeeded) setStatus({ msg: failMsg, ok: false });
+              });
+            } else { setStatus({ msg: "No saved message for this selection.", ok: false }); }
+          } catch { setStatus({ msg: failMsg, ok: false }); }
+          return;
+        }
+        const resolvedPersonName = commConfig?.personName || personName || personEmail || "";
+        if (action.action === "ANALYZE_FROM_HISTORY") {
+          const flag = (action as { action: string; flag: FlagEntityForAnalysis }).flag;
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "analyze", payload: {
+            selection: flag.actualSelection, selectionHtml: flagSelectionToHtml(flag.actualSelection),
+            mode: flag.selectionType === "Selection" ? "selection" : "paragraph", source: flag.source, personName, personEmail,
+            applicationName: flag.applicationName, communicationFunction: flag.communicationFunction, communicationSignal: flag.communicationSignal, projectName: flag.projectName,
+            peopleList: buildPeopleList(resolvedPersonName), communicationPersonName: resolvedPersonName, communicationPersonEmail: commConfig?.personEmail ?? "",
+          } } as HostMessage));
+          historyDelegateRef.current = analyzeDialogMessage;
+          return;
+        }
+        if (action.action === "APPLY_FROM_HISTORY") {
+          const flag = (action as { action: string; flag: FlagEntityForAnalysis }).flag;
+          const analyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
+          const feedbacks = getAllFeedbacks().map((f) => !f.analysisId ? { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] } : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] });
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "apply", payload: {
+            selection: flag.actualSelection, selectionHtml: flagSelectionToHtml(flag.actualSelection),
+            mode: flag.selectionType === "Selection" ? "selection" : "paragraph", source: flag.source, personName, personEmail,
+            applicationName: flag.applicationName, communicationFunction: flag.communicationFunction, communicationSignal: flag.communicationSignal, projectName: flag.projectName,
+            peopleList: buildPeopleList(resolvedPersonName), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(), communicationPersonName: resolvedPersonName, communicationPersonEmail: commConfig?.personEmail ?? "", analyses, feedbacks,
+          } } as HostMessage));
+          historyDelegateRef.current = applyDialogMessage;
+          return;
+        }
+        if (action.action === "PROVIDE_FROM_HISTORY") {
+          const flag = (action as { action: string; flag: FlagEntityForAnalysis }).flag;
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "provide-feedback", payload: {
+            selection: flag.actualSelection, selectionHtml: flagSelectionToHtml(flag.actualSelection),
+            mode: flag.selectionType === "Selection" ? "selection" : "paragraph", source: flag.source, personName, personEmail,
+            applicationName: flag.applicationName, communicationFunction: flag.communicationFunction, communicationSignal: flag.communicationSignal, projectName: flag.projectName,
+            peopleList: buildPeopleList(resolvedPersonName), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(), communicationPersonName: resolvedPersonName, communicationPersonEmail: commConfig?.personEmail ?? "",
+          } } as HostMessage));
+          historyDelegateRef.current = provideDialogMessage;
+          return;
+        }
         if (action.action === "DELETE_FLAG") {
           try { deleteFlag((action as { action: string; id: number }).id); }
           catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
@@ -928,7 +1004,7 @@ export function OutlookTaskPane() {
         }
       }
     );
-  }, [dbReady, openManagedDialog]);
+  }, [dbReady, openManagedDialog, analyzeDialogMessage, applyDialogMessage, provideDialogMessage]);
 
   const handleAnalysisHistory = useCallback(() => {
     if (!dbReady) return;
@@ -1557,6 +1633,19 @@ export function OutlookTaskPane() {
           reloadDbFromStorage()
             .then(() => { clearKeywordHistory(); refresh(); })
             .catch((err) => setStatus({ msg: `Failed to clear history: ${String(err)}`, ok: false }));
+        } else if (action.action === "VIEW_KEYWORD_MESSAGE") {
+          // Best-effort: open the original sent email by its captured itemId. The sent
+          // item may have been moved or deleted, so guard and report plainly.
+          const failMsg = "The original message can no longer be opened (it may have been moved or deleted).";
+          try {
+            if (action.itemId) {
+              Office.context.mailbox.displayMessageFormAsync(action.itemId, (r) => {
+                if (r.status !== Office.AsyncResultStatus.Succeeded) setStatus({ msg: failMsg, ok: false });
+              });
+            } else {
+              setStatus({ msg: "No saved message id for this entry.", ok: false });
+            }
+          } catch { setStatus({ msg: failMsg, ok: false }); }
         }
       }
     );

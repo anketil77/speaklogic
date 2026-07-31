@@ -15,7 +15,10 @@ CREATE TABLE IF NOT EXISTS FlagEntityForAnalysis (
   personName TEXT,
   personEmail TEXT,
   wasEntityAnalyzed TEXT,
-  articleId INTEGER
+  articleId INTEGER,
+  messageItemId TEXT,
+  emailDate TEXT,
+  emailTime TEXT
 );
 
 CREATE TABLE IF NOT EXISTS FlaggedEntityHistory (

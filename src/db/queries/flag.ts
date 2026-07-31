@@ -9,8 +9,9 @@ export function saveFlag(flag: Omit<FlagEntityForAnalysis, "id">): number {
     `INSERT INTO FlagEntityForAnalysis (
       actualSelection, selectionType, source,
       applicationName, communicationFunction, communicationSignal, projectName,
-      flagDate, flagTime, personName, personEmail, wasEntityAnalyzed, articleId
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      flagDate, flagTime, personName, personEmail, wasEntityAnalyzed, articleId,
+      messageItemId, emailDate, emailTime
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       flag.actualSelection,
       flag.selectionType,
@@ -25,6 +26,9 @@ export function saveFlag(flag: Omit<FlagEntityForAnalysis, "id">): number {
       flag.personEmail,
       flag.wasEntityAnalyzed ?? "No",
       flag.articleId ?? null,
+      flag.messageItemId ?? "",
+      flag.emailDate ?? "",
+      flag.emailTime ?? "",
     ]
   );
 
@@ -69,7 +73,8 @@ export function getAllFlaggedSelections(): FlagEntityForAnalysis[] {
   const result = db.exec(
     `SELECT id, actualSelection, selectionType, source, applicationName,
             communicationFunction, communicationSignal, projectName,
-            flagDate, flagTime, personName, personEmail, wasEntityAnalyzed, articleId
+            flagDate, flagTime, personName, personEmail, wasEntityAnalyzed, articleId,
+            messageItemId, emailDate, emailTime
      FROM FlagEntityForAnalysis
      WHERE articleId IS NULL
      ORDER BY flagDate DESC, flagTime DESC`

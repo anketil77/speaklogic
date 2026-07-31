@@ -20,6 +20,7 @@ import type { FlagEntityForAnalysis } from "@/types/db";
 interface Props {
   flag: FlagEntityForAnalysis;
   onClose: () => void;
+  onViewMessage?: () => void;
   onAnalyze?: () => void;
   onProvideFeedback?: () => void;
   onApplyFeedback?: () => void;
@@ -118,6 +119,7 @@ function FbMenuItem({
 export function ViewSelectionDialog({
   flag,
   onClose,
+  onViewMessage,
   onAnalyze,
   onProvideFeedback,
   onApplyFeedback,
@@ -309,6 +311,40 @@ export function ViewSelectionDialog({
           </button>
 
           <CmdSep />
+
+          {onViewMessage && flag.source === "Outlook Mail" && flag.messageItemId ? (
+            <>
+              <button
+                onClick={onViewMessage}
+                title={`Open the source email${flag.emailDate ? ` (received ${flag.emailDate}${flag.emailTime ? " " + flag.emailTime : ""})` : ""}`}
+                style={{
+                  height: 28,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "0 12px",
+                  background: C.white,
+                  color: C.blue,
+                  border: `1px solid ${C.grey78}`,
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  fontSize: "11.6px",
+                  fontWeight: 600,
+                  fontFamily: "inherit",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="3.5" width="12" height="9" rx="1.3" stroke={C.blue} strokeWidth="1.2" />
+                  <path d="m2.6 5 5.4 3.8L13.4 5" stroke={C.blue} strokeWidth="1.2" />
+                </svg>
+                View Message
+              </button>
+
+              <CmdSep />
+            </>
+          ) : null}
 
           {/* Feedback Options dropdown */}
           <div style={{ position: "relative" }}>
