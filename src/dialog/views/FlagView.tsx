@@ -5,6 +5,7 @@ import { FooterBar, DismissBtn, PrimaryBtn } from "@/dialog/components/FooterBut
 import { Spinner } from "@fluentui/react-components";
 import { useDialogComm } from "@/dialog/hooks/useDialogComm";
 import { nowDate, formatDisplayDate } from "@/db/db";
+import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
 import type { FlagEntityForAnalysis } from "@/types/db";
 
 function localTime(): string {
@@ -120,7 +121,8 @@ export default function FlagView() {
     }
 
     const payload: Omit<FlagEntityForAnalysis, "id"> = {
-      actualSelection: initData?.selection ?? "",
+      // Prefer the formatted selection (paste box / Word) so the flag keeps its formatting.
+      actualSelection: (initData?.selectionHtml ? sanitizeWordHtml(initData.selectionHtml) : initData?.selection) ?? "",
       selectionType: (initData?.mode === "paragraph" ? "Paragraph" : "Selection") as "Selection" | "Paragraph",
       source: initData?.source ?? "Word Document",
       applicationName: entityName.trim(),

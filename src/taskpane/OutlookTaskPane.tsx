@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { initDb, nowDate, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
 import { dbg } from "@/debug/log";
 import { openHtmlEmailDraft } from "@/shared/emailDraft";
+import { RichEditor } from "@/dialog/components/RichEditor";
 import { getCommunicationConfig, saveCommunicationConfig } from "@/db/queries/communication";
 import { getKeywordRules, getKeywordSetting, saveKeywordRules, getKeywordHistory, deleteKeywordHistoryById, clearKeywordHistory } from "@/db/queries/keywords";
 import { acquireToken, getSignedInAccount, signOut } from "@/graph/auth";
@@ -391,7 +392,8 @@ export function OutlookTaskPane() {
   // (getSelectedDataAsync is compose-only). When a "Selection" button is pressed in read mode
   // we ask the user to paste their copied text instead, then resume the pending action with it.
   const [pasteRequest, setPasteRequest] = useState<{ action: PasteAction; mode: SelectionMode } | null>(null);
-  const [pasteText, setPasteText] = useState("");
+  const [pasteHtml, setPasteHtml] = useState("");
+  const pasteEditorRef = useRef<HTMLDivElement>(null);
 
   // Reflect any existing Microsoft sign-in (for the folders feature) on load.
   // NAA shares the Outlook session, so the broker re-supplies the account on every
@@ -698,7 +700,7 @@ export function OutlookTaskPane() {
         }
       }, []);
 
-  const handleAnalyze = useCallback(async (mode: SelectionMode, overrideText?: string) => {
+  const handleAnalyze = useCallback(async (mode: SelectionMode, overrideText?: string, overrideHtml?: string) => {
     if (!dbReady) return;
     let text = overrideText ?? "";
     if (overrideText == null) {
@@ -713,7 +715,7 @@ export function OutlookTaskPane() {
     const subject = await readSubject();
     const resolvedPersonName = commConfig?.personName || personName || personEmail || "";
     const initPayload: DialogInitPayload = {
-      selection: text, mode, source: getSource(), personName, personEmail,
+      selection: text, selectionHtml: overrideHtml, mode, source: getSource(), personName, personEmail,
       applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName,
       peopleList: buildPeopleList(resolvedPersonName),
       communicationPersonName: resolvedPersonName,
@@ -727,7 +729,7 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog, analyzeDialogMessage]);
 
-  const handleFlag = useCallback(async (mode: SelectionMode, overrideText?: string) => {
+  const handleFlag = useCallback(async (mode: SelectionMode, overrideText?: string, overrideHtml?: string) => {
     if (!dbReady) return;
     let text = overrideText ?? "";
     if (overrideText == null) {
@@ -742,7 +744,7 @@ export function OutlookTaskPane() {
     const subject = await readSubject();
     const resolvedPersonName = commConfig?.personName || personName || personEmail || "";
     const initPayload: DialogInitPayload = {
-      selection: text, mode, source: getSource(), personName, personEmail,
+      selection: text, selectionHtml: overrideHtml, mode, source: getSource(), personName, personEmail,
       applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: buildPeopleList(resolvedPersonName),
       communicationPersonName: resolvedPersonName,
       communicationPersonEmail: commConfig?.personEmail ?? "",
@@ -778,7 +780,7 @@ export function OutlookTaskPane() {
     );
   }, [openManagedDialog]);
 
-  const handleApply = useCallback(async (mode: SelectionMode, overrideText?: string) => {
+  const handleApply = useCallback(async (mode: SelectionMode, overrideText?: string, overrideHtml?: string) => {
     if (!dbReady) return;
     let text = overrideText ?? "";
     if (overrideText == null) {
@@ -793,7 +795,7 @@ export function OutlookTaskPane() {
     const subject = await readSubject();
     const analyses = getAllAnalyses().map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), files: getFilesByAnalysis(a.id) });
     const feedbacks = getAllFeedbacks().map((f) => !f.analysisId ? { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] } : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] });
-    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName || subject, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "", analyses, feedbacks };
+    const initPayload: DialogInitPayload = { selection: text, selectionHtml: overrideHtml, mode, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName || subject, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "", analyses, feedbacks };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=apply`,
       DIALOG_SIZE,
@@ -846,7 +848,7 @@ export function OutlookTaskPane() {
     );
   }, [dbReady, openManagedDialog]);
 
-  const handleProvideFeedback = useCallback(async (mode: SelectionMode, overrideText?: string) => {
+  const handleProvideFeedback = useCallback(async (mode: SelectionMode, overrideText?: string, overrideHtml?: string) => {
     if (!dbReady) return;
     let text = overrideText ?? "";
     if (overrideText == null) {
@@ -859,7 +861,7 @@ export function OutlookTaskPane() {
     const { personName, personEmail } = getUserIdentity();
     const commConfig = getCommunicationConfig();
     const subject = await readSubject();
-    const initPayload: DialogInitPayload = { selection: text, mode, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName || subject, peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
+    const initPayload: DialogInitPayload = { selection: text, selectionHtml: overrideHtml, mode, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName || subject, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName || subject, peopleList: buildPeopleList(commConfig?.personName), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(), communicationPersonName: commConfig?.personName ?? "", communicationPersonEmail: commConfig?.personEmail ?? "" };
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=provide-feedback`,
       DIALOG_SIZE,
@@ -1745,24 +1747,29 @@ export function OutlookTaskPane() {
   // Resume the pending selection action with the text the user pasted (Point 12 read-mode fallback).
   const submitPaste = useCallback(() => {
     const req = pasteRequest;
-    const text = pasteText.trim();
+    const html = pasteHtml;
+    const text = plainText(html).trim();  // plain fallback + empty check
     if (!req || !text) return;
     setPasteRequest(null);
-    setPasteText("");
+    setPasteHtml("");
     switch (req.action) {
-      case "analyze":         void handleAnalyze(req.mode, text); break;
-      case "flag":            void handleFlag(req.mode, text); break;
-      case "apply":           void handleApply(req.mode, text); break;
-      case "provideFeedback": void handleProvideFeedback(req.mode, text); break;
+      case "analyze":         void handleAnalyze(req.mode, text, html); break;
+      case "flag":            void handleFlag(req.mode, text, html); break;
+      case "apply":           void handleApply(req.mode, text, html); break;
+      case "provideFeedback": void handleProvideFeedback(req.mode, text, html); break;
     }
-  }, [pasteRequest, pasteText, handleAnalyze, handleFlag, handleApply, handleProvideFeedback]);
+  }, [pasteRequest, pasteHtml, handleAnalyze, handleFlag, handleApply, handleProvideFeedback]);
 
-  const cancelPaste = useCallback(() => { setPasteRequest(null); setPasteText(""); }, []);
+  const cancelPaste = useCallback(() => { setPasteRequest(null); setPasteHtml(""); }, []);
+
+  // Focus the paste editor when the box opens so the user can paste straight away.
+  useEffect(() => { if (pasteRequest) pasteEditorRef.current?.focus(); }, [pasteRequest]);
 
   // ── render ────────────────────────────────────────────────────────────────
 
   // Comm Context fields are editable only while composing/replying; read-only when reading a received email.
   const composeMode = isComposeMode();
+  const pastePlain = pasteRequest ? plainText(pasteHtml).trim() : "";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#FAFAFA" }}>
@@ -1782,21 +1789,23 @@ export function OutlookTaskPane() {
             </div>
             <div style={{ padding: "12px 14px" }}>
               <div style={{ fontSize: 11, color: "#616161", lineHeight: 1.45, marginBottom: 8 }}>
-                Outlook can&apos;t read highlighted text in a received email. Copy your selection (Ctrl+C / ⌘C), then paste it below.
+                Outlook can&apos;t read highlighted text in a received email. Copy your selection (Ctrl+C / ⌘C), then paste it below — its formatting is kept.
               </div>
-              <textarea
-                autoFocus
-                value={pasteText}
-                onChange={(e) => setPasteText(e.target.value)}
+              <RichEditor
+                ref={pasteEditorRef}
+                value={pasteHtml}
+                onChange={setPasteHtml}
+                sanitizeOnPaste
+                htmlContentStyling
                 placeholder="Paste selected text here…"
-                style={{ width: "100%", height: 120, border: "1px solid #C7C7C7", borderRadius: 4, padding: 8, fontSize: 12, fontFamily: "inherit", boxSizing: "border-box", resize: "vertical" }}
+                style={{ width: "100%", minHeight: 120, maxHeight: 260, overflowY: "auto", border: "1px solid #C7C7C7", borderRadius: 4, padding: 8, fontSize: 12, boxSizing: "border-box" }}
               />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "10px 14px", borderTop: "1px solid #E8E8E8" }}>
               <button onClick={cancelPaste} style={{ height: 30, padding: "0 14px", background: "#FFFFFF", border: "1px solid #C7C7C7", borderRadius: 4, cursor: "pointer", fontSize: 12, fontFamily: "inherit", color: "#1B1B1B" }}>
                 Cancel
               </button>
-              <button onClick={submitPaste} disabled={!pasteText.trim()} style={{ height: 30, padding: "0 14px", background: pasteText.trim() ? "#0078D4" : "#B9D6F2", border: "none", borderRadius: 4, cursor: pasteText.trim() ? "pointer" : "default", fontSize: 12, fontWeight: 600, fontFamily: "inherit", color: "#FFFFFF" }}>
+              <button onClick={submitPaste} disabled={!pastePlain} style={{ height: 30, padding: "0 14px", background: pastePlain ? "#0078D4" : "#B9D6F2", border: "none", borderRadius: 4, cursor: pastePlain ? "pointer" : "default", fontSize: 12, fontWeight: 600, fontFamily: "inherit", color: "#FFFFFF" }}>
                 Use This Text
               </button>
             </div>
