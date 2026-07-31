@@ -254,15 +254,19 @@ export default function FeedbackHistoryView() {
       </div>
 
       {/* ── Command bar ── */}
+      {/* Wraps to a second row instead of clipping when the dialog is too narrow —
+          keeps every control reachable at any width (filter dropdown stays visible,
+          unlike overflow-x scroll which would clip it). */}
       <div
         style={{
-          height: 44,
           minHeight: 44,
           background: colors.grey96,
           display: "flex",
           alignItems: "center",
-          padding: "0 12px",
-          gap: 8,
+          flexWrap: "wrap",
+          padding: "4px 12px",
+          columnGap: 8,
+          rowGap: 6,
           boxSizing: "border-box",
         }}
       >
