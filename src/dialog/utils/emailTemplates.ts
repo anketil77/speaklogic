@@ -623,6 +623,24 @@ export function buildApplyFeedbackEmail(
   return buildApplyFeedbackBasic(fb);
 }
 
+// Terminal notification sent (only if the applier opts in) to the person whose
+// feedback was applied — a thank-you, no machine-readable payload (not re-imported).
+export function buildFeedbackAppliedNotificationEmail(
+  fb: SaveFeedbackPayload["feedback"],
+): string {
+  const provider = esc(fb.toPerson) || "there";
+  const applier = esc(fb.personName) || esc(fb.fromPerson) || "the reviewer";
+  const rows = [
+    blockField("Message", `Hi ${provider}, thank you for your feedback. It has been applied by ${applier}.`),
+    fieldRow("Feedback Subject", esc(fb.feedbackSubject)),
+    fieldRow("Applied On", `${esc(formatDisplayDate(fb.feedbackDate))} ${esc(fb.feedbackTime)}`),
+    fieldRow("Error Corrected", esc(fb.actualErrorSubstituted) || "—"),
+    fieldRow("Compensator Used", esc(fb.actualCompensatorReplaced) || "—"),
+    blockField("What Was Applied", esc(stripHtml(fb.feedbackApplication))),
+  ].join("");
+  return wrapPage("Feedback Applied", section("icon-apply.png", "Feedback Applied", rows));
+}
+
 export function buildRequestFeedbackEmail(p: SaveRequestFeedbackPayload): string {
   if (p.actualSelection && p.actualSelection.trim().length > 0) {
     return buildRequestFeedbackWithSelection(p);

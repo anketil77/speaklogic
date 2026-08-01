@@ -849,6 +849,8 @@ export interface UserInformationItem {
 export interface SaveFeedbackPayload {
   feedback: Omit<ProjectFeedback, "id">;
   toPersonEmail?: string;
+  // Applied feedback only: user opted to send a "feedback applied" thank-you to the provider.
+  notifyProvider?: boolean;
   files?: Omit<AttachFileToProject, "id" | "analysisId" | "feedbackId" | "flagId" | "articleId">[];
   newCorrectedItems?: Omit<ProjectCorrectedItem, "id" | "analysisId">[];
   problems?: Omit<ProjectProblem, "id" | "analysisId" | "feedbackId">[];

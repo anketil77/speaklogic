@@ -100,6 +100,7 @@ export default function ApplyView() {
   const [insertToast, setInsertToast] = useState(false);
   const [footerBtnHover, setFooterBtnHover] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showNotify, setShowNotify] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<SaveFeedbackPayload | null>(null);
 
   const [form, setForm] = useState<FeedbackForm>({ applicationName: "", communicationFunction: "", feedbackSubject: "", errorSubstituted: "", compensatorReplaced: "", feedbackApplication: "", fromPerson: "", toPerson: "" });
@@ -333,6 +334,8 @@ export default function ApplyView() {
         // id 0 = extracted-from-email (no local analysis row) → store no FK.
         analysisId: analysisData?.id && analysisData.id > 0 ? analysisData.id : undefined,
       },
+      // Resolve the provider's email so an opt-in "feedback applied" note can reach them.
+      toPersonEmail: initData.peopleEmailMap?.[form.toPerson || analysisData?.fromPerson || ""] ?? "",
       files: newFiles, newCorrectedItems,
       problems: problems.map((pr) => ({
         problemNumber: pr.problemNumber,
@@ -348,9 +351,21 @@ export default function ApplyView() {
     setShowConfirm(true);
   }, [form, initData, analysisData, correctedItems, files, selectionHtml, problems]);
 
-  const confirmSave = useCallback(() => {
-    if (pendingPayload) { dbg("APPLY", "confirmSave — sending SAVE_FEEDBACK"); submitSave({ action: "SAVE_FEEDBACK", payload: pendingPayload }); }
+  const submitWithNotify = useCallback((notify: boolean) => {
+    if (!pendingPayload) return;
+    setShowNotify(false);
+    dbg("APPLY", "submit — sending SAVE_FEEDBACK", { notify });
+    submitSave({ action: "SAVE_FEEDBACK", payload: { ...pendingPayload, notifyProvider: notify } });
   }, [pendingPayload, submitSave]);
+
+  // Correction confirmed → for genuine Applied feedback, ask whether to notify the
+  // provider; other types (e.g. Received via Apply Email) just save.
+  const confirmSave = useCallback(() => {
+    if (!pendingPayload) return;
+    setShowConfirm(false);
+    if (pendingPayload.feedback.feedbackType === "Applied") setShowNotify(true);
+    else submitWithNotify(false);
+  }, [pendingPayload, submitWithNotify]);
 
   if (!initData) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
@@ -421,6 +436,7 @@ export default function ApplyView() {
         pendingRemove={pendingRemove} setPendingRemove={setPendingRemove} confirmRemove={confirmRemove}
         showConfirm={showConfirm} setShowConfirm={setShowConfirm}
         setPendingPayload={setPendingPayload} saving={saving} confirmSave={confirmSave}
+        showNotify={showNotify} setShowNotify={setShowNotify} submitWithNotify={submitWithNotify}
         ctxMenu={ctxMenu} setCtxMenu={setCtxMenu} ctxItems={ctxItems}
         showAnalysisList={showAnalysisList} setShowAnalysisList={setShowAnalysisList}
         showFeedbackList={showFeedbackList} setShowFeedbackList={setShowFeedbackList}

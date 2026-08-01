@@ -25,7 +25,7 @@ import { openInterpretedPrincipleReport, openIdentifiedPrincipleReport, openRela
 import { formatArticleForAnalysis } from "@/dialog/utils/formatArticleForAnalysis";
 import {
   buildProvideFeedbackEmail,
-  buildApplyFeedbackEmail,
+  buildFeedbackAppliedNotificationEmail,
   buildRequestFeedbackEmail,
 } from "@/dialog/utils/emailTemplates";
 import { parseFeedbackEmail } from "@/dialog/utils/parseFeedbackEmail";
@@ -813,6 +813,8 @@ function openAnalyzeDialogWithPayload(
                 communicationSignal: payload.analysis.communicationSignal,
                 projectName: payload.analysis.projectName,
                 peopleList: [],
+                peopleEmailMap: getPeopleEmailMap(),
+                contacts: getAllPeople(),
                 communicationPersonName: commPersonName,
                 communicationPersonEmail: commPersonEmail,
                 analysisData: {
@@ -921,11 +923,9 @@ function openAnalyzeDialogWithPayload(
                 });
               } catch (err) { dbg("HOST", "saveFeedbackHistory (feedback audit) failed — non-critical", String(err)); }
             }
-            if (fbPayload.feedback.feedbackType === "Provided" || fbPayload.feedback.feedbackType === "Applied") {
+            if (fbPayload.feedback.feedbackType === "Provided") {
               const analysis = loadAnalysisForFeedback(fbPayload.feedback.analysisId);
-              const html = fbPayload.feedback.feedbackType === "Applied"
-                ? buildApplyFeedbackEmail(fbPayload.feedback, analysis)
-                : buildProvideFeedbackEmail(fbPayload.feedback, analysis);
+              const html = buildProvideFeedbackEmail(fbPayload.feedback, analysis);
               openHtmlEmailDraft(
                 html,
                 fbPayload.toPersonEmail ?? "",
@@ -937,6 +937,16 @@ function openAnalyzeDialogWithPayload(
                 },
               );
               // Do NOT close here — wait for the dialog to send CLOSE after the user clicks.
+            } else if (fbPayload.feedback.feedbackType === "Applied" && fbPayload.notifyProvider) {
+              // Applied is record-only; send a thank-you only if the user opted in, then close.
+              const html = buildFeedbackAppliedNotificationEmail(fbPayload.feedback);
+              openHtmlEmailDraft(
+                html,
+                fbPayload.toPersonEmail ?? "",
+                `Feedback applied: ${fbPayload.feedback.feedbackSubject}`,
+                html,
+                (mailtoUrl) => { if (mailtoUrl) openMailtoUrl(mailtoUrl); try { dialog.close(); } catch { } complete(); },
+              );
             } else {
               try { dialog.close(); } catch { }
               complete();
@@ -1721,6 +1731,8 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             communicationSignal: analysis.communicationSignal ?? "",
             projectName: analysis.projectName ?? "",
             peopleList: getPeopleNames(),
+            peopleEmailMap: getPeopleEmailMap(),
+            contacts: getAllPeople(),
             communicationPersonName: navCommConfig?.personName ?? "",
             communicationPersonEmail: navCommConfig?.personEmail ?? "",
             analyses: allAnalyses,
@@ -1812,11 +1824,9 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
               });
             } catch (err) { dbg("HOST", "saveFeedbackHistory (feedback audit) failed — non-critical", String(err)); }
           }
-          if (fbPayload.feedback.feedbackType === "Provided" || fbPayload.feedback.feedbackType === "Applied") {
+          if (fbPayload.feedback.feedbackType === "Provided") {
             const analysis = loadAnalysisForFeedback(fbPayload.feedback.analysisId);
-            const html = fbPayload.feedback.feedbackType === "Applied"
-              ? buildApplyFeedbackEmail(fbPayload.feedback, analysis)
-              : buildProvideFeedbackEmail(fbPayload.feedback, analysis);
+            const html = buildProvideFeedbackEmail(fbPayload.feedback, analysis);
             openHtmlEmailDraft(
               html,
               fbPayload.toPersonEmail ?? "",
@@ -1825,6 +1835,15 @@ function openAnalysisHistoryDialog(event: Office.AddinCommands.Event, attempt = 
               (mailtoUrl) => {
                 dialog.messageChild(JSON.stringify({ type: "SAVED", mailtoUrl } as HostMessage));
               },
+            );
+          } else if (fbPayload.feedback.feedbackType === "Applied" && fbPayload.notifyProvider) {
+            const html = buildFeedbackAppliedNotificationEmail(fbPayload.feedback);
+            openHtmlEmailDraft(
+              html,
+              fbPayload.toPersonEmail ?? "",
+              `Feedback applied: ${fbPayload.feedback.feedbackSubject}`,
+              html,
+              () => { try { dialog.close(); } catch { } complete(); },
             );
           } else {
             try { dialog.close(); } catch { }
@@ -3629,9 +3648,7 @@ function openProvideFeedbackDialog(initPayload: DialogInitPayload, addInEvent: O
             });
             {
               const analysis = loadAnalysisForFeedback(fbPayload.feedback.analysisId);
-              const html = fbPayload.feedback.feedbackType === "Applied"
-                ? buildApplyFeedbackEmail(fbPayload.feedback, analysis)
-                : buildProvideFeedbackEmail(fbPayload.feedback, analysis);
+              const html = buildProvideFeedbackEmail(fbPayload.feedback, analysis);
               openHtmlEmailDraft(
                 html,
                 fbPayload.toPersonEmail ?? "",
@@ -3730,15 +3747,27 @@ function openApplyDialog(initPayload: DialogInitPayload, addInEvent: Office.Addi
           case "READY":
             dialog.messageChild(JSON.stringify({ type: "INIT", payload: initPayload } as HostMessage));
             break;
-          case "SAVE_FEEDBACK":
+          case "SAVE_FEEDBACK": {
+            const fbp = m.payload as SaveFeedbackPayload;
             try {
-              saveFeedback(m.payload as SaveFeedbackPayload);
+              saveFeedback(fbp);
             } catch (err) {
               dialog.messageChild(JSON.stringify({ type: "ERROR", message: String(err) } as HostMessage));
+              try { dialog.close(); } catch { }
+              complete();
+              break;
             }
-            try { dialog.close(); } catch { }
-            complete();
+            // Applied is record-only; send a thank-you only if the user opted in.
+            if (fbp.feedback.feedbackType === "Applied" && fbp.notifyProvider) {
+              const html = buildFeedbackAppliedNotificationEmail(fbp.feedback);
+              openHtmlEmailDraft(html, fbp.toPersonEmail ?? "", `Feedback applied: ${fbp.feedback.feedbackSubject}`, html,
+                (mailtoUrl) => { if (mailtoUrl) openMailtoUrl(mailtoUrl); try { dialog.close(); } catch { } complete(); });
+            } else {
+              try { dialog.close(); } catch { }
+              complete();
+            }
             break;
+          }
           case "SAVE_PROBLEM_SOLUTION": {
             // Solve Problem from the apply-feedback Problems tab — save, keep dialog open.
             const sp = m.payload as import("@/types/db").SaveProblemSolutionPayload;

@@ -70,6 +70,9 @@ export interface ApplyFeedbackSubDialogsProps {
   setPendingPayload: React.Dispatch<React.SetStateAction<SaveFeedbackPayload | null>>;
   saving: boolean;
   confirmSave: () => void;
+  showNotify: boolean;
+  setShowNotify: React.Dispatch<React.SetStateAction<boolean>>;
+  submitWithNotify: (notify: boolean) => void;
   ctxMenu: CtxMenu | null;
   setCtxMenu: React.Dispatch<React.SetStateAction<CtxMenu | null>>;
   ctxItems: PanelMenuEntry[];
@@ -91,7 +94,7 @@ const applyBtnStyle: React.CSSProperties = { height: "32px", padding: "0 18px", 
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function ApplyFeedbackSubDialogs(p: ApplyFeedbackSubDialogsProps) {
-  const { openDialog, closePortal, questions, setQuestions, setAnswers, setErrors, setCompensators, setFiles, setCorrectedItems, errorOptions, compensatorOptions, errors, correctedItems, problems, setProblems, feedbackSubject, solvePreselectedErrors, solvePreselectedCompensators, pendingRemove, setPendingRemove, confirmRemove, showConfirm, setShowConfirm, setPendingPayload, saving, confirmSave, ctxMenu, setCtxMenu, ctxItems, showAnalysisList, setShowAnalysisList, showFeedbackList, setShowFeedbackList, viewAnalysis, setViewAnalysis, viewFeedback, setViewFeedback, availableAnalyses, availableFeedbacks, sendMessage } = p;
+  const { openDialog, closePortal, questions, setQuestions, setAnswers, setErrors, setCompensators, setFiles, setCorrectedItems, errorOptions, compensatorOptions, errors, correctedItems, problems, setProblems, feedbackSubject, solvePreselectedErrors, solvePreselectedCompensators, pendingRemove, setPendingRemove, confirmRemove, showConfirm, setShowConfirm, setPendingPayload, saving, confirmSave, showNotify, setShowNotify, submitWithNotify, ctxMenu, setCtxMenu, ctxItems, showAnalysisList, setShowAnalysisList, showFeedbackList, setShowFeedbackList, viewAnalysis, setViewAnalysis, viewFeedback, setViewFeedback, availableAnalyses, availableFeedbacks, sendMessage } = p;
 
   return (
     <>
@@ -110,6 +113,24 @@ export function ApplyFeedbackSubDialogs(p: ApplyFeedbackSubDialogsProps) {
               <button style={cancelBtnStyle} onClick={() => { setShowConfirm(false); setPendingPayload(null); }}>No — Continue Editing</button>
               <button disabled={saving} style={{ ...applyBtnStyle, ...(saving ? { background: "#C5C5C5", cursor: "default" } : {}) }} onClick={confirmSave}>
                 {saving ? "Saving…" : "Yes — Save Feedback"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Notify provider overlay (after correction confirmed) ────────────── */}
+      {showNotify && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: colors.white, borderRadius: "6px", boxShadow: "0 8px 32px rgba(0,0,0,0.18)", width: "360px", padding: "28px 24px 20px" }}>
+            <div style={{ fontSize: "14px", fontWeight: "700", color: colors.grey11, marginBottom: "10px" }}>Notify Provider</div>
+            <div style={{ fontSize: "12.5px", color: colors.grey11, lineHeight: "19px", marginBottom: "20px" }}>
+              Notify the provider that their feedback was applied? A thank-you email will be prepared for them.
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <button disabled={saving} style={cancelBtnStyle} onClick={() => submitWithNotify(false)}>No, just save</button>
+              <button disabled={saving} style={{ ...applyBtnStyle, ...(saving ? { background: "#C5C5C5", cursor: "default" } : {}) }} onClick={() => submitWithNotify(true)}>
+                {saving ? "Saving…" : "Yes — Notify"}
               </button>
             </div>
           </div>
