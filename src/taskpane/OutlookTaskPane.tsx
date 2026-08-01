@@ -1,7 +1,7 @@
 /* global Office */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { initDb, nowDate, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
+import { initDb, nowDate, nowTime, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
 import { dbg } from "@/debug/log";
 import { openHtmlEmailDraft } from "@/shared/emailDraft";
 import { RichEditor } from "@/dialog/components/RichEditor";
@@ -61,7 +61,8 @@ import {
 import { openIdentifiedPrincipleReport, openInterpretedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
 import { buildProvideFeedbackEmail, buildFeedbackAppliedNotificationEmail, buildRequestFeedbackEmail } from "@/dialog/utils/emailTemplates";
 import { parseFeedbackEmail } from "@/dialog/utils/parseFeedbackEmail";
-import type { ProjectAnalysis } from "@/types/db";
+import type { ProjectAnalysis, ProjectFeedback } from "@/types/db";
+import { feedbacksToXml, type AnalysisWithChildren } from "@/dialog/utils/feedbackXml";
 import type {
   AttachFileToProject,
   DialogAction,
@@ -338,6 +339,7 @@ const GROUPS: GroupDef[] = [
       { id: "applySelection",    label: "Apply Selection",    icon: "btn-apply-sel-32.png" },
       { id: "applyParagraph",    label: "Apply Paragraph",    icon: "btn-apply-para-32.png" },
       { id: "applyEmail",        label: "Apply Email",        icon: "btn-apply-sel-32.png" },
+      { id: "emailToXml",        label: "Email to XML",       icon: "btn-apply-sel-32.png" },
       { id: "provideFeedback",   label: "Provide Feedback",   icon: "btn-provide-fb-sel-32.png" },
       { id: "feedbackParagraph", label: "Feedback Paragraph", icon: "btn-provide-fb-para-32.png" },
       { id: "requestFeedback",   label: "Request Feedback",   icon: "btn-req-fb-32.png" },
@@ -858,6 +860,62 @@ export function OutlookTaskPane() {
       }
     );
   }, [dbReady, openManagedDialog]);
+
+  // Point 11 sibling — capture a received Speak Logic feedback email straight to an XML file.
+  const handleEmailToXml = useCallback(async () => {
+    if (!dbReady) return;
+    let html = "";
+    try { html = await readOutlookBodyHtml(); } catch { setStatus({ msg: "Failed to read the email.", ok: false }); return; }
+    const subject = await readSubject();
+    const parsed = parseFeedbackEmail(html);
+    if (!parsed) { setStatus({ msg: "No Speak Logic feedback found in this email.", ok: false }); return; }
+
+    const signal = commCtxRef.current.commSignal;
+    const project = commCtxRef.current.projectName;
+    const analysis: AnalysisWithChildren = {
+      id: parsed.id || undefined,
+      entityUnderAnalysis: parsed.entityUnderAnalysis || "",
+      fromPerson: parsed.fromPerson || "",
+      analysisSubject: parsed.analysisSubject || subject || "",
+      actualAnalysis: parsed.actualAnalysis || "",
+      whatToDoWithAnalysis: "ProvideFeedbackWithAnalysis",
+      source: getSource(), applicationName: subject || "", communicationFunction: "",
+      communicationSignal: signal, projectName: project,
+      analysisDate: nowDate(), analysisTime: nowTime(), personName: "", personEmail: "",
+      selectionType: "Selection",
+      errorCount: parsed.errors.length, questionCount: parsed.questions.length, compensatorCount: parsed.compensators.length,
+      answerCount: parsed.answers.length, problemCount: parsed.problems.length, correctedItemCount: 0,
+      errors: parsed.errors, compensators: parsed.compensators, questions: parsed.questions, answers: parsed.answers,
+      problems: parsed.problems, files: [], correctedItems: [], guidelineReferences: [],
+    };
+    const feedback: ProjectFeedback = {
+      feedbackApplication: "", feedbackDate: nowDate(), feedbackTime: nowTime(),
+      fromPerson: parsed.fromPerson || "", toPerson: "", feedbackSubject: parsed.analysisSubject || subject || "",
+      internalFeedbackName: "", feedbackType: "Received", actualSelection: parsed.entityUnderAnalysis || "",
+      selectionType: "Selection", actualErrorSubstituted: "", actualCompensatorReplaced: "",
+      source: getSource(), applicationName: subject || "", communicationFunction: "",
+      communicationSignal: signal, projectName: project, personName: "", personEmail: "",
+      analysisId: parsed.id || undefined,
+    };
+
+    try {
+      const xml = feedbacksToXml([{ feedback, analysis }]);
+      const now = new Date();
+      const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const blob = new Blob([xml], { type: "application/xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `speaklogic-email-feedback-${ts}.xml`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+      setStatus({ msg: "Email feedback saved as XML.", ok: true });
+    } catch (err) {
+      setStatus({ msg: `Export failed: ${String(err)}`, ok: false });
+    }
+  }, [dbReady]);
 
   const handleProvideFeedback = useCallback(async (mode: SelectionMode, overrideText?: string, overrideHtml?: string) => {
     if (!dbReady) return;
@@ -1750,6 +1808,7 @@ export function OutlookTaskPane() {
       case "applySelection":     void handleApply("selection"); break;
       case "applyParagraph":     void handleApply("paragraph"); break;
       case "applyEmail":         void handleApplyEmail(); break;
+      case "emailToXml":         void handleEmailToXml(); break;
       case "provideFeedback":    void handleProvideFeedback("selection"); break;
       case "feedbackParagraph":  void handleProvideFeedback("paragraph"); break;
       case "requestFeedback":    void handleRequestFeedback(); break;
