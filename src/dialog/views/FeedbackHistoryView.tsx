@@ -27,6 +27,7 @@ import {
 import { colors } from "@/styles/tokens";
 import type { ProjectFeedback } from "@/types/db";
 import { openFeedbackReport } from "@/dialog/utils/feedbackReport";
+import { feedbacksToXml, parseFeedbackXml } from "@/dialog/utils/feedbackXml";
 
 const FEEDBACK_TYPE_FILTERS: { label: string; value: string | null }[] = [
   { label: "Show All", value: null },
@@ -61,6 +62,24 @@ function CmdSepBar() {
   );
 }
 
+function ExportXmlIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7.5 1.5V9.5M7.5 9.5L4.75 6.75M7.5 9.5L10.25 6.75" stroke="#4259C3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 10.5V12C2 12.55 2.45 13 3 13H12C12.55 13 13 12.55 13 12V10.5" stroke="#4259C3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ImportXmlIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7.5 9.5V1.5M7.5 1.5L4.75 4.25M7.5 1.5L10.25 4.25" stroke="#4259C3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 10.5V12C2 12.55 2.45 13 3 13H12C12.55 13 13 12.55 13 12V10.5" stroke="#4259C3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function FeedbackHistoryView() {
   const { initData, sendMessage, closeDialog } = useDialogComm();
 
@@ -91,6 +110,7 @@ export default function FeedbackHistoryView() {
   const [viewFeedback, setViewFeedback] = useState<ProjectFeedback | null>(null);
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!filterOpen) return undefined;
@@ -114,6 +134,10 @@ export default function FeedbackHistoryView() {
     setSelectedIndex(null);
     setFilterOpen(false);
   }, []);
+
+  // A refresh INIT (e.g. after import) replaces the rows newest-first, so drop any
+  // stale selection rather than let it point at a different row.
+  useEffect(() => { setSelectedIndex(null); }, [initData]);
 
   const handleRowClick = useCallback((idx: number) => {
     setSelectedIndex((prev) => (prev === idx ? null : idx));
@@ -139,6 +163,58 @@ export default function FeedbackHistoryView() {
   const showInfo = useCallback((title: string, text: string) => {
     setInfoMsg({ title, text });
   }, []);
+
+  const handleExportXml = useCallback(() => {
+    const selected = selectedIndex !== null ? displayRows[selectedIndex] : undefined;
+    const rows = selected ? [selected] : displayRows;
+    if (!rows.length) {
+      showInfo("Export XML", "There is no feedback to export.");
+      return;
+    }
+    try {
+      const items = rows.map((f) => ({
+        feedback: f,
+        analysis: f.analysisId ? (initData?.analyses ?? []).find((a) => a.id === f.analysisId) ?? null : null,
+      }));
+      const xml = feedbacksToXml(items);
+      const now = new Date();
+      const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const blob = new Blob([xml], { type: "application/xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `speaklogic-feedback-${ts}.xml`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    } catch (err) {
+      showInfo("Export Failed", err instanceof Error ? err.message : String(err));
+    }
+  }, [selectedIndex, displayRows, initData, showInfo]);
+
+  const handleImportFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onerror = () => showInfo("Import Failed", "The file could not be read.");
+    reader.onload = () => {
+      const text = String(reader.result ?? "");
+      try {
+        const records = parseFeedbackXml(text);
+        if (!records.length) {
+          showInfo("Import XML", "No feedback records were found in that file.");
+          return;
+        }
+        sendMessage({ action: "IMPORT_FEEDBACK_XML", records });
+        showInfo("Import XML", `Importing ${records.length} feedback record(s). The list will refresh.`);
+      } catch (err) {
+        showInfo("Import Failed", err instanceof Error ? err.message : String(err));
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }, [sendMessage, showInfo]);
   const activeFilterLabel =
     FEEDBACK_TYPE_FILTERS.find((f) => f.value === filterType)?.label ?? null;
 
@@ -563,6 +639,57 @@ export default function FeedbackHistoryView() {
             </div>
           )}
         </div>
+
+        <CmdSepBar />
+
+        {/* Export selected (or all) feedback as XML */}
+        <button
+          title="Export as XML"
+          onClick={handleExportXml}
+          className="sl-icon-btn"
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "none",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <ExportXmlIcon />
+        </button>
+
+        {/* Import feedback from XML */}
+        <button
+          title="Import from XML"
+          onClick={() => importFileRef.current?.click()}
+          className="sl-icon-btn"
+          style={{
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "none",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <ImportXmlIcon />
+        </button>
+        <input
+          ref={importFileRef}
+          type="file"
+          accept=".xml,application/xml,text/xml"
+          style={{ display: "none" }}
+          onChange={handleImportFileChange}
+        />
 
         <CmdSepBar />
 

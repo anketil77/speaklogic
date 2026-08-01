@@ -452,6 +452,18 @@ export function getAnswersByAnalysis(analysisId: number): ProjectAnswer[] {
   });
 }
 
+export function getCorrectedItemsByAnalysis(analysisId: number): import("@/types/db").ProjectCorrectedItem[] {
+  const db = getDb();
+  const result = db.exec("SELECT * FROM ProjectCorrectedItem WHERE analysisId = ?", [analysisId]);
+  if (!result.length) return [];
+  return result[0].values.map((row) => {
+    const cols = result[0].columns;
+    const obj: Record<string, unknown> = {};
+    cols.forEach((col, i) => { obj[col] = row[i]; });
+    return obj as unknown as import("@/types/db").ProjectCorrectedItem;
+  });
+}
+
 export function getGuidelinesByAnalysis(analysisId: number): import("@/types/db").GuidelineReference[] {
   const db = getDb();
   const result = db.exec("SELECT * FROM GuidelineReference WHERE analysisId = ?", [analysisId]);

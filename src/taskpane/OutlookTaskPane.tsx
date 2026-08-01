@@ -22,12 +22,15 @@ import {
   getQuestionsByAnalysis,
   getAllAnalyses,
   getRetainedAnalyses,
+  getCorrectedItemsByAnalysis,
+  getGuidelinesByAnalysis,
   saveFullAnalysis,
   updateAnalysis,
 } from "@/db/queries/analysis";
 import {
   deleteFeedback,
   getAllFeedbacks,
+  importFeedback,
   saveFeedback,
   saveFeedbackHistory,
   saveCommSignalInfo,
@@ -1122,15 +1125,31 @@ export function OutlookTaskPane() {
     const { personName, personEmail } = getUserIdentity();
 
     const buildFeedbacks = () => getAllFeedbacks().map((f) => !f.analysisId ? { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] } : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] });
+    // Feedback-history export needs the full analysis (incl. correctedItems/guidelineReferences) to serialize <Analysis>.
+    // Only enrich analyses a feedback actually references — skip retained/orphan analyses.
+    const buildAnalyses = () => {
+      const refIds = new Set(getAllFeedbacks().map((f) => f.analysisId).filter((x): x is number => x != null));
+      return getAllAnalyses().filter((a) => a.id != null && refIds.has(a.id)).map((a) => !a.id ? a : { ...a, questions: getQuestionsByAnalysis(a.id), errors: getErrorsByAnalysis(a.id), compensators: getCompensatorsByAnalysis(a.id), answers: getAnswersByAnalysis(a.id), problems: getProblemsByAnalysis(a.id), files: getFilesByAnalysis(a.id), correctedItems: getCorrectedItemsByAnalysis(a.id), guidelineReferences: getGuidelinesByAnalysis(a.id) });
+    };
 
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=feedback-history`,
       DIALOG_SIZE,
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], feedbacks: buildFeedbacks(), feedbackFilter: initialFilter }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName, personEmail, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], feedbacks: buildFeedbacks(), analyses: buildAnalyses(), feedbackFilter: initialFilter }),
       (dialog, action) => {
         if (action.action === "DELETE_FEEDBACK") {
           try { deleteFeedback((action as { action: string; id: number }).id); }
           catch (err) { setStatus({ msg: `Delete failed: ${String(err)}`, ok: false }); }
+        }
+        if (action.action === "IMPORT_FEEDBACK_XML") {
+          const records = (action as { action: string; records: import("@/dialog/utils/feedbackXml").ImportedFeedback[] }).records;
+          let failures = 0;
+          for (const r of records) {
+            try { importFeedback(r); } catch { failures++; }
+          }
+          if (failures) setStatus({ msg: `Import finished with ${failures} failure(s) out of ${records.length}.`, ok: false });
+          const { personName: pn, personEmail: pe } = getUserIdentity();
+          dialog.messageChild(JSON.stringify({ type: "INIT", payload: { selection: "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], feedbacks: buildFeedbacks(), analyses: buildAnalyses() } } as HostMessage));
         }
         if (action.action === "SAVE_PROBLEM_SOLUTION") {
           const sp = action.payload as import("@/types/db").SaveProblemSolutionPayload;
@@ -1151,7 +1170,7 @@ export function OutlookTaskPane() {
         }
         if (action.action === "BACK_TO_FEEDBACK_HISTORY") {
           const { personName: pn, personEmail: pe } = getUserIdentity();
-          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "feedback-history", payload: { selection: "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], feedbacks: buildFeedbacks() } } as HostMessage));
+          dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "feedback-history", payload: { selection: "", mode: "selection", source: getSource(), personName: pn, personEmail: pe, applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: [], feedbacks: buildFeedbacks(), analyses: buildAnalyses() } } as HostMessage));
         }
         if (action.action === "DELETE_COMM_SIGNAL_REQUEST") {
           try { deleteCommSignalRequest((action as { action: string; id: number }).id); }

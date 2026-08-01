@@ -6,8 +6,8 @@ const DIALOG_BASE = window.location.origin;
 
 
 import { initDb, nowDate, nowTime, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
-import { saveFullAnalysis, updateAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback, getAllErrors, getErrorsByApplicationName, findAnalysisIdByErrorText, addCompensatorToAnalysis, getGuidelinesByAnalysis } from "@/db/queries/analysis";
-import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest } from "@/db/queries/feedback";
+import { saveFullAnalysis, updateAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback, getAllErrors, getErrorsByApplicationName, findAnalysisIdByErrorText, addCompensatorToAnalysis, getGuidelinesByAnalysis, getCorrectedItemsByAnalysis } from "@/db/queries/analysis";
+import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest, importFeedback } from "@/db/queries/feedback";
 import { getStatsOverview } from "@/db/queries/stats";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
@@ -1943,6 +1943,37 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
       }
       const dialog = result.value;
       const complete = makeEventCompleter(event);
+      const buildFeedbacks = () => getAllFeedbacks().map((f) => {
+        if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
+        return {
+          ...f,
+          questions: getQuestionsByAnalysis(f.analysisId),
+          errors: getErrorsByAnalysis(f.analysisId),
+          compensators: getCompensatorsByAnalysis(f.analysisId),
+          answers: getAnswersByAnalysis(f.analysisId),
+          files: getFilesByAnalysis(f.analysisId),
+          problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])],
+        };
+      });
+      // Feedback-history export needs the full analysis (incl. correctedItems/guidelineReferences) to serialize <Analysis>.
+      // Only enrich analyses a feedback actually references — skip retained/orphan analyses.
+      const buildAnalyses = () => {
+        const refIds = new Set(getAllFeedbacks().map((f) => f.analysisId).filter((x): x is number => x != null));
+        return getAllAnalyses().filter((a) => a.id != null && refIds.has(a.id)).map((a) => {
+          if (!a.id) return a;
+          return {
+            ...a,
+            questions: getQuestionsByAnalysis(a.id),
+            errors: getErrorsByAnalysis(a.id),
+            compensators: getCompensatorsByAnalysis(a.id),
+            answers: getAnswersByAnalysis(a.id),
+            problems: getProblemsByAnalysis(a.id),
+            files: getFilesByAnalysis(a.id),
+            correctedItems: getCorrectedItemsByAnalysis(a.id),
+            guidelineReferences: getGuidelinesByAnalysis(a.id),
+          };
+        });
+      };
       dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
         complete();
       });
@@ -1969,18 +2000,6 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "list-feedback-requested", payload: reqPayload } as HostMessage));
             return;
           }
-          const feedbacks = getAllFeedbacks().map((f) => {
-            if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
-            return {
-              ...f,
-              questions: getQuestionsByAnalysis(f.analysisId),
-              errors: getErrorsByAnalysis(f.analysisId),
-              compensators: getCompensatorsByAnalysis(f.analysisId),
-              answers: getAnswersByAnalysis(f.analysisId),
-              files: getFilesByAnalysis(f.analysisId),
-              problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])],
-            };
-          });
           const hostMsg: HostMessage = {
             type: "INIT",
             payload: {
@@ -1994,7 +2013,8 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
               communicationSignal: "",
               projectName: "",
               peopleList: [],
-              feedbacks,
+              feedbacks: buildFeedbacks(),
+              analyses: buildAnalyses(),
               feedbackFilter: initialFilter,
             },
           };
@@ -2004,6 +2024,33 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         if (m.action === "DELETE_FEEDBACK") {
           try { deleteFeedback((m as { action: string; id: number }).id); }
           catch (err) { replyError(dialog, `Delete failed: ${String(err)}`); }
+        }
+        if (m.action === "IMPORT_FEEDBACK_XML") {
+          const records = (m as { action: string; records: import("@/dialog/utils/feedbackXml").ImportedFeedback[] }).records;
+          let failures = 0;
+          for (const r of records) {
+            try { importFeedback(r); } catch { failures++; }
+          }
+          if (failures) replyError(dialog, `Import finished with ${failures} failure(s) out of ${records.length}.`);
+          const { personName, personEmail } = getUserIdentity();
+          const hostMsg: HostMessage = {
+            type: "INIT",
+            payload: {
+              selection: "",
+              mode: "selection",
+              source: getSource(),
+              personName,
+              personEmail,
+              applicationName: "",
+              communicationFunction: "",
+              communicationSignal: "",
+              projectName: "",
+              peopleList: [],
+              feedbacks: buildFeedbacks(),
+              analyses: buildAnalyses(),
+            },
+          };
+          dialog.messageChild(JSON.stringify(hostMsg));
         }
         if (m.action === "SAVE_PROBLEM_SOLUTION") {
           // Solve Problem from the View Feedback dialog's Problems tab.
@@ -2040,18 +2087,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
         }
         if (m.action === "BACK_TO_FEEDBACK_HISTORY") {
           const { personName, personEmail } = getUserIdentity();
-          const feedbacks = getAllFeedbacks().map((f) => {
-            if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
-            return {
-              ...f,
-              questions: getQuestionsByAnalysis(f.analysisId),
-              errors: getErrorsByAnalysis(f.analysisId),
-              compensators: getCompensatorsByAnalysis(f.analysisId),
-              answers: getAnswersByAnalysis(f.analysisId),
-              files: getFilesByAnalysis(f.analysisId),
-              problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])],
-            };
-          });
+          const feedbacks = buildFeedbacks();
           const backPayload: DialogInitPayload = {
             selection: "",
             mode: "selection",
@@ -2064,6 +2100,7 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
             projectName: "",
             peopleList: [],
             feedbacks,
+            analyses: buildAnalyses(),
           };
           dialog.messageChild(JSON.stringify({ type: "NAVIGATE", view: "feedback-history", payload: backPayload } as HostMessage));
         }

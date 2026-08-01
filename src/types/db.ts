@@ -85,6 +85,8 @@ export interface ProjectAnalysis {
   answers?: ProjectAnswer[];
   problems?: ProjectProblem[];
   files?: AttachFileToProject[];
+  correctedItems?: ProjectCorrectedItem[];
+  guidelineReferences?: GuidelineReference[];
 }
 
 export interface ProjectFeedback {
