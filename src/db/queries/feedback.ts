@@ -1,7 +1,8 @@
 // src/db/queries/feedback.ts
 
 import { getDb, persistDb, nowDate, nowTime } from "@/db/db";
-import type { ProjectFeedback, SaveFeedbackPayload, SaveRequestFeedbackPayload, CommSignalInfo } from "@/types/db";
+import type { ProjectFeedback, SaveFeedbackPayload, SaveRequestFeedbackPayload, CommSignalInfo, AttachFileToProject } from "@/types/db";
+import type { ImportedFeedback } from "@/dialog/utils/feedbackXml";
 
 export function getAllFeedbacks(): ProjectFeedback[] {
   const db = getDb();
@@ -12,6 +13,18 @@ export function getAllFeedbacks(): ProjectFeedback[] {
     const obj: Record<string, unknown> = {};
     cols.forEach((col, i) => { obj[col] = row[i]; });
     return obj as unknown as ProjectFeedback;
+  });
+}
+
+export function getFilesByFeedback(feedbackId: number): AttachFileToProject[] {
+  const db = getDb();
+  const result = db.exec("SELECT * FROM AttachFileToProject WHERE feedbackId = ?", [feedbackId]);
+  if (!result.length) return [];
+  return result[0].values.map((row) => {
+    const cols = result[0].columns;
+    const obj: Record<string, unknown> = {};
+    cols.forEach((col, i) => { obj[col] = row[i]; });
+    return obj as unknown as AttachFileToProject;
   });
 }
 
@@ -216,4 +229,178 @@ export function deleteCommSignalRequest(id: number): void {
   const db = getDb();
   db.run("DELETE FROM CommSignalInfo WHERE id = ?", [id]);
   persistDb();
+}
+
+// ── XML import (Phase 1 foundation — no host wiring yet) ──────────────────────
+
+/**
+ * Collision-free import of one ImportedFeedback record: never writes an id from the
+ * XML, mints fresh rows via AUTOINCREMENT and remaps every child FK to the new ids.
+ * Mirrors saveFullAnalysis (analysis + children) and saveFeedback (feedback + extras).
+ * Problem solutions are out of scope — ProjectProblemSolution.problemId is never
+ * populated elsewhere in this app.
+ */
+export function importFeedback(data: ImportedFeedback): number {
+  const db = getDb();
+  const date = nowDate();
+  const time = nowTime();
+
+  let analysisId: number | undefined;
+
+  if (data.analysis) {
+    const a = data.analysis;
+    const analysisProblems = a.problems.filter((p) => p.source === "analysis");
+
+    db.run(
+      `INSERT INTO ProjectAnalysis (
+        entityUnderAnalysis, fromPerson, analysisSubject,
+        actualAnalysis, whatToDoWithAnalysis,
+        source, applicationName, communicationFunction, communicationSignal,
+        projectName, analysisDate, analysisTime, personName, personEmail,
+        selectionType, errorCount, questionCount, compensatorCount,
+        answerCount, problemCount, correctedItemCount
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [
+        a.entityUnderAnalysis,
+        a.fromPerson ?? "",
+        a.analysisSubject ?? "",
+        a.actualAnalysis,
+        a.whatToDoWithAnalysis,
+        a.source,
+        a.applicationName,
+        a.communicationFunction,
+        a.communicationSignal,
+        a.projectName,
+        a.analysisDate || date,
+        a.analysisTime || time,
+        a.personName,
+        a.personEmail,
+        a.selectionType,
+        a.errors.length,
+        a.questions.length,
+        a.compensators.length,
+        a.answers.length,
+        analysisProblems.length,
+        a.correctedItems.length,
+      ]
+    );
+    const analysisResult = db.exec("SELECT last_insert_rowid() AS id");
+    analysisId = analysisResult[0].values[0][0] as number;
+
+    for (const e of a.errors) {
+      db.run(
+        `INSERT INTO ProjectError
+          (errorNumber, actualError, fromActualCommunication, entityErrorPointTo, errorDescription, errorDate, errorTime, analysisId)
+         VALUES (?,?,?,?,?,?,?,?)`,
+        [e.errorNumber, e.actualError, e.fromActualCommunication, e.entityErrorPointTo, e.errorDescription, e.errorDate || date, e.errorTime || time, analysisId]
+      );
+    }
+    for (const q of a.questions) {
+      db.run(
+        `INSERT INTO ProjectQuestion
+          (questionNumber, actualQuestion, entityQuestionPointTo, responseStatus, questionDate, questionTime, analysisId)
+         VALUES (?,?,?,?,?,?,?)`,
+        [q.questionNumber, q.actualQuestion, q.entityQuestionPointTo, q.responseStatus, q.questionDate || date, q.questionTime || time, analysisId]
+      );
+    }
+    for (const ans of a.answers) {
+      db.run(
+        `INSERT INTO ProjectAnswer
+          (answerNumber, actualQuestion, entityQuestionPointTo, informationAnswerPointTo, actualAnswer, answerDate, answerTime, analysisId)
+         VALUES (?,?,?,?,?,?,?,?)`,
+        [ans.answerNumber, ans.actualQuestion, ans.entityQuestionPointTo, ans.informationAnswerPointTo, ans.actualAnswer, ans.answerDate || date, ans.answerTime || time, analysisId]
+      );
+    }
+    for (const c of a.compensators) {
+      db.run(
+        `INSERT INTO ProjectCompensator
+          (compensatorNumber, actualCompensator, actualErrorReplaced, inActualCommunication, compensatorDescription, compensatorDate, compensatorTime, analysisId)
+         VALUES (?,?,?,?,?,?,?,?)`,
+        [c.compensatorNumber, c.actualCompensator, c.actualErrorReplaced, c.inActualCommunication, c.compensatorDescription, c.compensatorDate || date, c.compensatorTime || time, analysisId]
+      );
+    }
+    for (const ci of a.correctedItems) {
+      db.run(
+        `INSERT INTO ProjectCorrectedItem (
+          correctedItemNumber, errorSelection, compensatorSelection, corrected, correctedDescription, analysisId
+        ) VALUES (?,?,?,?,?,?)`,
+        [ci.correctedItemNumber, ci.errorSelection, ci.compensatorSelection, ci.corrected, ci.correctedDescription, analysisId]
+      );
+    }
+    for (const g of a.guidelineReferences) {
+      db.run(
+        `INSERT INTO GuidelineReference
+          (guidelineText, guidelineNumber, guidelineLink, useLink, guidelineDate, guidelineTime, analysisId)
+         VALUES (?,?,?,?,?,?,?)`,
+        [g.guidelineText, g.guidelineNumber, g.guidelineLink, g.useLink, g.guidelineDate || date, g.guidelineTime || time, analysisId]
+      );
+    }
+    for (const p of analysisProblems) {
+      db.run(
+        `INSERT INTO ProjectProblem
+          (problemNumber, problemName, actualProblem, fromActualError, problemDescription, problemDate, problemTime, analysisId)
+         VALUES (?,?,?,?,?,?,?,?)`,
+        [p.problemNumber, p.problemName, p.actualProblem, p.fromActualError, p.problemDescription, p.problemDate || date, p.problemTime || time, analysisId]
+      );
+    }
+    for (const f of a.files) {
+      db.run(
+        `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, analysisId) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        [f.fileName, f.fileType, f.fileSize, f.fileDirectory, f.fileDescription, f.fileDate || date, f.fileTime || time, f.storageId, f.fullFileName, analysisId]
+      );
+    }
+  }
+
+  const fb = data.feedback;
+  db.run(
+    `INSERT INTO ProjectFeedback (
+      feedbackApplication, feedbackDate, feedbackTime, fromPerson, toPerson,
+      feedbackSubject, internalFeedbackName, feedbackType, actualSelection,
+      selectionType, actualErrorSubstituted, actualCompensatorReplaced,
+      source, applicationName, communicationFunction, communicationSignal,
+      projectName, personName, personEmail, analysisId
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [
+      fb.feedbackApplication,
+      fb.feedbackDate || date,
+      fb.feedbackTime || time,
+      fb.fromPerson,
+      fb.toPerson,
+      fb.feedbackSubject,
+      fb.internalFeedbackName || "",
+      fb.feedbackType,
+      fb.actualSelection,
+      fb.selectionType,
+      fb.actualErrorSubstituted,
+      fb.actualCompensatorReplaced,
+      fb.source,
+      fb.applicationName,
+      fb.communicationFunction,
+      fb.communicationSignal,
+      fb.projectName,
+      fb.personName,
+      fb.personEmail,
+      analysisId ?? null,
+    ]
+  );
+  const feedbackResult = db.exec("SELECT last_insert_rowid() AS id");
+  const feedbackId = feedbackResult[0].values[0][0] as number;
+
+  for (const p of data.problems ?? []) {
+    db.run(
+      `INSERT INTO ProjectProblem
+        (problemNumber, problemName, actualProblem, fromActualError, problemDescription, problemDate, problemTime, feedbackId)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [p.problemNumber, p.problemName, p.actualProblem, p.fromActualError, p.problemDescription, p.problemDate || date, p.problemTime || time, feedbackId]
+    );
+  }
+  for (const f of data.files ?? []) {
+    db.run(
+      `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, feedbackId) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [f.fileName, f.fileType, f.fileSize, f.fileDirectory, f.fileDescription, f.fileDate || date, f.fileTime || time, f.storageId, f.fullFileName, feedbackId]
+    );
+  }
+
+  persistDb();
+  return feedbackId;
 }

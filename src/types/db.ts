@@ -965,7 +965,8 @@ export type DialogAction =
   | { action: "OPEN_STATS_LIST"; target: StatsListTarget; feedbackFilter?: string }
   | { action: "SAVE_POINT_TO_ENTITY"; payload: SavePointToEntityPayload }
   | { action: "DELETE_POINT_TO_ENTITY"; id: number }
-  | { action: "GO_TO_SELECTION"; text: string; documentLocation: string };
+  | { action: "GO_TO_SELECTION"; text: string; documentLocation: string }
+  | { action: "IMPORT_FEEDBACK_XML"; records: import("@/dialog/utils/feedbackXml").ImportedFeedback[] };
 
 /** Aggregate entity counts shown in the Stats Overview dialog (Point 14). */
 export interface StatsOverview {
