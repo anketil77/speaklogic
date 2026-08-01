@@ -83,7 +83,13 @@ const A_COLS: PanelTableCol<ProjectAnswer>[] = [
 ];
 
 const F_COLS: PanelTableCol<AttachFileToProject>[] = [
-  { header: "File Name", width: "32%", render: (f) => f.fileName || "—", truncate: true },
+  {
+    header: "File Name", width: "32%", truncate: true,
+    // Embedded files (from XML import / small attachments) download on click.
+    render: (f) => f.fileContent
+      ? <a href={f.fileContent} download={f.fullFileName || f.fileName || "file"} style={{ color: "#0078D4", textDecoration: "underline" }}>{f.fileName || "—"}</a>
+      : (f.fileName || "—"),
+  },
   { header: "File Type", width: "18%", render: (f) => f.fileType || "—", truncate: true },
   { header: "File Date", width: "18%", render: (f) => formatDisplayDate(f.fileDate) || "—", truncate: true },
   { header: "File Time", width: "16%", render: (f) => f.fileTime || "—", truncate: true },

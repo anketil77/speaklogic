@@ -354,6 +354,9 @@ export interface AttachFileToProject {
   principleInterpretationId?: number;
   selectionWithPrincipleId?: number;
   principleInSelectionId?: number;
+  // Base64 data URL of the file, captured at attach time (small files only) so it
+  // can travel inside an XML export. Empty for large files (name-only) or old rows.
+  fileContent?: string;
 }
 
 export interface CommSignalInfo {

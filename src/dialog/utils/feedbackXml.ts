@@ -87,7 +87,7 @@ const GUIDELINE_FIELDS: Scalars<GuidelineReference> = [
 
 const FILE_FIELDS: Scalars<AttachFileToProject> = [
   "fileName", "fileType", "fileSize", "fileDirectory", "fileDescription",
-  "fileDate", "fileTime", "storageId", "fullFileName",
+  "fileDate", "fileTime", "storageId", "fullFileName", "fileContent",
 ];
 
 // Fields that may carry multi-line/HTML content — wrapped in CDATA on write.
@@ -100,7 +100,7 @@ const CDATA_FIELDS = new Set<string>([
   "actualProblem", "fromActualError", "problemDescription",
   "errorSelection", "compensatorSelection", "corrected", "correctedDescription",
   "guidelineText", "guidelineLink",
-  "fileDescription",
+  "fileDescription", "fileContent",
 ]);
 
 function escapeXmlText(value: unknown): string {
@@ -388,6 +388,7 @@ function parseFile(el: Element): ImportedFileScalars {
     fileTime: textOf(el, "fileTime"),
     storageId: textOf(el, "storageId"),
     fullFileName: textOf(el, "fullFileName"),
+    fileContent: textOf(el, "fileContent"),
   };
 }
 

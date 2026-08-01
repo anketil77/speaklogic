@@ -30,6 +30,7 @@ import {
 import {
   deleteFeedback,
   getAllFeedbacks,
+  getFilesByFeedback,
   importFeedback,
   saveFeedback,
   saveFeedbackHistory,
@@ -1195,7 +1196,7 @@ export function OutlookTaskPane() {
     await reloadDbFromStorage();
     const { personName, personEmail } = getUserIdentity();
 
-    const buildFeedbacks = () => getAllFeedbacks().map((f) => !f.analysisId ? { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] } : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: getFilesByAnalysis(f.analysisId), problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] });
+    const buildFeedbacks = () => getAllFeedbacks().map((f) => !f.analysisId ? { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [], files: f.id ? getFilesByFeedback(f.id) : [] } : { ...f, questions: getQuestionsByAnalysis(f.analysisId), errors: getErrorsByAnalysis(f.analysisId), compensators: getCompensatorsByAnalysis(f.analysisId), answers: getAnswersByAnalysis(f.analysisId), files: [...getFilesByAnalysis(f.analysisId), ...(f.id ? getFilesByFeedback(f.id) : [])], problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])] });
     // Feedback-history export needs the full analysis (incl. correctedItems/guidelineReferences) to serialize <Analysis>.
     // Only enrich analyses a feedback actually references — skip retained/orphan analyses.
     const buildAnalyses = () => {

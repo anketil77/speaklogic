@@ -31,6 +31,10 @@ const C = {
 
 const LABEL_W = 56;
 
+// Files up to this size get their bytes embedded (base64) so they can travel in an
+// XML export; larger files stay name-only to keep the local DB / export bounded.
+const MAX_EMBED_BYTES = 1_000_000;
+
 interface FieldState {
   fileName: string;
   fileDirectory: string;
@@ -40,6 +44,7 @@ interface FieldState {
   fileTime: string;
   fileDescription: string;
   fullFileName: string;
+  fileContent: string;
 }
 
 const EMPTY: FieldState = {
@@ -51,12 +56,14 @@ const EMPTY: FieldState = {
   fileTime: "",
   fileDescription: "",
   fullFileName: "",
+  fileContent: "",
 };
 
 export function AttachFileDialog({ onAdd, onClose }: AttachFileDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<FieldState>(EMPTY);
   const [error, setError] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
 
   const { pos, onHeaderMouseDown } = useDraggable();
 
@@ -87,9 +94,20 @@ export function AttachFileDialog({ onAdd, onClose }: AttachFileDialogProps) {
       fileTime: modDate.toLocaleTimeString(),
       fileDescription: "",
       fullFileName: file.name,
+      fileContent: "",
     });
     setError(null);
     e.target.value = "";
+
+    // Embed small files (base64 data URL) so they travel inside an XML export.
+    // Guard Apply until the read completes so we never save a file name-only by mistake.
+    if (file.size <= MAX_EMBED_BYTES) {
+      setReading(true);
+      const reader = new FileReader();
+      reader.onload = () => { setFields((prev) => ({ ...prev, fileContent: String(reader.result ?? "") })); setReading(false); };
+      reader.onerror = () => setReading(false);
+      reader.readAsDataURL(file);
+    }
   }
 
   function handleApply() {
@@ -107,6 +125,7 @@ export function AttachFileDialog({ onAdd, onClose }: AttachFileDialogProps) {
       fileDescription: fields.fileDescription,
       storageId: "AnalysisDialog",
       fullFileName: fields.fullFileName,
+      fileContent: fields.fileContent,
     });
     onClose();
   }
@@ -343,7 +362,7 @@ export function AttachFileDialog({ onAdd, onClose }: AttachFileDialogProps) {
         <FooterBar>
           <span style={{ flex: 1 }} />
           <DismissBtn label="Cancel" onClick={onClose} />
-          <PrimaryBtn label="Apply" onClick={handleApply} />
+          <PrimaryBtn label={reading ? "Reading…" : "Apply"} onClick={handleApply} disabled={reading} />
         </FooterBar>
       </div>
 

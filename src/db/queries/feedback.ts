@@ -121,12 +121,12 @@ export function saveFeedback(payload: SaveFeedbackPayload): number {
       db.run(
         `INSERT INTO AttachFileToProject (
           fileName, fileType, fileSize, fileDirectory, fileDescription,
-          fileDate, fileTime, storageId, fullFileName, feedbackId
-        ) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+          fileDate, fileTime, storageId, fullFileName, fileContent, feedbackId
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         [
           file.fileName, file.fileType, file.fileSize, file.fileDirectory,
           file.fileDescription, file.fileDate, file.fileTime,
-          file.storageId, file.fullFileName, id,
+          file.storageId, file.fullFileName, file.fileContent ?? "", id,
         ]
       );
     }
@@ -345,8 +345,8 @@ export function importFeedback(data: ImportedFeedback): number {
     }
     for (const f of a.files) {
       db.run(
-        `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, analysisId) VALUES (?,?,?,?,?,?,?,?,?,?)`,
-        [f.fileName, f.fileType, f.fileSize, f.fileDirectory, f.fileDescription, f.fileDate || date, f.fileTime || time, f.storageId, f.fullFileName, analysisId]
+        `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, fileContent, analysisId) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        [f.fileName, f.fileType, f.fileSize, f.fileDirectory, f.fileDescription, f.fileDate || date, f.fileTime || time, f.storageId, f.fullFileName, f.fileContent ?? "", analysisId]
       );
     }
   }
@@ -396,8 +396,8 @@ export function importFeedback(data: ImportedFeedback): number {
   }
   for (const f of data.files ?? []) {
     db.run(
-      `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, feedbackId) VALUES (?,?,?,?,?,?,?,?,?,?)`,
-      [f.fileName, f.fileType, f.fileSize, f.fileDirectory, f.fileDescription, f.fileDate || date, f.fileTime || time, f.storageId, f.fullFileName, feedbackId]
+      `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, fileContent, feedbackId) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      [f.fileName, f.fileType, f.fileSize, f.fileDirectory, f.fileDescription, f.fileDate || date, f.fileTime || time, f.storageId, f.fullFileName, f.fileContent ?? "", feedbackId]
     );
   }
 

@@ -7,7 +7,7 @@ const DIALOG_BASE = window.location.origin;
 
 import { initDb, nowDate, nowTime, formatDisplayDate, reloadDbFromStorage } from "@/db/db";
 import { saveFullAnalysis, updateAnalysis, getAllAnalyses, getAnalysisById, getRetainedAnalyses, deleteAnalysis, getErrorsByAnalysis, getQuestionsByAnalysis, getCompensatorsByAnalysis, getAnswersByAnalysis, getFilesByAnalysis, getProblemsByAnalysis, getProblemsByFeedback, getAllErrors, getErrorsByApplicationName, findAnalysisIdByErrorText, addCompensatorToAnalysis, getGuidelinesByAnalysis, getCorrectedItemsByAnalysis } from "@/db/queries/analysis";
-import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest, importFeedback } from "@/db/queries/feedback";
+import { saveFeedback, saveFeedbackHistory, saveCommSignalInfo, getAllFeedbacks, deleteFeedback, getCommSignalRequests, deleteCommSignalRequest, importFeedback, getFilesByFeedback } from "@/db/queries/feedback";
 import { getStatsOverview } from "@/db/queries/stats";
 import { saveFlag, getAllFlaggedSelections, deleteFlag, getAllSelectionHistories, deleteSelectionHistory, getAllFlaggedArticles, deleteFlaggedArticle } from "@/db/queries/flag";
 import { getAllInterpretations, deleteInterpretation, getFilesByPrincipleInterpretation, addAttachedFile, removeAttachedFile, saveSelectionWithPrinciple, savePrincipleInSelection, getPrinciplesInSelection, getSelectionsWithPrinciple, deletePrincipleInSelection, deleteSelectionWithPrinciple, getFilesByPrincipleInSelection, getFilesBySelectionWithPrinciple, saveInterpretation } from "@/db/queries/principle";
@@ -1944,14 +1944,14 @@ function openFeedbackHistoryDialog(event: Office.AddinCommands.Event, attempt = 
       const dialog = result.value;
       const complete = makeEventCompleter(event);
       const buildFeedbacks = () => getAllFeedbacks().map((f) => {
-        if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [] };
+        if (!f.analysisId) return { ...f, problems: f.id ? getProblemsByFeedback(f.id) : [], files: f.id ? getFilesByFeedback(f.id) : [] };
         return {
           ...f,
           questions: getQuestionsByAnalysis(f.analysisId),
           errors: getErrorsByAnalysis(f.analysisId),
           compensators: getCompensatorsByAnalysis(f.analysisId),
           answers: getAnswersByAnalysis(f.analysisId),
-          files: getFilesByAnalysis(f.analysisId),
+          files: [...getFilesByAnalysis(f.analysisId), ...(f.id ? getFilesByFeedback(f.id) : [])],
           problems: [...getProblemsByAnalysis(f.analysisId), ...(f.id ? getProblemsByFeedback(f.id) : [])],
         };
       });

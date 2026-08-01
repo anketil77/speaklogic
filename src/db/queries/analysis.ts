@@ -98,7 +98,7 @@ export function saveFullAnalysis(payload: SaveAnalysisPayload): number {
   }
   for (const f of payload.files) {
     db.run(
-      `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, analysisId) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, fileContent, analysisId) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [
         f.fileName,
         f.fileType,
@@ -109,6 +109,7 @@ export function saveFullAnalysis(payload: SaveAnalysisPayload): number {
         f.fileTime || time,
         f.storageId,
         f.fullFileName,
+        f.fileContent ?? "",
         analysisId,
       ]
     );
@@ -213,7 +214,7 @@ export function updateAnalysis(id: number, payload: SaveAnalysisPayload): void {
   }
   for (const f of payload.files) {
     db.run(
-      `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, analysisId) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, fileContent, analysisId) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [
         f.fileName,
         f.fileType,
@@ -224,6 +225,7 @@ export function updateAnalysis(id: number, payload: SaveAnalysisPayload): void {
         f.fileTime || time,
         f.storageId,
         f.fullFileName,
+        f.fileContent ?? "",
         id,
       ]
     );

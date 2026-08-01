@@ -269,7 +269,8 @@ CREATE TABLE IF NOT EXISTS AttachFileToProject (
   articleId INTEGER REFERENCES Article(id),
   principleInterpretationId INTEGER REFERENCES PrincipleInterpretation(id),
   selectionWithPrincipleId INTEGER REFERENCES SelectionWithPrinciple(id),
-  principleInSelectionId INTEGER REFERENCES PrincipleInSelection(id)
+  principleInSelectionId INTEGER REFERENCES PrincipleInSelection(id),
+  fileContent TEXT
 );
 
 CREATE TABLE IF NOT EXISTS CommSignalInfo (
