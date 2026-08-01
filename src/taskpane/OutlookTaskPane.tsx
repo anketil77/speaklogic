@@ -60,7 +60,7 @@ import {
 } from "@/db/queries/principle";
 import { openIdentifiedPrincipleReport, openInterpretedPrincipleReport, openRelatedPrincipleReport } from "@/dialog/utils/reportGenerator";
 import { buildProvideFeedbackEmail, buildFeedbackAppliedNotificationEmail, buildRequestFeedbackEmail } from "@/dialog/utils/emailTemplates";
-import { parseFeedbackEmail } from "@/dialog/utils/parseFeedbackEmail";
+import { parseFeedbackEmail, parseEmailLabelMap } from "@/dialog/utils/parseFeedbackEmail";
 import type { ProjectAnalysis, ProjectFeedback } from "@/types/db";
 import { feedbacksToXml, type AnalysisWithChildren } from "@/dialog/utils/feedbackXml";
 import type {
@@ -870,18 +870,28 @@ export function OutlookTaskPane() {
     const parsed = parseFeedbackEmail(html);
     if (!parsed) { setStatus({ msg: "No Speak Logic feedback found in this email.", ok: false }); return; }
 
-    const signal = commCtxRef.current.commSignal;
+    // The analysis payload lacks the visible header fields — read them off the template.
+    const L = parseEmailLabelMap(html);
+    const pick = (...keys: string[]) => { for (const k of keys) if (L[k]) return L[k]; return ""; };
+    const fromPerson = parsed.fromPerson || pick("fromperson");
+    const appName = pick("applicationname") || subject || "";
+    const commFn = pick("communicationfunction");
+    const signal = pick("communicationsignal") || commCtxRef.current.commSignal;
     const project = commCtxRef.current.projectName;
+    const analysisSubject = parsed.analysisSubject || pick("analysissubject") || subject || "";
+
     const analysis: AnalysisWithChildren = {
       id: parsed.id || undefined,
       entityUnderAnalysis: parsed.entityUnderAnalysis || "",
-      fromPerson: parsed.fromPerson || "",
-      analysisSubject: parsed.analysisSubject || subject || "",
+      fromPerson,
+      analysisSubject,
       actualAnalysis: parsed.actualAnalysis || "",
       whatToDoWithAnalysis: "ProvideFeedbackWithAnalysis",
-      source: getSource(), applicationName: subject || "", communicationFunction: "",
+      source: getSource(), applicationName: appName, communicationFunction: commFn,
       communicationSignal: signal, projectName: project,
-      analysisDate: nowDate(), analysisTime: nowTime(), personName: "", personEmail: "",
+      analysisDate: pick("communicationdate", "analysisdate") || nowDate(),
+      analysisTime: pick("communicationtime", "analysistime") || nowTime(),
+      personName: "", personEmail: "",
       selectionType: "Selection",
       errorCount: parsed.errors.length, questionCount: parsed.questions.length, compensatorCount: parsed.compensators.length,
       answerCount: parsed.answers.length, problemCount: parsed.problems.length, correctedItemCount: 0,
@@ -889,11 +899,14 @@ export function OutlookTaskPane() {
       problems: parsed.problems, files: [], correctedItems: [], guidelineReferences: [],
     };
     const feedback: ProjectFeedback = {
-      feedbackApplication: "", feedbackDate: nowDate(), feedbackTime: nowTime(),
-      fromPerson: parsed.fromPerson || "", toPerson: "", feedbackSubject: parsed.analysisSubject || subject || "",
+      feedbackApplication: pick("actualfeedbackprovided", "feedbackapplication"),
+      feedbackDate: nowDate(), feedbackTime: nowTime(),
+      fromPerson, toPerson: pick("toperson"),
+      feedbackSubject: pick("feedbacksubject") || analysisSubject,
       internalFeedbackName: "", feedbackType: "Received", actualSelection: parsed.entityUnderAnalysis || "",
-      selectionType: "Selection", actualErrorSubstituted: "", actualCompensatorReplaced: "",
-      source: getSource(), applicationName: subject || "", communicationFunction: "",
+      selectionType: "Selection",
+      actualErrorSubstituted: pick("actualerrorsubstituted"), actualCompensatorReplaced: pick("actualcompensatorreplaced"),
+      source: getSource(), applicationName: appName, communicationFunction: commFn,
       communicationSignal: signal, projectName: project, personName: "", personEmail: "",
       analysisId: parsed.id || undefined,
     };

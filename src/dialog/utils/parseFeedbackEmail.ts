@@ -326,3 +326,23 @@ export function parseFeedbackEmail(html: string): AnalysisDataForApply | null {
   }
   return fromEmbedded(doc) ?? fromLabels(doc);
 }
+
+/**
+ * All visible "Label : value" rows of a Speak Logic email, keyed by collapsed label
+ * (e.g. "feedbacksubject", "toperson"). Captures the feedback header fields the
+ * analysis payload doesn't carry, so Email→XML can mirror the email faithfully.
+ */
+export function parseEmailLabelMap(html: string): Record<string, string> {
+  if (!html || !html.trim()) return {};
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const map: Record<string, string> = {};
+    for (const row of flatten(doc)) {
+      const key = row.label.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (key && !(key in map)) map[key] = row.value; // first occurrence wins
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
