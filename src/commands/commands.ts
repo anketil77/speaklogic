@@ -27,8 +27,10 @@ import {
   buildProvideFeedbackEmail,
   buildFeedbackAppliedNotificationEmail,
   buildRequestFeedbackEmail,
+  SL_FEEDBACK_MARKER,
 } from "@/dialog/utils/emailTemplates";
-import { parseFeedbackEmail } from "@/dialog/utils/parseFeedbackEmail";
+import { parseFeedbackEmail, parseEmailLabelMap } from "@/dialog/utils/parseFeedbackEmail";
+import type { ImportedFeedback } from "@/dialog/utils/feedbackXml";
 import type { ProjectAnalysis, AnalysisDataForApply } from "@/types/db";
 
 function buildPeopleList(commPersonName?: string): string[] {
@@ -4536,6 +4538,136 @@ function getBodyTextAsync(): Promise<string> {
   });
 }
 
+function getBodyHtmlAsync(): Promise<string> {
+  return new Promise((resolve) => {
+    try {
+      Office.context.mailbox.item.body.getAsync(Office.CoercionType.Html, (r) => {
+        resolve(r.status === Office.AsyncResultStatus.Succeeded ? String(r.value ?? "") : "");
+      });
+    } catch {
+      resolve("");
+    }
+  });
+}
+
+// Word has no mailbox API: "Provide Feedback" there only ever saves to Word's own
+// (separate, unsynced) DB, then hands off to Outlook via a mail compose window. This
+// is the only Outlook-side moment that email exists, so it's the only place we can
+// also log it into Outlook's own List of Feedback. Detection is deliberately narrow —
+// "Feedback Subject" + "Actual Feedback Provided" is the one label combo unique to
+// all three Provide Feedback templates (Apply/Receive/Request use different labels) —
+// so this never misfires on ordinary outgoing mail.
+function tryLogProvidedFeedbackFromSend(html: string, subject: string): void {
+  if (!html) return;
+  const L = parseEmailLabelMap(html);
+  const feedbackSubject = L["feedbacksubject"] || "";
+  const actualFeedbackProvided = L["actualfeedbackprovided"] || "";
+  if (!feedbackSubject || !actualFeedbackProvided) return;
+
+  const pick = (...keys: string[]) => { for (const k of keys) if (L[k]) return L[k]; return ""; };
+  const fromPerson = pick("fromperson");
+  const toPerson = pick("toperson");
+  const applicationName = pick("applicationname") || subject || "";
+  const communicationFunction = pick("communicationfunction");
+  const communicationSignal = pick("communicationsignal");
+
+  // Native-Outlook "Provide Feedback" already saved this to Outlook's DB before
+  // composing the mail — matching on subject + application + provided text (all
+  // plain-text-normalized) avoids a duplicate row for that case.
+  const normProvided = actualFeedbackProvided.trim().toLowerCase();
+  const alreadyLogged = getAllFeedbacks().some((f) =>
+    f.feedbackType === "Provided" &&
+    f.feedbackSubject === feedbackSubject &&
+    f.applicationName === applicationName &&
+    plainText(f.feedbackApplication).toLowerCase() === normProvided
+  );
+  if (alreadyLogged) {
+    dbg("KEYWORDS", "OnMessageSend: Provided feedback already logged, skipping", { feedbackSubject });
+    return;
+  }
+
+  const hasMarker = html.includes(SL_FEEDBACK_MARKER);
+  const analysisData = hasMarker ? parseFeedbackEmail(html) : null;
+
+  if (analysisData) {
+    const data: ImportedFeedback = {
+      feedback: {
+        feedbackApplication: actualFeedbackProvided,
+        feedbackDate: pick("feedbackdate") || nowDate(),
+        feedbackTime: pick("feedbacktime") || nowTime(),
+        fromPerson: analysisData.fromPerson || fromPerson,
+        toPerson,
+        feedbackSubject,
+        internalFeedbackName: "",
+        feedbackType: "Provided",
+        actualSelection: analysisData.entityUnderAnalysis || "",
+        selectionType: "Selection",
+        actualErrorSubstituted: pick("actualerrorsubstituted"),
+        actualCompensatorReplaced: pick("actualcompensatorreplaced"),
+        source: "Outlook Mail",
+        applicationName,
+        communicationFunction,
+        communicationSignal,
+        projectName: "",
+        personName: "",
+        personEmail: "",
+      },
+      analysis: {
+        entityUnderAnalysis: analysisData.entityUnderAnalysis || "",
+        fromPerson: analysisData.fromPerson || fromPerson,
+        analysisSubject: analysisData.analysisSubject || feedbackSubject,
+        actualAnalysis: analysisData.actualAnalysis || "",
+        whatToDoWithAnalysis: "ProvideFeedbackWithAnalysis",
+        source: "Outlook Mail",
+        applicationName,
+        communicationFunction,
+        communicationSignal,
+        projectName: "",
+        analysisDate: pick("communicationdate") || nowDate(),
+        analysisTime: pick("communicationtime") || nowTime(),
+        personName: "",
+        personEmail: "",
+        selectionType: "Selection",
+        errors: analysisData.errors,
+        compensators: analysisData.compensators,
+        questions: analysisData.questions,
+        answers: analysisData.answers,
+        correctedItems: [],
+        guidelineReferences: [],
+        problems: analysisData.problems.map((p) => ({ ...p, source: "analysis" as const })),
+        files: [],
+      },
+    };
+    importFeedback(data);
+    dbg("KEYWORDS", "OnMessageSend: logged Provided feedback (with analysis) to Outlook DB", { feedbackSubject });
+  } else {
+    saveFeedback({
+      feedback: {
+        feedbackApplication: actualFeedbackProvided,
+        feedbackDate: pick("feedbackdate") || nowDate(),
+        feedbackTime: pick("feedbacktime") || nowTime(),
+        fromPerson,
+        toPerson,
+        feedbackSubject,
+        internalFeedbackName: "",
+        feedbackType: "Provided",
+        actualSelection: pick("feedbackselection"),
+        selectionType: "",
+        actualErrorSubstituted: pick("actualerrorsubstituted"),
+        actualCompensatorReplaced: pick("actualcompensatorreplaced"),
+        source: "Outlook Mail",
+        applicationName,
+        communicationFunction,
+        communicationSignal,
+        projectName: "",
+        personName: "",
+        personEmail: "",
+      },
+    });
+    dbg("KEYWORDS", "OnMessageSend: logged Provided feedback (header-only) to Outlook DB", { feedbackSubject });
+  }
+}
+
 async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<void> {
   const ev = event as SmartAlertsEvent;
   try {
@@ -4546,11 +4678,21 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
     await reloadDbFromStorage();
     const rules = getKeywordRules();
 
-    const [recipients, body] = await Promise.all([getRecipientsAsync(), getBodyTextAsync()]);
+    const [recipients, body, html] = await Promise.all([getRecipientsAsync(), getBodyTextAsync(), getBodyHtmlAsync()]);
     const subject = (() => {
       try { return String((Office.context.mailbox.item as Office.MessageCompose).subject as unknown as string) || ""; }
       catch { return ""; }
     })();
+
+    // Side effect only — must never affect the banned-words allow/block decision below,
+    // so any failure here is swallowed rather than falling through to the outer catch
+    // (which would default-allow the send and skip the banned-words check entirely).
+    try {
+      tryLogProvidedFeedbackFromSend(html, subject);
+    } catch (err) {
+      dbg("KEYWORDS", "OnMessageSend: feedback logging failed — non-critical", String(err));
+    }
+
     const haystack = `${subject}\n${body}`;
     const hits = findBannedWords(recipients, haystack);
 

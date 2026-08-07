@@ -7,7 +7,10 @@
 
 import { dbg } from "@/debug/log";
 
-const HTML_BODY_LIMIT = 32000; // new Outlook / OWA silently refuse to open the form above this
+// Kept high-but-bounded, not removed: new Outlook / OWA refuse to even OPEN a compose
+// form above a hard character ceiling, so an unbounded body can break sending outright.
+// 100000 sits well above any realistic single feedback email but still under that ceiling.
+const HTML_BODY_LIMIT = 100000;
 const MAILTO_BODY_LIMIT = 1500; // mailto URLs cap around ~2000 chars once subject+recipient are encoded
 const BLOCK_TAGS = new Set(["tr", "p", "div", "h1", "h2", "h3", "h4", "h5", "h6", "li"]);
 const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);

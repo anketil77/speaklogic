@@ -17,6 +17,7 @@ import type {
   AnalysisDataForApply,
 } from "@/types/db";
 import { formatDisplayDate } from "@/db/db";
+import { sanitizeWordHtml } from "@/dialog/utils/sanitizeWordHtml";
 
 const GREEN = "#42b634";
 
@@ -120,9 +121,29 @@ function blockField(label: string, content: string): string {
   </tr>`;
 }
 
+function isHtmlEmpty(v: string | undefined | null): boolean {
+  return !v || !v.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+}
+
+// Like blockField, but keeps the field's rich formatting instead of stripping it to
+// plain text — used for the long-form body fields (feedback, analysis, message text).
+// Renders through sanitizeWordHtml (drops Word/Office boilerplate + dangerous content)
+// inside a .sl-html-content div so it picks up the styles embedded by wrapPage().
+function richBlockField(label: string, html: string | undefined | null): string {
+  const inner = isHtmlEmpty(html)
+    ? `<p style="margin:0;padding-bottom:10px;">—</p>`
+    : `<div class="sl-html-content">${sanitizeWordHtml(html as string)}</div>`;
+  return `<tr>
+    <td align="left" style="font-size:16px;font-family:Verdana;color:#000;line-height:30px;" colspan="3"><strong>${label}</strong></td>
+  </tr>
+  <tr>
+    <td align="left" style="font-size:14px;line-height:20px;font-family:Verdana;color:#000;" colspan="3">${inner}</td>
+  </tr>`;
+}
+
 function section(iconFile: string, title: string, rows: string): string {
   return `
-  <table cellpadding="0" cellspacing="0" width="600" style="background:#f7f7f7;margin-bottom:4px;">
+  <table class="sl-wrap" cellpadding="0" cellspacing="0" width="760" style="background:#f7f7f7;margin-bottom:4px;max-width:760px;width:100%;">
     <tr>
       <td style="background:${GREEN};padding:12px 0;text-align:center;font-size:22px;font-family:Verdana;color:#fff;">
         <table style="margin:0 auto;"><tr>
@@ -135,12 +156,34 @@ function section(iconFile: string, title: string, rows: string): string {
     <tr><td style="height:20px;"></td></tr>
     <tr>
       <td style="padding:0 30px;">
-        <table width="540" cellpadding="0" cellspacing="0"><tbody>${rows}</tbody></table>
+        <table width="700" cellpadding="0" cellspacing="0"><tbody>${rows}</tbody></table>
       </td>
     </tr>
     <tr><td style="height:20px;"></td></tr>
   </table>`;
 }
+
+// Mirrors .sl-html-content (src/dialog/components/HtmlContent.tsx) — email clients don't
+// load the add-in's runtime CSS, so rich body fields need this shipped inside the email.
+const RICH_CONTENT_CSS = `
+    .sl-html-content p{margin:0 0 0.85em;}
+    .sl-html-content h1,.sl-html-content h2,.sl-html-content h3,
+    .sl-html-content h4,.sl-html-content h5,.sl-html-content h6{color:#0F1419;margin:1.1em 0 0.45em;line-height:1.25;font-weight:700;}
+    .sl-html-content h1{font-size:1.45em;}
+    .sl-html-content h2{font-size:1.22em;}
+    .sl-html-content h3{font-size:1.08em;}
+    .sl-html-content h4,.sl-html-content h5,.sl-html-content h6{font-size:1em;}
+    .sl-html-content ul,.sl-html-content ol{padding-left:1.5em;margin:0 0 0.85em;}
+    .sl-html-content li{margin-bottom:0.25em;}
+    .sl-html-content blockquote{border-left:3px solid #0078D4;margin:0 0 0.85em;padding:4px 12px;color:#6B7280;font-style:italic;background:#F8FAFF;border-radius:0 4px 4px 0;}
+    .sl-html-content a{color:#0078D4;}
+    .sl-html-content pre{background:#F3F4F6;border-radius:4px;padding:8px 12px;overflow-x:auto;font-size:0.92em;margin:0 0 0.85em;white-space:pre;}
+    .sl-html-content pre,.sl-html-content code{font-family:Consolas,"SF Mono",Monaco,monospace;}
+    .sl-html-content img{max-width:100%;height:auto;display:block;margin:0.85em 0;border-radius:4px;}
+    .sl-html-content table{border-collapse:collapse;width:100%;margin:0 0 0.85em;}
+    .sl-html-content th,.sl-html-content td{border:1px solid #C7C7C7;padding:6px 9px;vertical-align:top;}
+    .sl-html-content th{background:#F3F4F6;font-weight:600;text-align:left;}
+    .sl-html-content hr{margin:1em 0;border:none;border-top:1px solid #D0D0D0;}`;
 
 function wrapPage(title: string, body: string): string {
   const year = new Date().getFullYear();
@@ -155,12 +198,13 @@ function wrapPage(title: string, body: string): string {
     body{background:#e0e0e0;font-family:Verdana,Arial,sans-serif;}
     p{margin:0;padding:0;padding-bottom:10px;line-height:1.6;font-family:Verdana,Arial,sans-serif;}
     img{display:inline-block;}
-    @media only screen and (max-width:767px){.section{width:100%!important;}.column{width:100%!important;}}
+    @media only screen and (max-width:767px){.sl-wrap{width:100%!important;}}
+    ${RICH_CONTENT_CSS}
   </style>
 </head>
 <body>
 <table width="100%"><tbody><tr><td align="center" style="padding:20px 10px;">
-  <table cellpadding="0" cellspacing="0" width="600">
+  <table class="sl-wrap" cellpadding="0" cellspacing="0" width="760" style="max-width:760px;width:100%;">
     <tr><td style="background:${GREEN};height:10px;"></td></tr>
     <tr>
       <td style="background:#fdfdfd;padding:20px 0;text-align:center;">
@@ -170,15 +214,15 @@ function wrapPage(title: string, body: string): string {
     <tr><td style="background:${GREEN};height:10px;"></td></tr>
     <tr><td style="height:0;"></td></tr>
   </table>
-  <table cellpadding="0" cellspacing="0" width="600" style="margin-bottom:4px;">
+  <table class="sl-wrap" cellpadding="0" cellspacing="0" width="760" style="margin-bottom:4px;max-width:760px;width:100%;">
     <tr>
       <td>
-        <img src="${imgUrl("feedback-banner.jpg")}" alt="Feedback" width="600" style="width:100%;display:block;">
+        <img src="${imgUrl("feedback-banner.jpg")}" alt="Feedback" width="760" style="width:100%;display:block;">
       </td>
     </tr>
   </table>
   ${body}
-  <table cellpadding="0" cellspacing="0" width="600">
+  <table class="sl-wrap" cellpadding="0" cellspacing="0" width="760" style="max-width:760px;width:100%;">
     <tr>
       <td style="background:${GREEN};padding:12px 0;text-align:center;font-size:13px;font-family:Verdana;color:#fff;">
         The Speak Logic Project &copy; ${year}. All Rights Reserved.
@@ -201,7 +245,7 @@ function buildErrorRows(errors: ProjectError[]): string {
     fieldRow("Entity Error Point to", esc(e.entityErrorPointTo)),
     fieldRow("Error Date", esc(formatDisplayDate(e.errorDate))),
     fieldRow("Error Time", esc(e.errorTime)),
-    blockField("Error Description", esc(stripHtml(e.errorDescription))),
+    richBlockField("Error Description", e.errorDescription),
   ].join("")).join("");
 }
 
@@ -214,7 +258,7 @@ function buildCompensatorRows(comps: ProjectCompensator[]): string {
     fieldRow("In Actual App/Comm", esc(c.inActualCommunication)),
     fieldRow("Compensator Date", esc(formatDisplayDate(c.compensatorDate))),
     fieldRow("Compensator Time", esc(c.compensatorTime)),
-    blockField("Compensator Description", esc(stripHtml(c.compensatorDescription))),
+    richBlockField("Compensator Description", c.compensatorDescription),
   ].join("")).join("");
 }
 
@@ -223,7 +267,7 @@ function buildQuestionRows(questions: ProjectQuestion[]): string {
   return questions.map((q, i) => [
     fieldRow("Question Number", esc(String(q.questionNumber ?? i + 1))),
     fieldRow("Entity Question Point to", esc(q.entityQuestionPointTo)),
-    blockField("Actual Question", esc(stripHtml(q.actualQuestion))),
+    richBlockField("Actual Question", q.actualQuestion),
   ].join("")).join("");
 }
 
@@ -232,7 +276,7 @@ function buildAnswerRows(answers: ProjectAnswer[]): string {
   return answers.map((a, i) => [
     fieldRow("Answer Number", esc(String(a.answerNumber ?? i + 1))),
     fieldRow("Information Answer Point to", esc(a.informationAnswerPointTo)),
-    blockField("Actual Answer", esc(stripHtml(a.actualAnswer))),
+    richBlockField("Actual Answer", a.actualAnswer),
   ].join("")).join("");
 }
 
@@ -243,7 +287,7 @@ function buildProblemRows(problems: ProjectProblem[]): string {
     fieldRow("Problem Name", esc(p.problemName)),
     fieldRow("Actual Problem", esc(p.actualProblem)),
     fieldRow("From Actual Error", esc(p.fromActualError)),
-    blockField("Problem Description", esc(stripHtml(p.problemDescription))),
+    richBlockField("Problem Description", p.problemDescription),
   ].join("")).join("");
 }
 
@@ -255,7 +299,7 @@ function buildProvideFeedbackWithAnalysis(
 ): string {
   const provideFbSection = section("icon-provide.png", "Provide Feedback", [
     fieldRow("Feedback Subject", esc(fb.feedbackSubject)),
-    blockField("Actual Feedback Provided", esc(stripHtml(fb.feedbackApplication))),
+    richBlockField("Actual Feedback Provided", fb.feedbackApplication),
   ].join(""));
 
   const msgSection = section("icon-receive.png", "Message Under Analysis", [
@@ -267,14 +311,14 @@ function buildProvideFeedbackWithAnalysis(
     fieldRow("Communication Date", esc(formatDisplayDate(analysis.analysisDate))),
     fieldRow("Communication Time", esc(analysis.analysisTime)),
     fieldRow("Analysis Subject", esc(analysis.analysisSubject)),
-    blockField("Actual Message", esc(stripHtml(analysis.entityUnderAnalysis))),
+    richBlockField("Actual Message", analysis.entityUnderAnalysis),
   ].join(""));
 
   const analysisSection = section("icon-analysis.png", "My Analysis", [
     fieldRow("From Person", esc(fb.fromPerson)),
     fieldRow("To Person", esc(fb.toPerson)),
     fieldRow("Application Name", esc(fb.applicationName)),
-    blockField("Actual Analysis", esc(stripHtml(analysis.actualAnalysis))),
+    richBlockField("Actual Analysis", analysis.actualAnalysis),
   ].join(""));
 
   const errorSection = (analysis.errors?.length)
@@ -310,7 +354,7 @@ function buildProvideFeedbackWithSelection(fb: SaveFeedbackPayload["feedback"]):
     fieldRow("Feedback Date", esc(formatDisplayDate(fb.feedbackDate))),
     fieldRow("Feedback Time", esc(fb.feedbackTime)),
     blockField("Feedback Selection", esc(stripHtml(fb.actualSelection))),
-    blockField("Actual Feedback Provided", esc(stripHtml(fb.feedbackApplication))),
+    richBlockField("Actual Feedback Provided", fb.feedbackApplication),
   ].join("");
   return wrapPage("Provide Feedback With Selection",
     section("icon-provide.png", "Provide Feedback With Selection", rows));
@@ -326,7 +370,7 @@ function buildProvideFeedbackBasic(fb: SaveFeedbackPayload["feedback"]): string 
     fieldRow("Feedback Type", esc(fb.feedbackType)),
     fieldRow("Feedback Date", esc(formatDisplayDate(fb.feedbackDate))),
     fieldRow("Feedback Time", esc(fb.feedbackTime)),
-    blockField("Actual Feedback Provided", esc(stripHtml(fb.feedbackApplication))),
+    richBlockField("Actual Feedback Provided", fb.feedbackApplication),
   ].join("");
   return wrapPage("Provide Feedback", section("icon-provide.png", "Provide Feedback", rows));
 }
@@ -348,7 +392,7 @@ function buildApplyFeedbackWithAnalysis(
     fieldRow("Feedback Type", esc(fb.feedbackType)),
     fieldRow("Feedback Date", esc(formatDisplayDate(fb.feedbackDate))),
     fieldRow("Feedback Time", esc(fb.feedbackTime)),
-    blockField("Feedback Application", esc(stripHtml(fb.feedbackApplication))),
+    richBlockField("Feedback Application", fb.feedbackApplication),
   ].join(""));
 
   const msgSection = section("icon-receive.png", "Message Under Analysis", [
@@ -360,14 +404,14 @@ function buildApplyFeedbackWithAnalysis(
     fieldRow("Communication Date", esc(formatDisplayDate(analysis.analysisDate))),
     fieldRow("Communication Time", esc(analysis.analysisTime)),
     fieldRow("Analysis Subject", esc(analysis.analysisSubject)),
-    blockField("Actual Message", esc(stripHtml(analysis.entityUnderAnalysis))),
+    richBlockField("Actual Message", analysis.entityUnderAnalysis),
   ].join(""));
 
   const analysisSection = section("icon-analysis.png", "My Analysis", [
     fieldRow("From Person", esc(fb.fromPerson)),
     fieldRow("To Person", esc(fb.toPerson)),
     fieldRow("Application Name", esc(fb.applicationName)),
-    blockField("Actual Analysis", esc(stripHtml(analysis.actualAnalysis))),
+    richBlockField("Actual Analysis", analysis.actualAnalysis),
   ].join(""));
 
   const errorSection = (analysis.errors?.length)
@@ -405,7 +449,7 @@ function buildApplyFeedbackWithSelection(fb: SaveFeedbackPayload["feedback"]): s
     fieldRow("Feedback Type", esc(fb.feedbackType)),
     fieldRow("Feedback Date", esc(formatDisplayDate(fb.feedbackDate))),
     fieldRow("Feedback Time", esc(fb.feedbackTime)),
-    blockField("Feedback Application", esc(stripHtml(fb.feedbackApplication))),
+    richBlockField("Feedback Application", fb.feedbackApplication),
   ].join("");
   return wrapPage("Apply Selection as Feedback",
     section("icon-apply.png", "Apply Selection as Feedback", rows));
@@ -423,7 +467,7 @@ function buildApplyFeedbackBasic(fb: SaveFeedbackPayload["feedback"]): string {
     fieldRow("Feedback Type", esc(fb.feedbackType)),
     fieldRow("Feedback Date", esc(formatDisplayDate(fb.feedbackDate))),
     fieldRow("Feedback Time", esc(fb.feedbackTime)),
-    blockField("Feedback Application", esc(stripHtml(fb.feedbackApplication))),
+    richBlockField("Feedback Application", fb.feedbackApplication),
   ].join("");
   return wrapPage("Apply Feedback", section("icon-apply.png", "Apply Feedback", rows));
 }
@@ -496,7 +540,7 @@ function buildReceiveFeedbackWithAnalysis(
     fieldRow("Communication Date", esc(formatDisplayDate(analysis.analysisDate))),
     fieldRow("Communication Time", esc(analysis.analysisTime)),
     fieldRow("Analysis Subject", esc(analysis.analysisSubject)),
-    blockField("Actual Message", esc(stripHtml(analysis.entityUnderAnalysis))),
+    richBlockField("Actual Message", analysis.entityUnderAnalysis),
   ].join(""));
 
   const errorSection = (analysis.errors?.length)
@@ -566,7 +610,7 @@ function buildSolveProblemWithAnalysis(d: SolveProblemData): string {
     fieldRow("Communication Date", esc(formatDisplayDate(analysis.analysisDate))),
     fieldRow("Communication Time", esc(analysis.analysisTime)),
     fieldRow("Analysis Subject", esc(analysis.analysisSubject)),
-    blockField("Actual Message", esc(stripHtml(analysis.entityUnderAnalysis))),
+    richBlockField("Actual Message", analysis.entityUnderAnalysis),
   ].join(""));
 
   const errorSection = (analysis.errors?.length)
@@ -636,7 +680,7 @@ export function buildFeedbackAppliedNotificationEmail(
     fieldRow("Applied On", `${esc(formatDisplayDate(fb.feedbackDate))} ${esc(fb.feedbackTime)}`),
     fieldRow("Error Corrected", esc(fb.actualErrorSubstituted) || "—"),
     fieldRow("Compensator Used", esc(fb.actualCompensatorReplaced) || "—"),
-    blockField("What Was Applied", esc(stripHtml(fb.feedbackApplication))),
+    richBlockField("What Was Applied", fb.feedbackApplication),
   ].join("");
   return wrapPage("Feedback Applied", section("icon-apply.png", "Feedback Applied", rows));
 }

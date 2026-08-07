@@ -26,37 +26,43 @@ const CINDERELLA = "#EBF3FC";
 const HEADER_H = 77.59;
 const BANNER_H = 61;
 
-const fieldRow: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  height: 32,
-  marginBottom: 12,
-};
+// Outlook's dialog window size is fixed by Office (narrow iframe) — stack label above field there instead of side-by-side.
+function getFieldRow(isOutlook: boolean): React.CSSProperties {
+  return isOutlook
+    ? { display: "flex", flexDirection: "column", alignItems: "stretch", height: "auto", marginBottom: 12 }
+    : { display: "flex", alignItems: "center", height: 32, marginBottom: 12 };
+}
 
-const fieldLabel: React.CSSProperties = {
-  width: 138,
-  minWidth: 138,
-  fontFamily: "Inter, 'Segoe UI', sans-serif",
-  fontWeight: 700,
-  fontSize: 11.6,
-  lineHeight: "14px",
-  color: COD_GRAY,
-  flexShrink: 0,
-};
+function getFieldLabel(isOutlook: boolean): React.CSSProperties {
+  return {
+    width: isOutlook ? "100%" : 138,
+    minWidth: isOutlook ? 0 : 138,
+    fontFamily: "Inter, 'Segoe UI', sans-serif",
+    fontWeight: 700,
+    fontSize: 11.6,
+    lineHeight: "14px",
+    color: COD_GRAY,
+    flexShrink: 0,
+    ...(isOutlook ? { marginBottom: 4 } : null),
+  };
+}
 
-const fieldInput: React.CSSProperties = {
-  flex: 1,
-  height: 32,
-  background: "#FFFFFF",
-  border: `1px solid ${SILVER}`,
-  borderRadius: 4,
-  padding: "0 11px",
-  fontFamily: "Inter, 'Segoe UI', sans-serif",
-  color: COD_GRAY,
-  outline: "none",
-  boxSizing: "border-box",
-  fontSize: 12,
-};
+function getFieldInput(isOutlook: boolean): React.CSSProperties {
+  return {
+    flex: isOutlook ? "unset" : 1,
+    width: isOutlook ? "100%" : undefined,
+    height: 32,
+    background: "#FFFFFF",
+    border: `1px solid ${SILVER}`,
+    borderRadius: 4,
+    padding: "0 11px",
+    fontFamily: "Inter, 'Segoe UI', sans-serif",
+    color: COD_GRAY,
+    outline: "none",
+    boxSizing: "border-box",
+    fontSize: 12,
+  };
+}
 
 const chevronSvg = `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23616161' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`;
 
@@ -150,6 +156,10 @@ export default function FlagView() {
 
   const source = initData.source ?? "Word Document";
   const peopleList = initData.peopleList ?? [];
+  const isOutlook = initData.source === "Outlook Mail";
+  const fieldRow = getFieldRow(isOutlook);
+  const fieldLabel = getFieldLabel(isOutlook);
+  const fieldInput = getFieldInput(isOutlook);
 
   const modalShell: React.CSSProperties = {
     width: "100%",

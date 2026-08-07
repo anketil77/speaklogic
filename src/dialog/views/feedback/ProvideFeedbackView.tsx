@@ -313,6 +313,14 @@ export default function ProvideFeedbackView() {
     [hasSelection, selectionTab],
   );
 
+  const tabCount: Partial<Record<TabValue, number>> = {
+    questions: analysisData?.questions.length ?? 0,
+    errors: analysisData?.errors.length ?? 0,
+    compensators: analysisData?.compensators.length ?? 0,
+    answers: analysisData?.answers.length ?? 0,
+    files: analysisData?.files.length ?? 0,
+  };
+
   // Pre-fill from init data on first load
   useEffect(() => {
     if (!initData) return;
@@ -513,13 +521,14 @@ export default function ProvideFeedbackView() {
       <div className={styles.tabBar}>
         {visibleTabs.map(({ value, label }) => {
           const isActive = activeTab === value;
+          const count = tabCount[value] ?? 0;
           return (
             <button
               key={value}
               className={`${styles.tabBtn}${isActive ? ` ${styles.tabBtnActive}` : ""}`}
               onClick={() => setActiveTab(value)}
             >
-              {label}
+              {count > 0 ? `${label} (${count})` : label}
               {isActive && <span className={styles.tabActiveUnderline} />}
             </button>
           );

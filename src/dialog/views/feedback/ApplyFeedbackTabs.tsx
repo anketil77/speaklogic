@@ -160,6 +160,16 @@ export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
   const s = useStyles();
   const { activeTab, setActiveTab, tabs, validationError, initData, analysisData, selectionHtml, form, updateForm, errorOptions, compensatorOptions, editorRef, questions, errors, compensators, answers, files, correctedItems, problems, selectedRow, onRowClick, onCtx, onInsertToDocument } = p;
 
+  const tabCount: Partial<Record<TabValue, number>> = {
+    questions: questions.length,
+    errors: errors.length,
+    compensators: compensators.length,
+    answers: answers.length,
+    problems: problems.length,
+    corrected: correctedItems.length,
+    files: files.length,
+  };
+
   return (
     <>
       {/* ── Validation banner ─────────────────────────────────────────────── */}
@@ -173,13 +183,14 @@ export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
       <div className={s.tabBar}>
         {tabs.map(({ value, label }) => {
           const isActive = activeTab === value;
+          const count = tabCount[value] ?? 0;
           return (
             <button
               key={value}
               className={`${s.tabBtn}${isActive ? ` ${s.tabBtnActive}` : ""}`}
               onClick={() => setActiveTab(value)}
             >
-              {label}
+              {count > 0 ? `${label} (${count})` : label}
               {isActive && <span className={s.tabUnderline} />}
             </button>
           );
