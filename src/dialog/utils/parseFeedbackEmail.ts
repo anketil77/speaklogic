@@ -466,6 +466,20 @@ const PLAIN_TEXT_INLINE_LABELS: Record<string, keyof PlainTextFeedbackFields> = 
 
 const normPlainLine = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
+// "Actual Feedback Provided" is the LAST field only in the basic/selection templates.
+// In buildProvideFeedbackWithAnalysis it's followed by the Message-Under-Analysis /
+// My-Analysis / error / compensator sections, so the feedback body has to stop at
+// the first of those boundaries instead of running to end-of-text.
+const PLAIN_TEXT_BLOCK_END_SECTIONS = new Set([
+  "messageunderanalysis", "myanalysis", "abouterror", "aboutcompensator",
+  "aboutquestion", "aboutanswer", "aboutproblem",
+]);
+const PLAIN_TEXT_BLOCK_END_LABELS = new Set([
+  "fromperson", "toperson", "applicationname", "communicationfunction",
+  "communicationsignal", "communicationdate", "communicationtime", "analysissubject",
+  "errornumber", "compensatornumber", "questionnumber", "answernumber",
+]);
+
 /**
  * Parse the plain-text body Outlook produces from Word's mailto handoff into the
  * same fields parseEmailLabelMap extracts from real Speak Logic HTML. Returns null
@@ -495,9 +509,8 @@ export function parsePlainTextFeedback(text: string): PlainTextFeedbackFields | 
       continue;
     }
 
-    // richBlockField/blockField labels never carry a colon; "Actual Feedback
-    // Provided" is always the last field the templates emit, so everything after
-    // it is that field's (possibly multi-paragraph) content.
+    // richBlockField/blockField labels never carry a colon; the content follows on
+    // the next line(s), bounded below by the next section/label (or end-of-text).
     if (normPlainLine(line) === "actualfeedbackprovided") {
       blockContentStart = i + 1;
       break;
@@ -505,8 +518,21 @@ export function parsePlainTextFeedback(text: string): PlainTextFeedbackFields | 
   }
 
   const feedbackSubject = fields.feedbackSubject ?? "";
-  const actualFeedbackProvided =
-    blockContentStart > -1 ? lines.slice(blockContentStart).join("\n").trim() : "";
+  const contentLines: string[] = [];
+  if (blockContentStart > -1) {
+    for (let j = blockContentStart; j < lines.length; j++) {
+      const l = lines[j];
+      const norm = normPlainLine(l);
+      // Stop at the wrapPage footer ("… All Rights Reserved.") too, else it trails
+      // into the body for the basic/selection templates where AFP is the last field.
+      if (norm.includes("allrightsreserved")) break;
+      const cIdx = l.indexOf(":");
+      const beforeColon = cIdx > -1 ? normPlainLine(l.slice(0, cIdx)) : "";
+      if (PLAIN_TEXT_BLOCK_END_SECTIONS.has(norm) || (cIdx > -1 && PLAIN_TEXT_BLOCK_END_LABELS.has(beforeColon))) break;
+      contentLines.push(l);
+    }
+  }
+  const actualFeedbackProvided = contentLines.join("\n").trim();
   if (!feedbackSubject || !actualFeedbackProvided) return null;
 
   return {
