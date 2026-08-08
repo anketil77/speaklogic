@@ -114,10 +114,13 @@ function flatten(doc: Document): FlatRow[] {
     if (cells.length >= 3 && txt(cells[1]) === ":") {
       rows.push({ label: txt(cells[0]), value: txt(cells[2]) });
     } else if (cells.length === 1 && cells[0].querySelector("strong") && txt(cells[0])) {
-      // blockField label row → value is the next row's content cell
+      // blockField/richBlockField always emit a strict [label row, content row] pair —
+      // pair unconditionally. (Previously this required the content row to be free of
+      // <strong>, which silently dropped the whole field whenever the rich content itself
+      // had bold text — e.g. an Actual Error/Analysis description with **bold** wording.)
       const next = trs[i + 1];
       const nextCell = next ? Array.from(next.children).find((c) => c.tagName === "TD") : null;
-      if (nextCell && !nextCell.querySelector("strong")) {
+      if (nextCell) {
         rows.push({ label: txt(cells[0]), value: txt(nextCell) });
         i++;
       }
@@ -177,18 +180,35 @@ function fromLabels(doc: Document): AnalysisDataForApply | null {
         if (!out.fromPerson) out.fromPerson = value;
         break;
 
-      // ── error ── ("Actual Error" starts a new error)
-      case "actualerror":
+      // ── error ── ("Error Number" starts a new error; "Actual Error" is a fallback
+      // trigger for hand-typed emails that skip the Number row)
+      case "errornumber":
         flush();
         curError = {
-          errorNumber: out.errors.length + 1,
-          actualError: value,
+          errorNumber: parseInt(value, 10) || out.errors.length + 1,
+          actualError: "",
           fromActualCommunication: "",
           entityErrorPointTo: "",
           errorDescription: "",
           errorDate: "",
           errorTime: "",
         };
+        break;
+      case "actualerror":
+        if (curError && !curError.actualError) {
+          curError.actualError = value;
+        } else {
+          flush();
+          curError = {
+            errorNumber: out.errors.length + 1,
+            actualError: value,
+            fromActualCommunication: "",
+            entityErrorPointTo: "",
+            errorDescription: "",
+            errorDate: "",
+            errorTime: "",
+          };
+        }
         break;
       case "fromactualcomm/app":
       case "fromactualcommunication":
@@ -200,19 +220,42 @@ function fromLabels(doc: Document): AnalysisDataForApply | null {
       case "errordescription":
         if (curError) curError.errorDescription = value;
         break;
+      case "errordate":
+        if (curError) curError.errorDate = value;
+        break;
+      case "errortime":
+        if (curError) curError.errorTime = value;
+        break;
 
-      // ── compensator ── ("Actual Compensator" starts a new compensator)
-      case "actualcompensator":
+      // ── compensator ── ("Compensator Number" starts a new compensator; "Actual
+      // Compensator" is a fallback trigger)
+      case "compensatornumber":
         flush();
         curComp = {
-          compensatorNumber: out.compensators.length + 1,
-          actualCompensator: value,
+          compensatorNumber: parseInt(value, 10) || out.compensators.length + 1,
+          actualCompensator: "",
           actualErrorReplaced: "",
           inActualCommunication: "",
           compensatorDescription: "",
           compensatorDate: "",
           compensatorTime: "",
         };
+        break;
+      case "actualcompensator":
+        if (curComp && !curComp.actualCompensator) {
+          curComp.actualCompensator = value;
+        } else {
+          flush();
+          curComp = {
+            compensatorNumber: out.compensators.length + 1,
+            actualCompensator: value,
+            actualErrorReplaced: "",
+            inActualCommunication: "",
+            compensatorDescription: "",
+            compensatorDate: "",
+            compensatorTime: "",
+          };
+        }
         break;
       case "actualerrorreplaced":
         if (curComp) curComp.actualErrorReplaced = value;
@@ -223,6 +266,12 @@ function fromLabels(doc: Document): AnalysisDataForApply | null {
         break;
       case "compensatordescription":
         if (curComp) curComp.compensatorDescription = value;
+        break;
+      case "compensatordate":
+        if (curComp) curComp.compensatorDate = value;
+        break;
+      case "compensatortime":
+        if (curComp) curComp.compensatorTime = value;
         break;
 
       // ── problem ── ("Problem Name" or "Actual Problem" starts a new problem)
@@ -259,12 +308,14 @@ function fromLabels(doc: Document): AnalysisDataForApply | null {
         if (curP) curP.problemDescription = value;
         break;
 
-      // ── question ── ("Actual Question" starts a new question)
-      case "actualquestion":
+      // ── question ── ("Question Number" starts a new question; the template renders
+      // "Entity Question Point to" BEFORE "Actual Question", so the Number row is the
+      // only reliable trigger — "Actual Question" is a fallback for hand-typed emails)
+      case "questionnumber":
         flush();
         curQ = {
-          questionNumber: out.questions.length + 1,
-          actualQuestion: value,
+          questionNumber: parseInt(value, 10) || out.questions.length + 1,
+          actualQuestion: "",
           entityQuestionPointTo: "",
           responseStatus: "",
           questionDate: "",
@@ -274,22 +325,55 @@ function fromLabels(doc: Document): AnalysisDataForApply | null {
       case "entityquestionpointto":
         if (curQ) curQ.entityQuestionPointTo = value;
         break;
+      case "actualquestion":
+        if (curQ && !curQ.actualQuestion) {
+          curQ.actualQuestion = value;
+        } else {
+          flush();
+          curQ = {
+            questionNumber: out.questions.length + 1,
+            actualQuestion: value,
+            entityQuestionPointTo: "",
+            responseStatus: "",
+            questionDate: "",
+            questionTime: "",
+          };
+        }
+        break;
 
-      // ── answer ── ("Actual Answer" starts a new answer)
-      case "actualanswer":
+      // ── answer ── ("Answer Number" starts a new answer; the template renders
+      // "Information Answer Point to" BEFORE "Actual Answer", so the Number row is the
+      // only reliable trigger — "Actual Answer" is a fallback for hand-typed emails)
+      case "answernumber":
         flush();
         curA = {
-          answerNumber: out.answers.length + 1,
+          answerNumber: parseInt(value, 10) || out.answers.length + 1,
           actualQuestion: "",
           entityQuestionPointTo: "",
           informationAnswerPointTo: "",
-          actualAnswer: value,
+          actualAnswer: "",
           answerDate: "",
           answerTime: "",
         };
         break;
       case "informationanswerpointto":
         if (curA) curA.informationAnswerPointTo = value;
+        break;
+      case "actualanswer":
+        if (curA && !curA.actualAnswer) {
+          curA.actualAnswer = value;
+        } else {
+          flush();
+          curA = {
+            answerNumber: out.answers.length + 1,
+            actualQuestion: "",
+            entityQuestionPointTo: "",
+            informationAnswerPointTo: "",
+            actualAnswer: value,
+            answerDate: "",
+            answerTime: "",
+          };
+        }
         break;
 
       default:
@@ -345,4 +429,95 @@ export function parseEmailLabelMap(html: string): Record<string, string> {
   } catch {
     return {};
   }
+}
+
+// ── Strategy 3: plain-text parse (Word → mailto → Outlook-coerced text) ───────
+//
+// Word has no mailbox API, so "Provide Feedback" there hands off via a plain-text
+// mailto: URL (see plainTextMailtoUrl/walkForText in src/shared/emailDraft.ts).
+// Outlook coerces that into <div>/<br> HTML with no <table> markup, so
+// parseEmailLabelMap (which requires table rows) always returns {} for it. This
+// mirrors the same label set for the shape walkForText actually produces:
+// fieldRow becomes one line "Label : value"; blockField/richBlockField becomes a
+// bare label line (no colon) followed by its content on the following line(s).
+
+export interface PlainTextFeedbackFields {
+  feedbackSubject: string;
+  actualFeedbackProvided: string;
+  fromPerson: string;
+  toPerson: string;
+  applicationName: string;
+  communicationFunction: string;
+  communicationSignal: string;
+  feedbackDate: string;
+  feedbackTime: string;
+}
+
+const PLAIN_TEXT_INLINE_LABELS: Record<string, keyof PlainTextFeedbackFields> = {
+  feedbacksubject: "feedbackSubject",
+  fromperson: "fromPerson",
+  toperson: "toPerson",
+  applicationname: "applicationName",
+  communicationfunction: "communicationFunction",
+  communicationsignal: "communicationSignal",
+  feedbackdate: "feedbackDate",
+  feedbacktime: "feedbackTime",
+};
+
+const normPlainLine = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+/**
+ * Parse the plain-text body Outlook produces from Word's mailto handoff into the
+ * same fields parseEmailLabelMap extracts from real Speak Logic HTML. Returns null
+ * unless both "Feedback Subject" and "Actual Feedback Provided" are recognisable —
+ * the one label combo unique to the Provide Feedback templates (kept in step with
+ * tryLogProvidedFeedbackFromSend's HTML detection so this stays narrow and never
+ * misfires on ordinary outgoing mail).
+ */
+export function parsePlainTextFeedback(text: string): PlainTextFeedbackFields | null {
+  if (!text || !text.trim()) return null;
+  const lines = text.replace(/\u00A0/g, " ").split(/\r?\n/).map((l) => l.trim());
+
+  const fields: Partial<PlainTextFeedbackFields> = {};
+  let blockContentStart = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line) continue;
+
+    const colonIdx = line.indexOf(":");
+    if (colonIdx > -1) {
+      const key = normPlainLine(line.slice(0, colonIdx));
+      const field = PLAIN_TEXT_INLINE_LABELS[key];
+      if (field && !fields[field]) {
+        fields[field] = line.slice(colonIdx + 1).trim();
+      }
+      continue;
+    }
+
+    // richBlockField/blockField labels never carry a colon; "Actual Feedback
+    // Provided" is always the last field the templates emit, so everything after
+    // it is that field's (possibly multi-paragraph) content.
+    if (normPlainLine(line) === "actualfeedbackprovided") {
+      blockContentStart = i + 1;
+      break;
+    }
+  }
+
+  const feedbackSubject = fields.feedbackSubject ?? "";
+  const actualFeedbackProvided =
+    blockContentStart > -1 ? lines.slice(blockContentStart).join("\n").trim() : "";
+  if (!feedbackSubject || !actualFeedbackProvided) return null;
+
+  return {
+    feedbackSubject,
+    actualFeedbackProvided,
+    fromPerson: fields.fromPerson ?? "",
+    toPerson: fields.toPerson ?? "",
+    applicationName: fields.applicationName ?? "",
+    communicationFunction: fields.communicationFunction ?? "",
+    communicationSignal: fields.communicationSignal ?? "",
+    feedbackDate: fields.feedbackDate ?? "",
+    feedbackTime: fields.feedbackTime ?? "",
+  };
 }

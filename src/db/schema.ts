@@ -566,7 +566,8 @@ CREATE TABLE IF NOT EXISTS KeywordRule (
 
 CREATE TABLE IF NOT EXISTS KeywordSetting (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  sendMode TEXT NOT NULL DEFAULT 'warn'
+  sendMode TEXT NOT NULL DEFAULT 'warn',
+  highlightInRed INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS KeywordHistory (
@@ -578,7 +579,9 @@ CREATE TABLE IF NOT EXISTS KeywordHistory (
   action TEXT NOT NULL DEFAULT 'warn',
   subject TEXT NOT NULL DEFAULT '',
   itemId TEXT NOT NULL DEFAULT '',
-  conversationId TEXT NOT NULL DEFAULT ''
+  conversationId TEXT NOT NULL DEFAULT '',
+  messageSubject TEXT,
+  messageBody TEXT
 );
 
 -- Point Selection to Entity: a selected Word / Sentence / Paragraph "points to"

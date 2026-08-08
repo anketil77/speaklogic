@@ -664,11 +664,14 @@ export interface KeywordRule {
 export interface KeywordSetting {
   id?: number;
   sendMode: KeywordSendMode;
+  /** Optional: recolor flagged words red in the compose body on warn-mode sends. */
+  highlightInRed?: boolean;
 }
 
 export interface SaveKeywordRulesPayload {
   rules: Array<Omit<KeywordRule, "id">>;
   sendMode: KeywordSendMode;
+  highlightInRed?: boolean;
 }
 
 /** One logged flagged-send event (Keywords / Bad Words History). */
@@ -687,6 +690,12 @@ export interface KeywordHistory {
   /** Conversation id captured at send time (durable across the send), kept for
    *  diagnostics / future fallback. Not directly openable by displayMessageForm. */
   conversationId?: string;
+  /** Snapshot of the sent message, captured at send time, so "View message" can
+   *  show it in-app — the sent item's real Exchange id differs from the compose
+   *  item's, so displayMessageFormAsync can't reliably reopen it after the fact. */
+  messageSubject?: string;
+  /** Plain-text body snapshot (not HTML) — safe to render, no reformat risk. */
+  messageBody?: string;
 }
 
 export type SelectionMode = "selection" | "paragraph";
@@ -810,6 +819,7 @@ export interface DialogInitPayload {
   /** Keyword guard rules + send mode (KeywordSettingsView). */
   keywordRules?: KeywordRule[];
   keywordSendMode?: KeywordSendMode;
+  keywordHighlightInRed?: boolean;
   /** Logged flagged-send events (KeywordHistoryView). */
   keywordHistory?: KeywordHistory[];
   /** Error texts from the CURRENT document, for the inline Compensator dialog

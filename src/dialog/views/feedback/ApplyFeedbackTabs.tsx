@@ -134,6 +134,7 @@ export interface ApplyFeedbackTabsProps {
   setActiveTab: (t: TabValue) => void;
   tabs: { value: TabValue; label: string }[];
   validationError: string | null;
+  isReceived: boolean;
   initData: DialogInitPayload;
   analysisData: AnalysisDataForApply | null | undefined;
   selectionHtml: string;
@@ -158,7 +159,7 @@ export interface ApplyFeedbackTabsProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
   const s = useStyles();
-  const { activeTab, setActiveTab, tabs, validationError, initData, analysisData, selectionHtml, form, updateForm, errorOptions, compensatorOptions, editorRef, questions, errors, compensators, answers, files, correctedItems, problems, selectedRow, onRowClick, onCtx, onInsertToDocument } = p;
+  const { activeTab, setActiveTab, tabs, validationError, isReceived, initData, analysisData, selectionHtml, form, updateForm, errorOptions, compensatorOptions, editorRef, questions, errors, compensators, answers, files, correctedItems, problems, selectedRow, onRowClick, onCtx, onInsertToDocument } = p;
 
   const tabCount: Partial<Record<TabValue, number>> = {
     questions: questions.length,
@@ -202,33 +203,6 @@ export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
 
         {activeTab === "feedback" && (
           <>
-            {analysisData && (
-              <>
-                <span style={{ display: "block", fontSize: "11px", fontWeight: "700", letterSpacing: "0.6px", textTransform: "uppercase", color: colors.grey38, lineHeight: "13px", marginBottom: "8px" }}>
-                  Entity Under Analysis
-                </span>
-                <div style={{ background: colors.white, border: "1px solid #E0E0E0", borderRadius: "4px", height: "72px", display: "flex", alignItems: "center", padding: "0 12px", overflow: "hidden", marginBottom: "16px" }}>
-                  <span style={{ fontSize: "16.9px", fontWeight: "400", lineHeight: "25px", color: colors.grey11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {analysisData.entityUnderAnalysis}
-                  </span>
-                </div>
-                {analysisData.fromPerson && (
-                  <div style={rowS}><span style={labelS}>From Person</span><span style={roStyle}>{analysisData.fromPerson}</span></div>
-                )}
-                {analysisData.analysisSubject && (
-                  <div style={rowS}><span style={labelS}>Analysis Subject</span><span style={roStyle}>{analysisData.analysisSubject}</span></div>
-                )}
-                {analysisData.actualAnalysis && (
-                  <div style={rowTopS}>
-                    <span style={labelTopS}>Actual Analysis</span>
-                    <div style={{ flex: 1, border: "1px solid #E0E0E0", borderRadius: "4px", padding: "8px 11px", fontSize: "12.2px", color: colors.grey38, background: "#F9F9F9", minHeight: "60px", maxHeight: "120px", overflowY: "auto" }}
-                      dangerouslySetInnerHTML={{ __html: analysisData.actualAnalysis }} />
-                  </div>
-                )}
-                <div style={{ height: "1px", background: "#E0E0E0", margin: "0 0 16px 0" }} />
-              </>
-            )}
-
             <div style={rowS}><span style={labelS}>Application Name</span>
               <input style={inputStyle} value={form.applicationName} onChange={(e) => updateForm("applicationName", e.target.value)} placeholder="Enter application name" />
             </div>
@@ -238,28 +212,32 @@ export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
             <div style={rowS}><span style={labelS}>Feedback Subject</span>
               <input style={inputStyle} value={form.feedbackSubject} onChange={(e) => updateForm("feedbackSubject", e.target.value)} placeholder="Enter feedback subject" />
             </div>
-            <div style={rowS}><span style={labelS}>Error Substituted</span>
-              {errorOptions.length > 0 ? (
-                <select style={selectStyle} value={form.errorSubstituted} onChange={(e) => updateForm("errorSubstituted", e.target.value)}>
-                  <option value="">-- Select error --</option>
-                  {errorOptions.map((e) => <option key={e} value={e}>{e}</option>)}
-                </select>
-              ) : (
-                <input style={inputStyle} value={form.errorSubstituted} onChange={(e) => updateForm("errorSubstituted", e.target.value)} placeholder="Enter error substituted" />
-              )}
-            </div>
-            <div style={rowS}><span style={labelS}>Compensator Replaced</span>
-              {compensatorOptions.length > 0 ? (
-                <select style={selectStyle} value={form.compensatorReplaced} onChange={(e) => updateForm("compensatorReplaced", e.target.value)}>
-                  <option value="">-- Select compensator --</option>
-                  {compensatorOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              ) : (
-                <input style={inputStyle} value={form.compensatorReplaced} onChange={(e) => updateForm("compensatorReplaced", e.target.value)} placeholder="Enter compensator replaced" />
-              )}
-            </div>
+            {!isReceived && (
+              <>
+                <div style={rowS}><span style={labelS}>Error Substituted</span>
+                  {errorOptions.length > 0 ? (
+                    <select style={selectStyle} value={form.errorSubstituted} onChange={(e) => updateForm("errorSubstituted", e.target.value)}>
+                      <option value="">-- Select error --</option>
+                      {errorOptions.map((e) => <option key={e} value={e}>{e}</option>)}
+                    </select>
+                  ) : (
+                    <input style={inputStyle} value={form.errorSubstituted} onChange={(e) => updateForm("errorSubstituted", e.target.value)} placeholder="Enter error substituted" />
+                  )}
+                </div>
+                <div style={rowS}><span style={labelS}>Compensator Replaced</span>
+                  {compensatorOptions.length > 0 ? (
+                    <select style={selectStyle} value={form.compensatorReplaced} onChange={(e) => updateForm("compensatorReplaced", e.target.value)}>
+                      <option value="">-- Select compensator --</option>
+                      {compensatorOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  ) : (
+                    <input style={inputStyle} value={form.compensatorReplaced} onChange={(e) => updateForm("compensatorReplaced", e.target.value)} placeholder="Enter compensator replaced" />
+                  )}
+                </div>
+              </>
+            )}
             <div style={rowTopS}>
-              <span style={labelTopS}>Feedback Application</span>
+              <span style={labelTopS}>{isReceived ? "Actual Feedback Received" : "Feedback Application"}</span>
               <div style={{ flex: 1 }}>
                 <InsertToDocumentEditor
                   editorRef={editorRef}
@@ -321,6 +299,14 @@ export function ApplyFeedbackTabs(p: ApplyFeedbackTabsProps) {
 
         {activeTab === "analysis" && analysisData && (
           <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column" }}>
+            <span style={{ display: "block", fontSize: "11px", fontWeight: "700", letterSpacing: "0.6px", textTransform: "uppercase", color: colors.grey38, lineHeight: "13px", marginBottom: "8px" }}>
+              Entity Under Analysis
+            </span>
+            <div style={{ background: colors.white, border: "1px solid #E0E0E0", borderRadius: "4px", height: "72px", display: "flex", alignItems: "center", padding: "0 12px", overflow: "hidden", marginBottom: "16px" }}>
+              <span style={{ fontSize: "16.9px", fontWeight: "400", lineHeight: "25px", color: colors.grey11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {analysisData.entityUnderAnalysis}
+              </span>
+            </div>
             {analysisData.fromPerson && (
               <div style={rowS}><span style={labelS}>From Person</span><span style={roStyle}>{analysisData.fromPerson}</span></div>
             )}

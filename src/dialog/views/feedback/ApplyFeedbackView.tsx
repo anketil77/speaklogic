@@ -156,6 +156,7 @@ export default function ApplyView() {
     return () => document.removeEventListener("selectionchange", onSel);
   }, []);
 
+  const isReceived = initData?.feedbackTypeOverride === "Received";
   const analysisData = initData?.analysisData;
   const selectionHtml = useMemo(() => (initData?.selectionHtml ? sanitizeWordHtml(initData.selectionHtml) : ""), [initData?.selectionHtml]);
   const errorOptions = useMemo(() => errors.map((e) => e.actualError).filter(Boolean), [errors]);
@@ -173,7 +174,8 @@ export default function ApplyView() {
   );
 
   const tabs = useMemo((): { value: TabValue; label: string }[] => {
-    const mid = initData?.mode === "selection" ? { value: "selection" as TabValue, label: "Selection" } :
+    const mid = initData?.analysisData ? { value: "analysis" as TabValue, label: "Analysis" } :
+      initData?.mode === "selection" ? { value: "selection" as TabValue, label: "Selection" } :
       initData?.mode === "paragraph" ? { value: "paragraph" as TabValue, label: "Paragraph" } : null;
     return [{ value: "feedback", label: "Feedback" }, ...(mid ? [mid] : []), { value: "questions", label: "Analysis Question" }, { value: "errors", label: "Errors" }, { value: "compensators", label: "Compensators" }, { value: "answers", label: "Answers" }, { value: "problems", label: "Problems" }, { value: "corrected", label: "Corrected Items" }, { value: "files", label: "Attached Files" }];
   }, [initData]);
@@ -298,12 +300,14 @@ export default function ApplyView() {
       setInfoMsg({ title: MSG_FEEDBACK_SUBJECT_TITLE, text: MSG_FEEDBACK_SUBJECT });
       return;
     }
-    if (!form.errorSubstituted.trim()) {
+    // Error Substituted / Compensator Replaced are hidden fields for Received feedback,
+    // so they must not block save.
+    if (!isReceived && !form.errorSubstituted.trim()) {
       setActiveTab("feedback");
       setInfoMsg({ title: MSG_ERROR_TO_SUBSTITUTE_TITLE, text: MSG_ERROR_TO_SUBSTITUTE });
       return;
     }
-    if (!form.compensatorReplaced.trim()) {
+    if (!isReceived && !form.compensatorReplaced.trim()) {
       setActiveTab("feedback");
       setInfoMsg({ title: MSG_COMPENSATOR_REPLACED_TITLE, text: MSG_COMPENSATOR_REPLACED });
       return;
@@ -349,7 +353,7 @@ export default function ApplyView() {
     };
     setPendingPayload(payload);
     setShowConfirm(true);
-  }, [form, initData, analysisData, correctedItems, files, selectionHtml, problems]);
+  }, [form, initData, analysisData, correctedItems, files, selectionHtml, problems, isReceived]);
 
   const submitWithNotify = useCallback((notify: boolean) => {
     if (!pendingPayload) return;
@@ -379,8 +383,8 @@ export default function ApplyView() {
       <div className={styles.titleSection}>
         <div className={styles.headerIcon}><HamburgerIcon /></div>
         <div className={styles.titles}>
-          <span className={styles.titleText}>Apply Feedback</span>
-          <span className={styles.subtitleText}>Apply analysis as feedback and document the correction.</span>
+          <span className={styles.titleText}>{isReceived ? "Feedback Received" : "Apply Feedback"}</span>
+          <span className={styles.subtitleText}>{isReceived ? "Document the feedback received and its details." : "Apply analysis as feedback and document the correction."}</span>
         </div>
       </div>
 
@@ -388,7 +392,7 @@ export default function ApplyView() {
       <div className={styles.commandBar} style={{ position: "relative" }}>
         <button className={styles.applyMainBtn} onClick={save}>
           <CheckmarkRegular style={{ fontSize: "13px", color: colors.white }} />
-          <span className={styles.applyMainBtnText}>Apply Feedback</span>
+          <span className={styles.applyMainBtnText}>{isReceived ? "Save Received Feedback" : "Apply Feedback"}</span>
         </button>
         <div className={styles.cmdSep} />
         <button className={`${styles.cmdIconBtn} sl-icon-btn`} title="View List of Feedback" onClick={() => setShowFeedbackList(true)}><PfFeedbackListIcon /></button>
@@ -402,6 +406,7 @@ export default function ApplyView() {
       {/* ── Tab bar + body ────────────────────────────────────────────────── */}
       <ApplyFeedbackTabs
         activeTab={activeTab} setActiveTab={setActiveTab} tabs={tabs} validationError={validationError}
+        isReceived={isReceived}
         initData={initData} analysisData={analysisData} selectionHtml={selectionHtml}
         form={form} updateForm={updateForm} errorOptions={errorOptions} compensatorOptions={compensatorOptions}
         editorRef={editorRef} questions={questions} errors={errors} compensators={compensators}
@@ -420,7 +425,7 @@ export default function ApplyView() {
         <span className={styles.footerHint}>Feedback can be applied after completing all required fields.</span>
         <button style={cancelBtnS()} onClick={closeDialog}>Cancel</button>
         <button style={applyBtnS(footerBtnHover)} onMouseEnter={() => setFooterBtnHover(true)} onMouseLeave={() => setFooterBtnHover(false)} onClick={save}>
-          Apply Feedback
+          {isReceived ? "Save Received Feedback" : "Apply Feedback"}
         </button>
       </div>
 

@@ -29,7 +29,7 @@ import {
   buildRequestFeedbackEmail,
   SL_FEEDBACK_MARKER,
 } from "@/dialog/utils/emailTemplates";
-import { parseFeedbackEmail, parseEmailLabelMap } from "@/dialog/utils/parseFeedbackEmail";
+import { parseFeedbackEmail, parseEmailLabelMap, parsePlainTextFeedback } from "@/dialog/utils/parseFeedbackEmail";
 import type { ImportedFeedback } from "@/dialog/utils/feedbackXml";
 import type { ProjectAnalysis, AnalysisDataForApply } from "@/types/db";
 
@@ -4309,6 +4309,7 @@ function openKeywordSettingsDialog(event: Office.AddinCommands.Event, attempt = 
       contacts: getAllPeople(),
       keywordRules: getKeywordRules(),
       keywordSendMode: getKeywordSetting().sendMode,
+      keywordHighlightInRed: getKeywordSetting().highlightInRed,
     };
 
     const TARGET_H_PX = 560;
@@ -4342,7 +4343,7 @@ function openKeywordSettingsDialog(event: Office.AddinCommands.Event, attempt = 
             case "SAVE_KEYWORD_RULES":
               try {
                 const p = m.payload as SaveKeywordRulesPayload;
-                saveKeywordRules(p.rules, p.sendMode);
+                saveKeywordRules(p.rules, p.sendMode, p.highlightInRed);
                 try { dialog.close(); } catch { /* already closed */ }
                 complete();
               } catch (err) { replyError(dialog, `Failed to save keyword settings: ${String(err)}`); }
@@ -4550,6 +4551,38 @@ function getBodyHtmlAsync(): Promise<string> {
   });
 }
 
+function escapeRegExpLiteral(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Wraps each flagged-word occurrence in a red <span>, operating only on text
+// segments (split on tags) so markup/attributes are never touched. Matches the
+// same case-insensitive "contains" semantics as findBannedWords.
+function highlightWordsInHtml(html: string, words: string[]): string {
+  if (!html || !words.length) return html;
+  const pattern = words.map(escapeRegExpLiteral).join("|");
+  if (!pattern) return html;
+  const wordRe = new RegExp(`(${pattern})`, "gi");
+  return html
+    .split(/(<[^>]+>)/)
+    .map((segment) => (segment.startsWith("<") ? segment : segment.replace(wordRe, '<span style="color:#c00;">$1</span>')))
+    .join("");
+}
+
+// Never rejects — a failed reformat should leave the original (plain-text) body in
+// place rather than throw out of the send handler.
+function setBodyHtmlAsync(html: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      Office.context.mailbox.item.body.setAsync(html, { coercionType: Office.CoercionType.Html }, (r) => {
+        resolve(r.status === Office.AsyncResultStatus.Succeeded);
+      });
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
 // Word has no mailbox API: "Provide Feedback" there only ever saves to Word's own
 // (separate, unsynced) DB, then hands off to Outlook via a mail compose window. This
 // is the only Outlook-side moment that email exists, so it's the only place we can
@@ -4693,6 +4726,55 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
       dbg("KEYWORDS", "OnMessageSend: feedback logging failed — non-critical", String(err));
     }
 
+    // Word has no mailbox API, so "Provide Feedback" there hands off via a plain-text
+    // mailto: — Outlook coerces it to <div>/<br> HTML with no <table> markup, so the
+    // marker/label detection above (and its logging) never fires for it. Recover the
+    // fields from the plain text, rebuild the real Speak Logic HTML, and swap it into
+    // the outgoing body so Word-origin feedback arrives — and logs — the same as
+    // native Outlook-composed feedback. Must run before the fast "no rules" return
+    // below (the common case for legitimate feedback text), so this has to happen
+    // here rather than after the banned-words check.
+    const alreadyTemplated = html.includes("sl-wrap") || html.includes(SL_FEEDBACK_MARKER);
+    if (!alreadyTemplated) {
+      try {
+        const parsed = parsePlainTextFeedback(body);
+        if (parsed) {
+          const fb: SaveFeedbackPayload["feedback"] = {
+            feedbackApplication: parsed.actualFeedbackProvided,
+            feedbackDate: parsed.feedbackDate || nowDate(),
+            feedbackTime: parsed.feedbackTime || nowTime(),
+            fromPerson: parsed.fromPerson,
+            toPerson: parsed.toPerson,
+            feedbackSubject: parsed.feedbackSubject,
+            internalFeedbackName: "",
+            feedbackType: "Provided",
+            actualSelection: "",
+            selectionType: "",
+            actualErrorSubstituted: "",
+            actualCompensatorReplaced: "",
+            source: "Outlook Mail",
+            applicationName: parsed.applicationName || subject || "",
+            communicationFunction: parsed.communicationFunction,
+            communicationSignal: parsed.communicationSignal,
+            projectName: "",
+            personName: "",
+            personEmail: "",
+          };
+          const formattedHtml = buildProvideFeedbackEmail(fb);
+          const applied = await setBodyHtmlAsync(formattedHtml);
+          dbg("KEYWORDS", "OnMessageSend: reformatted Word-origin plain-text feedback", {
+            applied,
+            feedbackSubject: fb.feedbackSubject,
+          });
+          // Reuses the exact same detection/dedup path as native Outlook feedback —
+          // formattedHtml now has real <table> markup, so parseEmailLabelMap can read it.
+          tryLogProvidedFeedbackFromSend(formattedHtml, subject);
+        }
+      } catch (err) {
+        dbg("KEYWORDS", "OnMessageSend: plain-text feedback reformat failed — non-critical", String(err));
+      }
+    }
+
     const haystack = `${subject}\n${body}`;
     const hits = findBannedWords(recipients, haystack);
 
@@ -4700,10 +4782,14 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
 
     if (rules.length === 0 || hits.length === 0) { ev.completed({ allowEvent: true }); return; }
 
-    const mode = getKeywordSetting().sendMode;
+    const setting = getKeywordSetting();
+    const mode = setting.sendMode;
     const wordList = hits.join(", ");
 
     // Log this flagged-send event (Keywords / Bad Words History). Non-critical.
+    // Snapshots subject + plain-text body so "View message" can show a saved copy —
+    // the sent item gets a different Exchange id than the compose item, so
+    // displayMessageFormAsync(itemId) can't reliably reopen it after the fact.
     try {
       const recipLabel = recipients
         .map((r) => r.name || r.email || "")
@@ -4719,6 +4805,8 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
         subject,
         itemId,
         conversationId,
+        messageSubject: subject,
+        messageBody: body,
       });
     } catch {
       /* never block send on audit failure */
@@ -4731,6 +4819,19 @@ async function onMessageSendHandler(event: Office.AddinCommands.Event): Promise<
         errorMessage: `Forbidden word found: ${wordList}. Remove it before sending.`,
       });
     } else {
+      // Optional: recolor flagged words red in the compose body before the "Send
+      // Anyway" prompt. Best-effort only — never affects the allow/block decision.
+      // Read-then-write here is sequential (awaited), so it can't race the earlier
+      // Word-origin feedback setBodyHtmlAsync above.
+      if (setting.highlightInRed) {
+        try {
+          const currentHtml = await getBodyHtmlAsync();
+          const highlighted = highlightWordsInHtml(currentHtml, hits);
+          if (highlighted !== currentHtml) await setBodyHtmlAsync(highlighted);
+        } catch (err) {
+          dbg("KEYWORDS", "OnMessageSend: highlight-in-red failed — non-critical", String(err));
+        }
+      }
       // warn: relax the SoftBlock default to PromptUser so a "Send Anyway" button appears.
       // sendModeOverride only supports PromptUser (Mailbox 1.14+); harmless if unsupported.
       const promptUser =

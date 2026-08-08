@@ -27,7 +27,7 @@ import {
 import { colors } from "@/styles/tokens";
 import type { ProjectFeedback } from "@/types/db";
 import { openFeedbackReport } from "@/dialog/utils/feedbackReport";
-import { feedbacksToXml, parseFeedbackXml } from "@/dialog/utils/feedbackXml";
+import { feedbacksToXml, parseFeedbackXml, type ImportedFeedback } from "@/dialog/utils/feedbackXml";
 
 const FEEDBACK_TYPE_FILTERS: { label: string; value: string | null }[] = [
   { label: "Show All", value: null },
@@ -65,7 +65,7 @@ function CmdSepBar() {
 function ExportXmlIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M7.5 1.5V9.5M7.5 9.5L4.75 6.75M7.5 9.5L10.25 6.75" stroke="#4259C3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7.5 9.5V1.5M7.5 1.5L4.75 4.25M7.5 1.5L10.25 4.25" stroke="#4259C3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M2 10.5V12C2 12.55 2.45 13 3 13H12C12.55 13 13 12.55 13 12V10.5" stroke="#4259C3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -74,7 +74,7 @@ function ExportXmlIcon() {
 function ImportXmlIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M7.5 9.5V1.5M7.5 1.5L4.75 4.25M7.5 1.5L10.25 4.25" stroke="#4259C3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7.5 1.5V9.5M7.5 9.5L4.75 6.75M7.5 9.5L10.25 6.75" stroke="#4259C3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M2 10.5V12C2 12.55 2.45 13 3 13H12C12.55 13 13 12.55 13 12V10.5" stroke="#4259C3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -107,6 +107,7 @@ export default function FeedbackHistoryView() {
   }, [initData?.feedbackFilter]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
+  const [pendingImport, setPendingImport] = useState<ImportedFeedback[] | null>(null);
   const [viewFeedback, setViewFeedback] = useState<ProjectFeedback | null>(null);
   const [infoMsg, setInfoMsg] = useState<{ title: string; text: string } | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -179,15 +180,27 @@ export default function FeedbackHistoryView() {
       const xml = feedbacksToXml(items);
       const now = new Date();
       const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const filename = `speaklogic-feedback-${ts}.xml`;
       const blob = new Blob([xml], { type: "application/xml" });
+      // Legacy Edge/IE never finalizes blob-URL anchor downloads at all — use its dedicated API.
+      const msSaveBlob = (navigator as Navigator & { msSaveOrOpenBlob?: (blob: Blob, name: string) => void }).msSaveOrOpenBlob;
+      if (msSaveBlob) {
+        msSaveBlob(blob, filename);
+        return;
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `speaklogic-feedback-${ts}.xml`;
+      a.download = filename;
+      a.rel = "noopener";
+      a.target = "_blank";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 500);
+      // Running inside the Office dialog iframe, Chrome can leave the download as
+      // "Unconfirmed .crdownload" if the blob URL is revoked before it finishes writing —
+      // give it a generous window instead of the usual near-immediate revoke.
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch (err) {
       showInfo("Export Failed", err instanceof Error ? err.message : String(err));
     }
@@ -206,15 +219,27 @@ export default function FeedbackHistoryView() {
           showInfo("Import XML", "No feedback records were found in that file.");
           return;
         }
-        sendMessage({ action: "IMPORT_FEEDBACK_XML", records });
-        showInfo("Import XML", `Importing ${records.length} feedback record(s). The list will refresh.`);
+        // Ask how to classify before sending — an imported email is usually a Received
+        // item the user still needs to Apply, not already-Applied/Provided feedback.
+        setPendingImport(records);
       } catch (err) {
         showInfo("Import Failed", err instanceof Error ? err.message : String(err));
       }
     };
     reader.readAsText(file);
     e.target.value = "";
-  }, [sendMessage, showInfo]);
+  }, [showInfo]);
+
+  const confirmImport = useCallback((asReceived: boolean | null) => {
+    const records = pendingImport;
+    setPendingImport(null);
+    if (!records || asReceived === null) return;
+    if (asReceived) {
+      records.forEach((r) => { r.feedback.feedbackType = "Received"; });
+    }
+    sendMessage({ action: "IMPORT_FEEDBACK_XML", records });
+    showInfo("Import XML", `Importing ${records.length} feedback record(s). The list will refresh.`);
+  }, [pendingImport, sendMessage, showInfo]);
   const activeFilterLabel =
     FEEDBACK_TYPE_FILTERS.find((f) => f.value === filterType)?.label ?? null;
 
@@ -864,6 +889,7 @@ export default function FeedbackHistoryView() {
       {viewFeedback && (
         <ViewFeedbackDialog
           feedback={viewFeedback}
+          analyses={initData?.analyses ?? []}
           onClose={() => setViewFeedback(null)}
           onSolveProblem={(payload) => sendMessage({ action: "SAVE_PROBLEM_SOLUTION", payload: { ...payload, problemIdx: -1 } })}
         />
@@ -872,6 +898,95 @@ export default function FeedbackHistoryView() {
       {/* ── Info message card ── */}
       {infoMsg && (
         <InfoMessageCard title={infoMsg.title} text={infoMsg.text} onClose={() => setInfoMsg(null)} />
+      )}
+
+      {/* ── Import XML: ask how to classify the incoming records ── */}
+      {pendingImport && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 300,
+          }}
+        >
+          <div
+            style={{
+              background: colors.white,
+              borderRadius: 8,
+              padding: "24px 28px",
+              maxWidth: 540,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+              fontFamily: "Inter, Segoe UI, sans-serif",
+            }}
+          >
+            <p
+              style={{
+                fontSize: 12.4,
+                color: colors.grey11,
+                lineHeight: "20px",
+                margin: "0 0 20px",
+              }}
+            >
+              Importing {pendingImport.length} feedback record{pendingImport.length === 1 ? "" : "s"}. Import as
+              Received (so it can be applied), or keep the feedback type from the file?
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <button
+                onClick={() => confirmImport(null)}
+                style={{
+                  height: 30,
+                  padding: "0 16px",
+                  background: colors.white,
+                  border: `1px solid ${colors.grey78}`,
+                  borderRadius: 4,
+                  fontSize: 12.4,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  color: colors.grey11,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => confirmImport(false)}
+                style={{
+                  height: 30,
+                  padding: "0 16px",
+                  background: colors.white,
+                  border: `1px solid ${colors.grey78}`,
+                  borderRadius: 4,
+                  fontSize: 12.4,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  color: colors.grey11,
+                }}
+              >
+                Import as Provided
+              </button>
+              <button
+                onClick={() => confirmImport(true)}
+                style={{
+                  height: 30,
+                  padding: "0 16px",
+                  background: colors.azure42,
+                  border: "none",
+                  borderRadius: 4,
+                  fontSize: 12.4,
+                  fontWeight: 700,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  color: colors.white,
+                }}
+              >
+                Import as Received
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

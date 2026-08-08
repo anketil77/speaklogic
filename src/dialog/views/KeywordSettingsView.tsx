@@ -34,6 +34,7 @@ export default function KeywordSettingsView() {
   const { initData, submitSave, saving, closeDialog } = useDialogComm();
   const [rules, setRules] = useState<Draft[]>([]);
   const [sendMode, setSendMode] = useState<KeywordSendMode>("warn");
+  const [highlightInRed, setHighlightInRed] = useState(false);
   const [activeScope, setActiveScope] = useState<string>(GLOBAL_KEY);
   const [wordInput, setWordInput] = useState("");
   const [newName, setNewName] = useState("");
@@ -48,6 +49,7 @@ export default function KeywordSettingsView() {
     }));
     setRules(loaded);
     setSendMode(initData.keywordSendMode ?? "warn");
+    setHighlightInRed(initData.keywordHighlightInRed ?? false);
   }, [initData]);
 
   // People scopes = contacts from the project + any person already in a rule.
@@ -132,9 +134,9 @@ export default function KeywordSettingsView() {
 
   const save = useCallback(() => {
     const cleaned = rules.filter((r) => r.keyword.trim());
-    const payload: SaveKeywordRulesPayload = { rules: cleaned, sendMode };
+    const payload: SaveKeywordRulesPayload = { rules: cleaned, sendMode, highlightInRed };
     submitSave({ action: "SAVE_KEYWORD_RULES", payload });
-  }, [rules, sendMode, submitSave]);
+  }, [rules, sendMode, highlightInRed, submitSave]);
 
   if (!initData) {
     return (
@@ -187,6 +189,15 @@ export default function KeywordSettingsView() {
               );
             })}
           </div>
+          <label style={{ display: "flex", alignItems: "center", gap: "7px", marginTop: "10px", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={highlightInRed}
+              onChange={(e) => setHighlightInRed(e.target.checked)}
+              style={{ width: "14px", height: "14px", cursor: "pointer" }}
+            />
+            <span style={{ fontSize: "12px", color: colors.grey11 }}>Show Keyword in Red</span>
+          </label>
         </div>
 
         {/* Scope selector */}

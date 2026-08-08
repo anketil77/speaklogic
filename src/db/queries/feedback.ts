@@ -2,7 +2,7 @@
 
 import { getDb, persistDb, nowDate, nowTime } from "@/db/db";
 import type { ProjectFeedback, SaveFeedbackPayload, SaveRequestFeedbackPayload, CommSignalInfo, AttachFileToProject } from "@/types/db";
-import type { ImportedFeedback } from "@/dialog/utils/feedbackXml";
+import { fileContentKey, type ImportedFeedback } from "@/dialog/utils/feedbackXml";
 
 export function getAllFeedbacks(): ProjectFeedback[] {
   const db = getDb();
@@ -246,6 +246,10 @@ export function importFeedback(data: ImportedFeedback): number {
   const time = nowTime();
 
   let analysisId: number | undefined;
+  // Export can emit the same file under both the analysis and feedback buckets
+  // (feedbackXml's own dedup is best-effort); track what's already inserted here
+  // by content since ids are re-minted on import and can't be trusted as keys.
+  const analysisFileKeys = new Set<string>();
 
   if (data.analysis) {
     const a = data.analysis;
@@ -348,6 +352,7 @@ export function importFeedback(data: ImportedFeedback): number {
         `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, fileContent, analysisId) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         [f.fileName, f.fileType, f.fileSize, f.fileDirectory, f.fileDescription, f.fileDate || date, f.fileTime || time, f.storageId, f.fullFileName, f.fileContent ?? "", analysisId]
       );
+      analysisFileKeys.add(fileContentKey(f));
     }
   }
 
@@ -395,6 +400,7 @@ export function importFeedback(data: ImportedFeedback): number {
     );
   }
   for (const f of data.files ?? []) {
+    if (analysisFileKeys.has(fileContentKey(f))) continue;
     db.run(
       `INSERT INTO AttachFileToProject (fileName, fileType, fileSize, fileDirectory, fileDescription, fileDate, fileTime, storageId, fullFileName, fileContent, feedbackId) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [f.fileName, f.fileType, f.fileSize, f.fileDirectory, f.fileDescription, f.fileDate || date, f.fileTime || time, f.storageId, f.fullFileName, f.fileContent ?? "", feedbackId]

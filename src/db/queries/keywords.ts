@@ -36,20 +36,24 @@ export function getKeywordRules(): KeywordRule[] {
 export function getKeywordSetting(): KeywordSetting {
   try {
     const db = getDb();
-    const result = db.exec("SELECT id, sendMode FROM KeywordSetting LIMIT 1");
+    const result = db.exec("SELECT id, sendMode, highlightInRed FROM KeywordSetting LIMIT 1");
     if (result.length && result[0].values.length) {
       const row = result[0].values[0];
       const mode = String(row[1] ?? "warn");
-      return { id: row[0] as number, sendMode: (mode === "stop" ? "stop" : "warn") };
+      return {
+        id: row[0] as number,
+        sendMode: (mode === "stop" ? "stop" : "warn"),
+        highlightInRed: Boolean(row[2]),
+      };
     }
   } catch {
     /* fall through to default */
   }
-  return { sendMode: "warn" };
+  return { sendMode: "warn", highlightInRed: false };
 }
 
-/** Replace the full rule set + send mode in one transaction (Settings save). */
-export function saveKeywordRules(rules: Array<Omit<KeywordRule, "id">>, sendMode: KeywordSendMode): void {
+/** Replace the full rule set + send mode + highlight setting in one transaction (Settings save). */
+export function saveKeywordRules(rules: Array<Omit<KeywordRule, "id">>, sendMode: KeywordSendMode, highlightInRed?: boolean): void {
   const db = getDb();
   db.run("DELETE FROM KeywordRule");
   for (const r of rules) {
@@ -61,10 +65,11 @@ export function saveKeywordRules(rules: Array<Omit<KeywordRule, "id">>, sendMode
     );
   }
   const existing = getKeywordSetting();
+  const highlightFlag = highlightInRed ? 1 : 0;
   if (existing.id != null) {
-    db.run("UPDATE KeywordSetting SET sendMode = ? WHERE id = ?", [sendMode, existing.id]);
+    db.run("UPDATE KeywordSetting SET sendMode = ?, highlightInRed = ? WHERE id = ?", [sendMode, highlightFlag, existing.id]);
   } else {
-    db.run("INSERT INTO KeywordSetting (sendMode) VALUES (?)", [sendMode]);
+    db.run("INSERT INTO KeywordSetting (sendMode, highlightInRed) VALUES (?, ?)", [sendMode, highlightFlag]);
   }
   persistDb();
 }
@@ -115,8 +120,11 @@ export function addKeywordHistory(entry: Omit<KeywordHistory, "id">): void {
   try {
     const db = getDb();
     db.run(
-      "INSERT INTO KeywordHistory (sentDate, sentTime, recipients, words, action, subject, itemId, conversationId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      [entry.sentDate, entry.sentTime, entry.recipients, entry.words, entry.action, entry.subject, entry.itemId ?? "", entry.conversationId ?? ""]
+      "INSERT INTO KeywordHistory (sentDate, sentTime, recipients, words, action, subject, itemId, conversationId, messageSubject, messageBody) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        entry.sentDate, entry.sentTime, entry.recipients, entry.words, entry.action, entry.subject,
+        entry.itemId ?? "", entry.conversationId ?? "", entry.messageSubject ?? "", entry.messageBody ?? "",
+      ]
     );
     persistDb();
   } catch {
@@ -129,7 +137,7 @@ export function getKeywordHistory(): KeywordHistory[] {
   try {
     const db = getDb();
     const result = db.exec(
-      "SELECT id, sentDate, sentTime, recipients, words, action, subject, itemId, conversationId FROM KeywordHistory ORDER BY sentDate DESC, sentTime DESC, id DESC"
+      "SELECT id, sentDate, sentTime, recipients, words, action, subject, itemId, conversationId, messageSubject, messageBody FROM KeywordHistory ORDER BY sentDate DESC, sentTime DESC, id DESC"
     );
     if (!result.length) return [];
     return result[0].values.map((row) => ({
@@ -142,6 +150,8 @@ export function getKeywordHistory(): KeywordHistory[] {
       subject: String(row[6] ?? ""),
       itemId: String(row[7] ?? ""),
       conversationId: String(row[8] ?? ""),
+      messageSubject: String(row[9] ?? ""),
+      messageBody: String(row[10] ?? ""),
     }));
   } catch {
     return [];

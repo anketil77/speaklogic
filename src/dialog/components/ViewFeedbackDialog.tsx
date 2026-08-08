@@ -28,7 +28,7 @@ import {
 import { FeedbackModelDialog } from "@/dialog/components/FeedbackModelDialog";
 import { HtmlContent } from "@/dialog/components/HtmlContent";
 import { colors } from "@/styles/tokens";
-import type { ProjectFeedback, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, ProjectProblem, AttachFileToProject } from "@/types/db";
+import type { ProjectFeedback, ProjectQuestion, ProjectError, ProjectCompensator, ProjectAnswer, ProjectProblem, AttachFileToProject, ProjectAnalysis } from "@/types/db";
 
 // ─── Tab types ────────────────────────────────────────────────────────────────
 type VFTab = "feedback" | "selection" | "errors" | "compensators" | "questions" | "answers" | "problems" | "files";
@@ -51,6 +51,7 @@ const VF_TABS: { value: VFTab; label: string }[] = [
 
 const VF_SELECTION_TAB_SELECTION: { value: VFTab; label: string } = { value: "selection", label: "Selection" };
 const VF_SELECTION_TAB_PARAGRAPH: { value: VFTab; label: string } = { value: "selection", label: "Paragraph" };
+const VF_SELECTION_TAB_ANALYSIS: { value: VFTab; label: string } = { value: "selection", label: "Analysis" };
 
 // ─── Sub-tab column definitions ───────────────────────────────────────────────
 const Q_COLS: PanelTableCol<ProjectQuestion>[] = [
@@ -175,9 +176,12 @@ interface Props {
   onClose: () => void;
   /** When provided, the Problems tab exposes "Solve Problem". The host persists the solution. */
   onSolveProblem?: (payload: VfSolveProblemPayload) => void;
+  /** Source analyses to resolve the Analysis tab (matched via feedback.analysisId). */
+  analyses?: ProjectAnalysis[];
 }
 
-export function ViewFeedbackDialog({ feedback, onClose, onSolveProblem }: Props) {
+export function ViewFeedbackDialog({ feedback, onClose, onSolveProblem, analyses = [] }: Props) {
+  const isReceived = feedback.feedbackType === "Received";
   const { pos, onHeaderMouseDown } = useDraggable();
   const [activeTab, setActiveTab] = useState<VFTab>("feedback");
   const [openDropId, setOpenDropId] = useState<string | null>(null);
@@ -216,9 +220,18 @@ export function ViewFeedbackDialog({ feedback, onClose, onSolveProblem }: Props)
   const files = feedback.files ?? [];
   const problems = feedback.problems ?? [];
 
-  // Selection tab appears only for selection/paragraph-applied feedback.
-  const hasSelection = !!(feedback.actualSelection || feedback.selectionType);
-  const vfSelectionTab = feedback.selectionType === "Paragraph" ? VF_SELECTION_TAB_PARAGRAPH : VF_SELECTION_TAB_SELECTION;
+  // Analysis-based feedback resolves its source analysis by FK; the second tab then
+  // shows Entity Under Analysis / Actual Analysis instead of the raw selection.
+  const matchedAnalysis = useMemo(
+    () => (feedback.analysisId != null ? analyses.find((a) => a.id === feedback.analysisId) ?? null : null),
+    [analyses, feedback.analysisId],
+  );
+
+  // Selection tab appears only for selection/paragraph-applied feedback (or analysis-based feedback).
+  const hasSelection = !!matchedAnalysis || !!(feedback.actualSelection || feedback.selectionType);
+  const vfSelectionTab = matchedAnalysis
+    ? VF_SELECTION_TAB_ANALYSIS
+    : feedback.selectionType === "Paragraph" ? VF_SELECTION_TAB_PARAGRAPH : VF_SELECTION_TAB_SELECTION;
   const visibleTabs = useMemo(
     () => (hasSelection ? [VF_TABS[0], vfSelectionTab, ...VF_TABS.slice(1)] : VF_TABS),
     [hasSelection, vfSelectionTab],
@@ -474,7 +487,7 @@ export function ViewFeedbackDialog({ feedback, onClose, onSolveProblem }: Props)
               <VfFormRow label="Application Name"><input style={vfReadonlyInput} value={feedback.applicationName || ""} readOnly /></VfFormRow>
               <VfFormRow label="Communication Function"><input style={vfReadonlyInput} value={feedback.communicationFunction || ""} readOnly /></VfFormRow>
               <VfFormRow label="Feedback Subject"><input style={vfReadonlyInput} value={feedback.feedbackSubject || ""} readOnly /></VfFormRow>
-              {feedback.feedbackType !== "Provided" && (
+              {feedback.feedbackType !== "Provided" && !isReceived && (
                 <>
                   <VfFormRow label="Actual Error Substituted"><input style={vfReadonlyInput} value={feedback.actualErrorSubstituted || ""} readOnly /></VfFormRow>
                   <VfFormRow label="Actual Compensator Replaced"><input style={vfReadonlyInput} value={feedback.actualCompensatorReplaced || ""} readOnly /></VfFormRow>
@@ -485,7 +498,7 @@ export function ViewFeedbackDialog({ feedback, onClose, onSolveProblem }: Props)
               <VfFormRow label="Feedback Type"><input style={vfReadonlyInput} value={feedback.feedbackType || ""} readOnly /></VfFormRow>
               <VfFormRow label="Feedback Date"><input style={vfReadonlyInput} value={formatDisplayDate(feedback.feedbackDate) || ""} readOnly /></VfFormRow>
               <VfFormRow label="Feedback Time"><input style={vfReadonlyInput} value={feedback.feedbackTime || ""} readOnly /></VfFormRow>
-              <VfFormRow label="Feedback Application" alignTop>
+              <VfFormRow label={isReceived ? "Actual Feedback Received" : "Feedback Application"} alignTop>
                 <div dangerouslySetInnerHTML={{ __html: feedback.feedbackApplication || "" }} style={{ minHeight: 80, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey11, background: colors.grey96, lineHeight: "20px", overflowY: "auto" }} />
               </VfFormRow>
             </div>
@@ -493,21 +506,39 @@ export function ViewFeedbackDialog({ feedback, onClose, onSolveProblem }: Props)
 
           {activeTab === "selection" && (
             <div style={{ overflowY: "auto", flex: 1, padding: "12px 20px", display: "flex", flexDirection: "column" }}>
-              <VfFormRow label="Selection Type"><input style={vfReadonlyInput} value={feedback.selectionType || feedback.source || ""} readOnly /></VfFormRow>
-              <VfFormRow label="From Person"><input style={vfReadonlyInput} value={feedback.fromPerson || ""} readOnly /></VfFormRow>
-              <VfFormRow label="To Person"><input style={vfReadonlyInput} value={feedback.toPerson || ""} readOnly /></VfFormRow>
-              <VfFormRow label="Actual Selection" alignTop>
-                {feedback.actualSelection ? (
-                  <HtmlContent
-                    html={feedback.actualSelection}
-                    style={{ minHeight: 120, maxHeight: 260, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey38, background: colors.grey96, lineHeight: 1.7, overflowY: "auto", wordBreak: "break-word" }}
-                  />
-                ) : (
-                  <div style={{ minHeight: 120, maxHeight: 260, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey38, background: colors.grey96, lineHeight: "20px", overflowY: "auto" }}>
-                    <em>No selection captured.</em>
-                  </div>
-                )}
-              </VfFormRow>
+              {matchedAnalysis ? (
+                <>
+                  <VfFormRow label="Entity Under Analysis" alignTop>
+                    <div style={{ minHeight: 60, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey11, background: colors.grey96, lineHeight: "20px", overflowY: "auto" }}>
+                      {matchedAnalysis.entityUnderAnalysis}
+                    </div>
+                  </VfFormRow>
+                  <VfFormRow label="Actual Analysis" alignTop>
+                    <div
+                      dangerouslySetInnerHTML={{ __html: matchedAnalysis.actualAnalysis || "" }}
+                      style={{ minHeight: 120, maxHeight: 260, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey11, background: colors.grey96, lineHeight: "20px", overflowY: "auto" }}
+                    />
+                  </VfFormRow>
+                </>
+              ) : (
+                <>
+                  <VfFormRow label="Selection Type"><input style={vfReadonlyInput} value={feedback.selectionType || feedback.source || ""} readOnly /></VfFormRow>
+                  <VfFormRow label="From Person"><input style={vfReadonlyInput} value={feedback.fromPerson || ""} readOnly /></VfFormRow>
+                  <VfFormRow label="To Person"><input style={vfReadonlyInput} value={feedback.toPerson || ""} readOnly /></VfFormRow>
+                  <VfFormRow label="Actual Selection" alignTop>
+                    {feedback.actualSelection ? (
+                      <HtmlContent
+                        html={feedback.actualSelection}
+                        style={{ minHeight: 120, maxHeight: 260, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey38, background: colors.grey96, lineHeight: 1.7, overflowY: "auto", wordBreak: "break-word" }}
+                      />
+                    ) : (
+                      <div style={{ minHeight: 120, maxHeight: 260, border: `1px solid ${colors.grey78}`, borderRadius: 4, padding: "8px 11px", fontSize: "12.2px", fontFamily: "inherit", color: colors.grey38, background: colors.grey96, lineHeight: "20px", overflowY: "auto" }}>
+                        <em>No selection captured.</em>
+                      </div>
+                    )}
+                  </VfFormRow>
+                </>
+              )}
             </div>
           )}
 

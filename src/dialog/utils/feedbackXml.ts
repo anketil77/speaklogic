@@ -175,6 +175,42 @@ function dedupeById<T extends { id?: number }>(...lists: T[][]): T[] {
   return out;
 }
 
+// Stable across export/import — DB ids are re-minted on import, so id-based dedup
+// alone can't catch a file re-included in both the analysis and feedback buckets
+// once ids go missing. Shared with feedback.ts's importFeedback for the same reason.
+export function fileContentKey(f: {
+  fileName: string;
+  fileType: string;
+  fileDate: string;
+  fileTime: string;
+  fileSize: string;
+  fileContent?: string;
+}): string {
+  return [f.fileName, f.fileType, f.fileDate, f.fileTime, f.fileSize, f.fileContent?.length ?? 0].join("|");
+}
+
+// Same as dedupeById, but falls back to fileContentKey when id is missing so files
+// re-included in both the analysis and feedback buckets don't survive dedup twice.
+function dedupeFiles(...lists: AttachFileToProject[][]): AttachFileToProject[] {
+  const out: AttachFileToProject[] = [];
+  const seenIds = new Set<number>();
+  const seenKeys = new Set<string>();
+  for (const list of lists) {
+    for (const item of list) {
+      if (item.id != null) {
+        if (seenIds.has(item.id)) continue;
+        seenIds.add(item.id);
+      } else {
+        const key = fileContentKey(item);
+        if (seenKeys.has(key)) continue;
+        seenKeys.add(key);
+      }
+      out.push(item);
+    }
+  }
+  return out;
+}
+
 function splitProblems(problems: ProjectProblem[]): { analysisProblems: ProjectProblem[]; feedbackProblems: ProjectProblem[] } {
   const analysisProblems: ProjectProblem[] = [];
   const feedbackProblems: ProjectProblem[] = [];
@@ -211,7 +247,7 @@ function renderFeedbackElement(feedback: ProjectFeedback, analysis: AnalysisWith
   const lines = [`${indent}<Feedback>`, ...xmlScalars(feedback, FEEDBACK_FIELDS, inner)];
 
   const problemPool = dedupeById(analysis?.problems ?? [], feedback.problems ?? []);
-  const filePool = dedupeById(analysis?.files ?? [], feedback.files ?? []);
+  const filePool = dedupeFiles(analysis?.files ?? [], feedback.files ?? []);
   const { analysisProblems, feedbackProblems } = splitProblems(problemPool);
   const { analysisFiles, feedbackFiles } = splitFiles(filePool);
 

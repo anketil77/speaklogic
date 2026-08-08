@@ -34,6 +34,7 @@ export default function KeywordHistoryView() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; row: KeywordHistory } | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [viewRow, setViewRow] = useState<KeywordHistory | null>(null);
 
   useEffect(() => {
     if (!initData) return;
@@ -46,11 +47,12 @@ export default function KeywordHistoryView() {
     sendMessage({ action: "DELETE_KEYWORD_HISTORY", id });
   }, [sendMessage]);
 
+  // Shows the message snapshot captured at send time — no host round-trip. Exchange
+  // assigns the sent item a different id than the compose item, so reopening the
+  // live message via displayMessageFormAsync is unreliable; a saved copy is not.
   const viewMessage = useCallback((row: KeywordHistory) => {
-    // Best-effort: route to host, which opens the email via displayMessageFormAsync.
-    // Only enabled when an itemId was captured at send time (see context menu).
-    if (row.itemId) sendMessage({ action: "VIEW_KEYWORD_MESSAGE", itemId: row.itemId });
-  }, [sendMessage]);
+    if (row.messageBody || row.messageSubject) setViewRow(row);
+  }, []);
 
   const openCtxMenu = useCallback((e: React.MouseEvent, row: KeywordHistory) => {
     e.preventDefault();
@@ -173,16 +175,46 @@ export default function KeywordHistoryView() {
           items={[
             {
               label: "View message",
-              disabled: !ctxMenu.row.itemId,
+              disabled: !ctxMenu.row.messageBody && !ctxMenu.row.messageSubject,
               onClick: () => {
-                if (ctxMenu.row.itemId) viewMessage(ctxMenu.row);
-                else setNote("The original message link wasn't captured for this entry, so it can't be opened.");
+                if (ctxMenu.row.messageBody || ctxMenu.row.messageSubject) viewMessage(ctxMenu.row);
+                else setNote("No saved copy for this message.");
               },
             },
             { isSep: true } as PanelMenuEntry,
             { label: "Remove from history", onClick: () => deleteRow(ctxMenu.row.id) },
           ]}
         />
+      )}
+
+      {/* Saved message snapshot (captured at send time — the sent item's own id
+          can't reliably be reopened via displayMessageFormAsync afterward) */}
+      {viewRow && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 320 }}>
+          <div style={{ background: colors.white, borderRadius: "8px", padding: "20px", width: "440px", maxHeight: "80vh", boxShadow: "0px 8px 24px rgba(0,0,0,0.18)", display: "flex", flexDirection: "column", gap: "12px" }}>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: colors.grey11 }}>
+              {viewRow.messageSubject || "(no subject)"}
+            </span>
+            <div style={{ fontSize: "11px", color: colors.grey38 }}>
+              {formatDisplayDate(viewRow.sentDate) || "—"} {viewRow.sentTime || ""} · {viewRow.recipients || "—"}
+            </div>
+            <div style={{
+              flex: 1, overflowY: "auto", fontSize: "12px", lineHeight: "18px", color: colors.grey11,
+              whiteSpace: "pre-wrap", wordBreak: "break-word", border: "1px solid #E0E0E0", borderRadius: "6px",
+              padding: "12px", background: "#FAFAFA", minHeight: "120px", maxHeight: "50vh",
+            }}>
+              {viewRow.messageBody || "(no body)"}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setViewRow(null)}
+                style={{ height: "32px", padding: "0 16px", borderRadius: "4px", border: "none", background: colors.azure42, color: colors.white, fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Transient note (e.g. message link unavailable) */}

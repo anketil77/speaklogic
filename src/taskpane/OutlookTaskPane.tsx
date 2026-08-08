@@ -261,6 +261,52 @@ async function readOutlookBodyHtml(): Promise<string> {
   });
 }
 
+// Files up to this size get their bytes embedded (base64) so they travel inside the
+// XML export — mirrors AttachFileDialog's MAX_EMBED_BYTES convention.
+const MAX_EMAIL_ATTACHMENT_BYTES = 1_000_000;
+
+function attachmentFileType(name: string): string {
+  const lastDot = name.lastIndexOf(".");
+  return lastDot > 0 ? `${name.substring(lastDot + 1).toUpperCase()} File` : "Unknown";
+}
+
+// Read the received email's real file attachments (Email to XML — Task 9). Inline images,
+// item/cloud attachments, and anything over the size cap are skipped (name-only isn't useful
+// without the app to re-fetch it, so we just omit them). One bad attachment is skipped, not fatal.
+async function readEmailAttachments(): Promise<AttachFileToProject[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const item = Office.context.mailbox.item as any;
+  const details: Office.AttachmentDetails[] = item?.attachments ?? [];
+  const candidates = details.filter(
+    (a) => !a.isInline && a.attachmentType === Office.MailboxEnums.AttachmentType.File && a.size <= MAX_EMAIL_ATTACHMENT_BYTES
+  );
+  const results = await Promise.all(candidates.map((a) => new Promise<AttachFileToProject | null>((resolve) => {
+    try {
+      item.getAttachmentContentAsync(a.id, (result: Office.AsyncResult<Office.AttachmentContent>) => {
+        if (result.status === Office.AsyncResultStatus.Failed || result.value?.format !== Office.MailboxEnums.AttachmentContentFormat.Base64) {
+          resolve(null);
+          return;
+        }
+        resolve({
+          fileName: a.name,
+          fileType: attachmentFileType(a.name),
+          fileSize: `${a.size} Bytes`,
+          fileDirectory: "",
+          fileDescription: "",
+          fileDate: nowDate(),
+          fileTime: nowTime(),
+          storageId: "EmailAttachment",
+          fullFileName: a.name,
+          fileContent: `data:application/octet-stream;base64,${result.value.content}`,
+        });
+      });
+    } catch {
+      resolve(null);
+    }
+  })));
+  return results.filter((f): f is AttachFileToProject => f !== null);
+}
+
 async function readSubject(): Promise<string> {
   try {
     const rawSubject = (Office.context.mailbox.item as { subject?: string | { getAsync?: unknown } }).subject;
@@ -871,6 +917,10 @@ export function OutlookTaskPane() {
     const parsed = parseFeedbackEmail(html);
     if (!parsed) { setStatus({ msg: "No Speak Logic feedback found in this email.", ok: false }); return; }
 
+    // Gather the email's own attachments before building the XML (Task 9) — a failed
+    // attachment read shouldn't block the export, so fall back to none.
+    const attachmentFiles = await readEmailAttachments().catch(() => []);
+
     // The analysis payload lacks the visible header fields — read them off the template.
     const L = parseEmailLabelMap(html);
     const pick = (...keys: string[]) => { for (const k of keys) if (L[k]) return L[k]; return ""; };
@@ -910,6 +960,7 @@ export function OutlookTaskPane() {
       source: getSource(), applicationName: appName, communicationFunction: commFn,
       communicationSignal: signal, projectName: project, personName: "", personEmail: "",
       analysisId: parsed.id || undefined,
+      files: attachmentFiles,
     };
 
     try {
@@ -1698,12 +1749,12 @@ export function OutlookTaskPane() {
     openManagedDialog(
       `${DIALOG_BASE}/dialog.html?view=keyword-settings`,
       { height: 70, width: 32 },
-      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(), keywordRules: getKeywordRules(), keywordSendMode: getKeywordSetting().sendMode }),
+      () => ({ selection: "", mode: "selection" as const, source: getSource(), personName: "", personEmail: "", applicationName: commCtxRef.current.appName, communicationFunction: commCtxRef.current.commFunction, communicationSignal: commCtxRef.current.commSignal, projectName: commCtxRef.current.projectName, peopleList: getPeopleNames(), peopleEmailMap: getPeopleEmailMap(), contacts: getAllPeople(), keywordRules: getKeywordRules(), keywordSendMode: getKeywordSetting().sendMode, keywordHighlightInRed: getKeywordSetting().highlightInRed }),
       (dialog, action) => {
         if (action.action === "SAVE_KEYWORD_RULES") {
           try {
             const p = action.payload as SaveKeywordRulesPayload;
-            saveKeywordRules(p.rules, p.sendMode);
+            saveKeywordRules(p.rules, p.sendMode, p.highlightInRed);
             dialog.close(); dialogRef.current = null;
           } catch (err) { setStatus({ msg: `Failed to save keyword settings: ${String(err)}`, ok: false }); }
         }
